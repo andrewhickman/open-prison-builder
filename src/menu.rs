@@ -1,4 +1,5 @@
 use crate::loading::TextureAssets;
+use crate::theme::Theme;
 use crate::GameState;
 use bevy::prelude::*;
 
@@ -15,26 +16,17 @@ impl Plugin for MenuPlugin {
 }
 
 #[derive(Component)]
-struct ButtonColors {
-    normal: Color,
-    hovered: Color,
-}
-
-impl Default for ButtonColors {
-    fn default() -> Self {
-        ButtonColors {
-            normal: Color::rgb(0.15, 0.15, 0.15),
-            hovered: Color::rgb(0.25, 0.25, 0.25),
-        }
-    }
-}
-
-#[derive(Component)]
 struct Menu;
 
-fn setup_menu(mut commands: Commands, _: Res<TextureAssets>) {
+fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) {
     info!("menu");
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle {
+        camera: Camera {
+            clear_color: theme.background().into(),
+            ..Default::default()
+        },
+        ..Default::default()
+    });
     commands
         .spawn((
             NodeBundle {
@@ -51,7 +43,6 @@ fn setup_menu(mut commands: Commands, _: Res<TextureAssets>) {
             Menu,
         ))
         .with_children(|children| {
-            let button_colors = ButtonColors::default();
             children
                 .spawn((
                     ButtonBundle {
@@ -62,10 +53,9 @@ fn setup_menu(mut commands: Commands, _: Res<TextureAssets>) {
                             align_items: AlignItems::Center,
                             ..Default::default()
                         },
-                        background_color: button_colors.normal.into(),
+                        background_color: theme.button().into(),
                         ..Default::default()
                     },
-                    button_colors,
                     ChangeState(GameState::Running),
                 ))
                 .with_children(|parent| {
@@ -73,7 +63,7 @@ fn setup_menu(mut commands: Commands, _: Res<TextureAssets>) {
                         "Play",
                         TextStyle {
                             font_size: 40.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
+                            color: theme.text(),
                             ..default()
                         },
                     ));
@@ -107,12 +97,8 @@ fn setup_menu(mut commands: Commands, _: Res<TextureAssets>) {
                             padding: UiRect::all(Val::Px(5.)),
                             ..Default::default()
                         },
-                        background_color: Color::NONE.into(),
+                        background_color: theme.button().into(),
                         ..Default::default()
-                    },
-                    ButtonColors {
-                        normal: Color::NONE,
-                        ..default()
                     },
                     OpenLink("https://bevyengine.org"),
                 ))
@@ -121,7 +107,7 @@ fn setup_menu(mut commands: Commands, _: Res<TextureAssets>) {
                         "Made with Bevy",
                         TextStyle {
                             font_size: 15.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
+                            color: theme.text(),
                             ..default()
                         },
                     ));
@@ -137,20 +123,21 @@ struct OpenLink(&'static str);
 
 fn click_play_button(
     mut next_state: ResMut<NextState<GameState>>,
+    theme: ResMut<Theme>,
     mut interaction_query: Query<
         (
             &Interaction,
             &mut BackgroundColor,
-            &ButtonColors,
             Option<&ChangeState>,
             Option<&OpenLink>,
         ),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
-    for (interaction, mut color, button_colors, change_state, open_link) in &mut interaction_query {
+    for (interaction, mut color, change_state, open_link) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
+                *color = theme.button_active().into();
                 if let Some(state) = change_state {
                     next_state.set(state.0.clone());
                 } else if let Some(link) = open_link {
@@ -160,10 +147,10 @@ fn click_play_button(
                 }
             }
             Interaction::Hovered => {
-                *color = button_colors.hovered.into();
+                *color = theme.button_hot().into();
             }
             Interaction::None => {
-                *color = button_colors.normal.into();
+                *color = theme.button().into();
             }
         }
     }

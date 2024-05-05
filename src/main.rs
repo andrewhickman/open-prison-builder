@@ -1,4 +1,3 @@
-// disable console on windows for release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::io::Cursor;
@@ -16,7 +15,6 @@ fn main() {
     App::new()
         .insert_resource(Msaa::Off)
         .insert_resource(AssetMetaCheck::Never)
-        .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Prison Manager".to_string(),
