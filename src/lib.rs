@@ -1,6 +1,8 @@
 #![allow(clippy::type_complexity)]
 
+mod camera;
 mod loading;
+mod map;
 mod menu;
 mod theme;
 
@@ -11,6 +13,8 @@ use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
+use camera::CameraPlugin;
+use map::MapPlugin;
 use theme::ThemePlugin;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
@@ -25,8 +29,13 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<GameState>()
-            .add_plugins((LoadingPlugin, MenuPlugin, ThemePlugin));
+        app.init_state::<GameState>().add_plugins((
+            CameraPlugin,
+            LoadingPlugin,
+            MenuPlugin,
+            ThemePlugin,
+            MapPlugin,
+        ));
 
         #[cfg(debug_assertions)]
         {
