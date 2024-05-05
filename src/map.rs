@@ -10,6 +10,8 @@ use crate::{loading::TextureAssets, GameState};
 
 const TILE_SIZE: u32 = 32;
 const LARGE_TILE_SIZE: u32 = 1024;
+const LARGE_TILE_SUBTILES: u32 = LARGE_TILE_SIZE / TILE_SIZE;
+const LARGE_TILE_OFFSET: u32 = LARGE_TILE_SUBTILES * LARGE_TILE_SUBTILES;
 
 pub struct MapPlugin;
 
@@ -28,11 +30,12 @@ fn startup(mut commands: Commands, textures: Res<TextureAssets>) {
     for y in 0..map_size.y {
         for x in 0..map_size.x {
             let tile_pos = TilePos { x, y };
+            let base_pos = if x % 2 == y % 2 { 0 } else { 1 } * LARGE_TILE_OFFSET;
             let tile_entity = commands
                 .spawn(TileBundle {
                     position: tile_pos,
                     tilemap_id: TilemapId(tilemap_entity),
-                    texture_index: large_texture_id(TileTextureIndex(0), tile_pos),
+                    texture_index: large_texture_id(TileTextureIndex(base_pos), tile_pos),
                     ..Default::default()
                 })
                 .id();

@@ -23,6 +23,6 @@ pub struct TextureAssets {
     #[asset(texture_atlas_layout(tile_size_x = 32.0, tile_size_y = 32.0, columns = 8, rows = 8))]
     pub atlas_layout: Handle<TextureAtlasLayout>,
     #[asset(image(sampler = nearest))]
-    #[asset(path = "textures/grass.png")]
+    #[asset(path = "textures/atlas.png")]
     pub atlas: Handle<Image>,
 }

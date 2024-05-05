@@ -1,0 +1,10 @@
+[package]
+name = "generate-texture"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy_render = "0.13.2"
+image = { version = "0.25.1", default-features = false, features = ["png"] }
+noise = "0.9.0"
+rand = { version = "0.8.5", features = ["small_rng"] }
