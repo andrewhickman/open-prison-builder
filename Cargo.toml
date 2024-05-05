@@ -1,0 +1,59 @@
+[package]
+name = "open-prison-builder"
+version = "0.1.0"
+publish = false
+authors = ["Andrew Hickman <me@andrewhickman.dev>"]
+edition = "2021"
+exclude = ["dist", "build", "assets"]
+build = "build.rs"
+
+[workspace]
+members = ["pb-engine", "pb-render", "pb-ui"]
+
+[[bin]]
+name = "pb"
+path = "src/main.rs"
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dist]
+inherits = "release"
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[features]
+dev = [
+    "bevy/dynamic_linking",
+]
+
+[dependencies]
+pb-engine = { path = "pb-engine" }
+pb-render = { path = "pb-render" }
+pb-ui = { path = "pb-ui" }
+bevy = { version = "0.13", default-features = false, features = [
+    "bevy_asset",
+    "bevy_render",
+    "bevy_winit",
+    "multi-threaded",
+    "png",
+    "webgl2",
+    "x11",
+] }
+image = { version = "0.24", default-features = false, features = ["png"] }
+webbrowser = { version = "0.8", features = ["hardened"] }
+winit = { version = "0.29", default-features = false }
+
+[build-dependencies]
+embed-resource = "1"
