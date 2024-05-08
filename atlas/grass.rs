@@ -1,15 +1,14 @@
-use bevy_render::color::Color;
+use image::Rgba;
 use noise::NoiseFn;
-use noise::SuperSimplex;
 use rand::{rngs::SmallRng, RngCore, SeedableRng};
 
-use crate::{Noise, HEIGHT, WIDTH};
+use super::Noise;
 
-pub struct DirtNoise {
+pub struct GrassNoise {
     layers: Vec<(f64, f64, noise::OpenSimplex)>,
 }
 
-impl Default for DirtNoise {
+impl Default for GrassNoise {
     fn default() -> Self {
         let mut rand = SmallRng::seed_from_u64(42);
 
@@ -24,12 +23,12 @@ impl Default for DirtNoise {
             })
             .collect();
 
-        DirtNoise { layers }
+        GrassNoise { layers }
     }
 }
 
-impl Noise for DirtNoise {
-    fn get_color(&self, x: f64, y: f64, z: f64, w: f64) -> Color {
+impl Noise for GrassNoise {
+    fn get_color(&self, x: f64, y: f64, z: f64, w: f64) -> Rgba<u8> {
         let mut result = 0.0;
         let mut scale = 1.0;
         for (scale_x, scale_y, noise) in &self.layers {
@@ -37,12 +36,16 @@ impl Noise for DirtNoise {
             scale /= 2.0;
         }
 
-        if result < -0.1 {
-            Color::rgb(0.278, 0.243, 0.161)
-        } else if result < 0.1 {
-            Color::rgb(0.247, 0.200, 0.145)
+        if result < -0.6 {
+            Rgba([0x7e, 0x7a, 0x56, u8::MAX])
+        } else if result < -0.3 {
+            Rgba([0x70, 0x74, 0x52, u8::MAX])
+        } else if result < 0.3 {
+            Rgba([0x63, 0x6d, 0x4d, u8::MAX])
+        } else if result < 0.6 {
+            Rgba([0x55, 0x66, 0x48, u8::MAX])
         } else {
-            Color::rgb(0.278, 0.243, 0.161)
+            Rgba([0x48, 0x60, 0x44, u8::MAX])
         }
     }
 }

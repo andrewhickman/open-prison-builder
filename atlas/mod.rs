@@ -1,6 +1,5 @@
-use std::f64;
+use std::{f64, path::Path};
 
-use bevy_render::color::Color;
 use image::{ImageBuffer, Rgba};
 
 mod dirt;
@@ -9,17 +8,17 @@ mod grass;
 pub const WIDTH: u32 = 1024;
 pub const HEIGHT: u32 = 1024;
 
-trait Noise: Default {
-    fn get_color(&self, x: f64, y: f64, z: f64, w: f64) -> Color;
-}
-
-fn main() {
+pub fn write_atlas(path: impl AsRef<Path>) {
     let mut image = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(WIDTH, HEIGHT * 2);
 
-    write_noise::<grass::GrassNoise>(&mut image, 0);
-    write_noise::<dirt::DirtNoise>(&mut image, 1);
+    write_noise::<dirt::DirtNoise>(&mut image, 0);
+    write_noise::<grass::GrassNoise>(&mut image, 1);
 
-    image.save("assets/textures/atlas.png").unwrap();
+    image.save(path).unwrap();
+}
+
+trait Noise: Default {
+    fn get_color(&self, x: f64, y: f64, z: f64, w: f64) -> Rgba<u8>;
 }
 
 fn write_noise<N: Noise>(image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, offset: u32) {
@@ -42,8 +41,7 @@ fn write_noise<N: Noise>(image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, offset: u32
             let nz = x1 + f64::sin(s * f64::consts::TAU) * (dx / f64::consts::TAU);
             let nw = y1 + f64::sin(t * f64::consts::TAU) * (dy / f64::consts::TAU);
 
-            let color = noise.get_color(nx, ny, nz, nw);
-            image.get_pixel_mut(x, offset * HEIGHT + y).0 = color.as_rgba_u8();
+            *image.get_pixel_mut(x, offset * HEIGHT + y) = noise.get_color(nx, ny, nz, nw);
         }
     }
 }

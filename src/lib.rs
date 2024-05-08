@@ -5,6 +5,7 @@ mod loading;
 mod map;
 mod menu;
 mod theme;
+mod material;
 
 use crate::loading::LoadingPlugin;
 use crate::menu::MenuPlugin;

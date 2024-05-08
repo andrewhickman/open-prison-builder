@@ -6,12 +6,12 @@ use bevy_ecs_tilemap::{
     TilemapBundle, TilemapPlugin,
 };
 
-use crate::{loading::TextureAssets, GameState};
+use crate::{loading::TextureAssets, GameState, material::Material};
 
-const TILE_SIZE: u32 = 32;
-const LARGE_TILE_SIZE: u32 = 1024;
-const LARGE_TILE_SUBTILES: u32 = LARGE_TILE_SIZE / TILE_SIZE;
-const LARGE_TILE_OFFSET: u32 = LARGE_TILE_SUBTILES * LARGE_TILE_SUBTILES;
+pub const TILE_SIZE: u32 = 32;
+pub const LARGE_TILE_SIZE: u32 = 1024;
+pub const LARGE_TILE_SUBTILES: u32 = LARGE_TILE_SIZE / TILE_SIZE;
+pub const LARGE_TILE_OFFSET: u32 = LARGE_TILE_SUBTILES * LARGE_TILE_SUBTILES;
 
 pub struct MapPlugin;
 
@@ -30,12 +30,12 @@ fn startup(mut commands: Commands, textures: Res<TextureAssets>) {
     for y in 0..map_size.y {
         for x in 0..map_size.x {
             let tile_pos = TilePos { x, y };
-            let base_pos = if x % 2 == y % 2 { 0 } else { 1 } * LARGE_TILE_OFFSET;
+            let material = Material::Grass;
             let tile_entity = commands
                 .spawn(TileBundle {
                     position: tile_pos,
                     tilemap_id: TilemapId(tilemap_entity),
-                    texture_index: large_texture_id(TileTextureIndex(base_pos), tile_pos),
+                    texture_index: material.index(tile_pos),
                     ..Default::default()
                 })
                 .id();
@@ -60,9 +60,4 @@ fn startup(mut commands: Commands, textures: Res<TextureAssets>) {
         transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0),
         ..Default::default()
     });
-}
-
-fn large_texture_id(base: TileTextureIndex, pos: TilePos) -> TileTextureIndex {
-    let len = LARGE_TILE_SIZE / TILE_SIZE;
-    TileTextureIndex(base.0 + (len - 1 - (pos.y % len)) * len + (pos.x % len))
 }
