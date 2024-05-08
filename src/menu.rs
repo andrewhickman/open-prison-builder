@@ -19,14 +19,16 @@ impl Plugin for MenuPlugin {
 struct Menu;
 
 fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) {
-    info!("menu");
-    commands.spawn(Camera2dBundle {
-        camera: Camera {
-            clear_color: theme.background().into(),
+    commands.spawn((
+        Camera2dBundle {
+            camera: Camera {
+                clear_color: theme.background().into(),
+                ..Default::default()
+            },
             ..Default::default()
         },
-        ..Default::default()
-    });
+        Menu,
+    ));
     commands
         .spawn((
             NodeBundle {
