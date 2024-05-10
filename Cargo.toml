@@ -5,6 +5,7 @@ publish = false
 authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 edition = "2021"
 exclude = ["dist", "build", "assets"]
+build = "build.rs"
 
 [[bin]]
 name = "prison-builder"

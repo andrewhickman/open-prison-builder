@@ -29,6 +29,7 @@ fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) 
         },
         Menu,
     ));
+
     commands
         .spawn((
             NodeBundle {

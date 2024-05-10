@@ -6,10 +6,12 @@ mod map;
 mod material;
 mod menu;
 mod theme;
+mod ui;
 
 #[cfg(debug_assertions)]
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
+use ui::UiPlugin;
 
 use crate::camera::InputPlugin;
 use crate::loading::LoadingPlugin;
@@ -18,9 +20,10 @@ use crate::menu::MenuPlugin;
 use crate::theme::ThemePlugin;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
-enum GameState {
+pub enum GameState {
     #[default]
     Loading,
+    LoadingFailed,
     Menu,
     Running,
 }
@@ -35,6 +38,7 @@ impl Plugin for GamePlugin {
             MenuPlugin,
             ThemePlugin,
             MapPlugin,
+            UiPlugin,
         ));
 
         #[cfg(debug_assertions)]
