@@ -18,7 +18,10 @@ pub struct GameContent;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, spinner::update_spinners);
+        app.add_systems(
+            Update,
+            (spinner::update_spinners, menu_bar::on_play_button_clicked),
+        );
         app.add_systems(OnEnter(GameState::Running), spawn_game_ui);
         app.add_systems(OnExit(GameState::Running), despawn_game_ui);
     }
@@ -68,8 +71,11 @@ fn spawn_game_ui(mut commands: Commands, theme: Res<Theme>) {
     .set_parent(ui_root);
 }
 
-fn spawn_build_menu(mut _commands: &mut ChildBuilder) -> Entity {
-    todo!()
+fn spawn_build_menu(commands: &mut ChildBuilder) {
+    commands.spawn(TextBundle::from_section(
+        "hello".to_owned(),
+        TextStyle::default(),
+    ));
 }
 
 fn despawn_game_ui(mut commands: Commands, ui_q: Query<Entity, With<GameUi>>) {

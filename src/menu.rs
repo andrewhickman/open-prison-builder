@@ -10,7 +10,10 @@ pub struct MenuPlugin;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Menu), setup_menu)
-            .add_systems(Update, click_play_button.run_if(in_state(GameState::Menu)))
+            .add_systems(
+                Update,
+                on_play_button_clicked.run_if(in_state(GameState::Menu)),
+            )
             .add_systems(OnExit(GameState::Menu), cleanup_menu);
     }
 }
@@ -123,14 +126,10 @@ struct ChangeState(GameState);
 #[derive(Component)]
 struct OpenLink(&'static str);
 
-fn click_play_button(
+fn on_play_button_clicked(
     mut next_state: ResMut<NextState<GameState>>,
     mut interaction_query: Query<
-        (
-            &Interaction,
-            Option<&ChangeState>,
-            Option<&OpenLink>,
-        ),
+        (&Interaction, Option<&ChangeState>, Option<&OpenLink>),
         (Changed<Interaction>, With<Button>),
     >,
 ) {

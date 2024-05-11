@@ -1,16 +1,16 @@
-use bevy::{ecs::system::EntityCommands, prelude::*, ui::FocusPolicy};
+use bevy::{ecs::system::EntityCommands, prelude::*};
 
 use crate::theme::Theme;
 
-pub type ButtonCallback = Box<dyn Fn(&mut ChildBuilder) -> Entity + Send + Sync>;
+pub type ButtonCallback = Box<dyn Fn(&mut ChildBuilder) + Send + Sync>;
 
 #[derive(Component)]
-struct MenuBar {
-    child: Option<Entity>,
+pub struct MenuBar {
+    child: Option<(Entity, Entity)>,
 }
 
 #[derive(Component)]
-struct MenuBarButton {
+pub struct MenuBarButton {
     parent: Entity,
     callback: ButtonCallback,
 }
@@ -49,7 +49,6 @@ pub fn spawn_menu_bar<'a>(
                         ..Default::default()
                     },
                     background_color: BackgroundColor(theme.ui_background()),
-                    focus_policy: FocusPolicy::Block,
                     ..Default::default()
                 },
                 Outline {
@@ -93,4 +92,33 @@ pub fn spawn_menu_bar<'a>(
     });
 
     commands
+}
+
+pub fn on_play_button_clicked(
+    mut commands: Commands,
+    mut menu_q: Query<(Entity, &mut MenuBar)>,
+    interaction_q: Query<(Entity, &Interaction, &MenuBarButton), Changed<Interaction>>,
+) {
+    for (button_entity, interaction, button) in &interaction_q {
+        if let Interaction::Pressed = *interaction {
+            if let Ok((menu_entity, mut menu_bar)) = menu_q.get_mut(button.parent) {
+                if let Some((existing_button, child)) = menu_bar.child.take() {
+                    commands.entity(child).despawn_recursive();
+
+                    if existing_button == button_entity {
+                        continue;
+                    }
+                }
+
+                let child = commands
+                    .spawn(NodeBundle {
+                        ..Default::default()
+                    })
+                    .with_children(&button.callback)
+                    .set_parent(menu_entity)
+                    .id();
+                menu_bar.child = Some((button_entity, child));
+            }
+        }
+    }
 }

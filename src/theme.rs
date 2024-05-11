@@ -4,8 +4,7 @@ pub struct ThemePlugin;
 
 impl Plugin for ThemePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .insert_resource(Theme::default())
+        app.insert_resource(Theme::default())
             .add_systems(Update, update_button_color);
     }
 }
@@ -107,11 +106,7 @@ fn mix(color1: Color, color2: Color, weight: f32) -> Color {
 pub fn update_button_color(
     theme: ResMut<Theme>,
     mut interaction_query: Query<
-        (
-            &Interaction,
-            Option<&ButtonStyle>,
-            &mut BackgroundColor,
-        ),
+        (&Interaction, Option<&ButtonStyle>, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
