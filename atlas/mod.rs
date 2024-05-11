@@ -15,7 +15,9 @@ pub fn write_atlas(path: impl AsRef<Path>) {
     write_noise::<grass::GrassNoise>(&mut image, 1);
 
     let mut buf = Vec::new();
-    image.write_to(&mut Cursor::new(&mut buf), ImageFormat::Png).unwrap();
+    image
+        .write_to(&mut Cursor::new(&mut buf), ImageFormat::Png)
+        .unwrap();
     if fs::read(path.as_ref()).unwrap() != buf {
         fs::write(path, buf).unwrap();
     }

@@ -13,7 +13,7 @@ pub struct ControlPlugin;
 pub struct ControlSystem;
 
 /// The position of the cursor, in world space.
-/// 
+///
 /// `None` if the cursor is hovering over a UI element or outside the window.
 #[derive(Default, Component)]
 pub struct CursorPos(pub Option<Vec2>);

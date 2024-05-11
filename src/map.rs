@@ -7,7 +7,10 @@ use bevy_ecs_tilemap::{
 };
 
 use crate::{
-    control::{ControlSystem, CursorPos}, loading::TextureAssets, material::Material, GameState
+    control::{ControlSystem, CursorPos},
+    loading::TextureAssets,
+    material::Material,
+    GameState,
 };
 
 pub const TILE_SIZE: u32 = 32;
@@ -30,7 +33,12 @@ impl Plugin for MapPlugin {
                     .after(ControlSystem)
                     .run_if(in_state(GameState::Running)),
             )
-            .add_systems(Update, spawn_dirt.after(update_hovered_tile).run_if(input_just_pressed(MouseButton::Left)));
+            .add_systems(
+                Update,
+                spawn_dirt
+                    .after(update_hovered_tile)
+                    .run_if(input_just_pressed(MouseButton::Left)),
+            );
     }
 }
 
@@ -119,10 +127,7 @@ fn update_hovered_tile(
     }
 }
 
-fn spawn_dirt(
-    hovered_tile_q: Query<&HoveredTile>,
-    mut texture_q: Query<&mut TileTextureIndex>,
-) {
+fn spawn_dirt(hovered_tile_q: Query<&HoveredTile>, mut texture_q: Query<&mut TileTextureIndex>) {
     for tile in hovered_tile_q.iter() {
         if let Some((entity, pos)) = tile.0 {
             if let Ok(mut texture) = texture_q.get_mut(entity) {
