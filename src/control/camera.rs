@@ -8,7 +8,7 @@ pub fn spawn_game_camera(mut commands: Commands, theme: Res<Theme>) {
     commands.spawn((
         Camera2dBundle {
             camera: Camera {
-                clear_color: theme.ui_background().into(),
+                clear_color: theme.game_background().into(),
                 ..Default::default()
             },
             ..Default::default()

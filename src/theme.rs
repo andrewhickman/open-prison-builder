@@ -1,14 +1,12 @@
-use bevy::{
-    app::{App, Plugin},
-    ecs::system::Resource,
-    render::color::Color,
-};
+use bevy::prelude::*;
 
 pub struct ThemePlugin;
 
 impl Plugin for ThemePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Theme::default());
+        app
+            .insert_resource(Theme::default())
+            .add_systems(Update, update_button_color);
     }
 }
 
@@ -17,16 +15,14 @@ pub struct Theme {
     game_background: Color,
     text: Color,
     ui_background: Color,
-    #[allow(unused)]
-    detail2: Color,
-    #[allow(unused)]
-    detail3: Color,
-    #[allow(unused)]
-    accent1: Color,
-    #[allow(unused)]
-    accent2: Color,
-    #[allow(unused)]
-    accent3: Color,
+    button: Color,
+    bold_button: Color,
+}
+
+#[derive(Component)]
+pub enum ButtonStyle {
+    Normal,
+    Bold,
 }
 
 impl Theme {
@@ -43,7 +39,7 @@ impl Theme {
     }
 
     pub fn button(&self) -> Color {
-        self.detail2
+        self.button
     }
 
     pub fn button_hot(&self) -> Color {
@@ -53,19 +49,28 @@ impl Theme {
     pub fn button_active(&self) -> Color {
         active(self.button(), self.text)
     }
+
+    pub fn bold_button(&self) -> Color {
+        self.bold_button
+    }
+
+    pub fn bold_button_hot(&self) -> Color {
+        hot(self.bold_button(), self.text)
+    }
+
+    pub fn bold_button_active(&self) -> Color {
+        active(self.bold_button(), self.text)
+    }
 }
 
 impl Default for Theme {
     fn default() -> Self {
         Theme {
-            game_background: Color::rgb(0.031, 0.071, 0.027),
-            text: Color::rgb(0.871, 0.863, 0.875),
-            ui_background: Color::rgb(0.439, 0.431, 0.384),
-            detail2: Color::rgb(0.373, 0.278, 0.329),
-            detail3: Color::rgb(0.553, 0.635, 0.561),
-            accent1: Color::rgb(0.482, 0.698, 0.851),
-            accent2: Color::rgb(0.357, 0.729, 0.435),
-            accent3: Color::rgb(0.929, 0.278, 0.290),
+            game_background: Color::hex("#081207").unwrap(),
+            text: Color::hex("#f5f5f5").unwrap(),
+            ui_background: Color::hex("#706e62").unwrap(),
+            button: Color::hex("#5F4754").unwrap(),
+            bold_button: Color::hex("#485921").unwrap(),
         }
     }
 }
@@ -97,4 +102,27 @@ fn mix(color1: Color, color2: Color, weight: f32) -> Color {
         color1.b() * weight1 + color2.b() * weight2,
         color1.a() * weight + color2.a() * (1.0 - weight),
     )
+}
+
+pub fn update_button_color(
+    theme: ResMut<Theme>,
+    mut interaction_query: Query<
+        (
+            &Interaction,
+            Option<&ButtonStyle>,
+            &mut BackgroundColor,
+        ),
+        (Changed<Interaction>, With<Button>),
+    >,
+) {
+    for (interaction, style, mut color) in &mut interaction_query {
+        color.0 = match (interaction, style) {
+            (Interaction::None, None | Some(ButtonStyle::Normal)) => theme.button(),
+            (Interaction::None, Some(ButtonStyle::Bold)) => theme.bold_button(),
+            (Interaction::Hovered, None | Some(ButtonStyle::Normal)) => theme.button_hot(),
+            (Interaction::Hovered, Some(ButtonStyle::Bold)) => theme.bold_button_hot(),
+            (Interaction::Pressed, None | Some(ButtonStyle::Normal)) => theme.button_active(),
+            (Interaction::Pressed, Some(ButtonStyle::Bold)) => theme.bold_button_active(),
+        };
+    }
 }

@@ -1,5 +1,5 @@
 use crate::loading::TextureAssets;
-use crate::theme::Theme;
+use crate::theme::{ButtonStyle, Theme};
 use crate::GameState;
 use bevy::prelude::*;
 
@@ -56,9 +56,9 @@ fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) 
                             align_items: AlignItems::Center,
                             ..Default::default()
                         },
-                        background_color: theme.button().into(),
                         ..Default::default()
                     },
+                    ButtonStyle::Bold,
                     ChangeState(GameState::Running),
                 ))
                 .with_children(|parent| {
@@ -100,7 +100,6 @@ fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) 
                             padding: UiRect::all(Val::Px(5.)),
                             ..Default::default()
                         },
-                        background_color: theme.button().into(),
                         ..Default::default()
                     },
                     OpenLink("https://bevyengine.org"),
@@ -126,34 +125,23 @@ struct OpenLink(&'static str);
 
 fn click_play_button(
     mut next_state: ResMut<NextState<GameState>>,
-    theme: ResMut<Theme>,
     mut interaction_query: Query<
         (
             &Interaction,
-            &mut BackgroundColor,
             Option<&ChangeState>,
             Option<&OpenLink>,
         ),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
-    for (interaction, mut color, change_state, open_link) in &mut interaction_query {
-        match *interaction {
-            Interaction::Pressed => {
-                *color = theme.button_active().into();
-                if let Some(state) = change_state {
-                    next_state.set(state.0.clone());
-                } else if let Some(link) = open_link {
-                    if let Err(error) = webbrowser::open(link.0) {
-                        warn!("Failed to open link {error:?}");
-                    }
+    for (interaction, change_state, open_link) in &mut interaction_query {
+        if let Interaction::Pressed = *interaction {
+            if let Some(state) = change_state {
+                next_state.set(state.0.clone());
+            } else if let Some(link) = open_link {
+                if let Err(error) = webbrowser::open(link.0) {
+                    warn!("Failed to open link {error:?}");
                 }
-            }
-            Interaction::Hovered => {
-                *color = theme.button_hot().into();
-            }
-            Interaction::None => {
-                *color = theme.button().into();
             }
         }
     }

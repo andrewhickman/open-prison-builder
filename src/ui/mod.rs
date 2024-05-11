@@ -1,17 +1,20 @@
-mod app_bar;
+mod menu_bar;
 mod spinner;
 
 use bevy::prelude::*;
 
 use crate::{theme::Theme, GameState};
 
-pub use self::app_bar::{spawn_app_bar, AppBody};
+pub use self::menu_bar::spawn_menu_bar;
 pub use self::spinner::{spawn_spinner, Spinner, SpinnerBundle};
 
 pub struct UiPlugin;
 
 #[derive(Component)]
-struct GameUi;
+pub struct GameUi;
+
+#[derive(Component)]
+pub struct GameContent;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
@@ -22,7 +25,51 @@ impl Plugin for UiPlugin {
 }
 
 fn spawn_game_ui(mut commands: Commands, theme: Res<Theme>) {
-    spawn_app_bar(&mut commands, theme).insert(GameUi);
+    let ui_root = commands
+        .spawn((
+            GameUi,
+            NodeBundle {
+                style: Style {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    flex_direction: FlexDirection::Column,
+                    ..default()
+                },
+                ..default()
+            },
+        ))
+        .id();
+
+    commands
+        .spawn((
+            GameContent,
+            NodeBundle {
+                style: Style {
+                    position_type: PositionType::Absolute,
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            Interaction::default(),
+        ))
+        .set_parent(ui_root);
+
+    spawn_menu_bar(
+        &mut commands,
+        theme,
+        vec![
+            ("Build".to_owned(), Box::new(spawn_build_menu)),
+            ("View".to_owned(), Box::new(spawn_build_menu)),
+            ("Manage".to_owned(), Box::new(spawn_build_menu)),
+        ],
+    )
+    .set_parent(ui_root);
+}
+
+fn spawn_build_menu(mut _commands: &mut ChildBuilder) -> Entity {
+    todo!()
 }
 
 fn despawn_game_ui(mut commands: Commands, ui_q: Query<Entity, With<GameUi>>) {

@@ -3,7 +3,7 @@ mod camera;
 use approx::abs_diff_eq;
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::{ui::AppBody, GameState};
+use crate::{ui::GameContent, GameState};
 
 use self::camera::{camera_movement, spawn_game_camera};
 
@@ -32,7 +32,7 @@ impl Plugin for ControlPlugin {
 }
 
 pub fn update_cursor_pos(
-    body_q: Query<Ref<Interaction>, With<AppBody>>,
+    body_q: Query<Ref<Interaction>, With<GameContent>>,
     mut q_cameras: Query<(Ref<GlobalTransform>, Ref<Camera>, &mut CursorPos)>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
 ) {
