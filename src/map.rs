@@ -1,16 +1,13 @@
-use bevy::prelude::*;
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_ecs_tilemap::{
     helpers::geometry::get_tilemap_center_transform,
     map::{TilemapGridSize, TilemapId, TilemapSize, TilemapTexture, TilemapTileSize, TilemapType},
-    tiles::{TileBundle, TilePos, TileStorage},
+    tiles::{TileBundle, TilePos, TileStorage, TileTextureIndex},
     TilemapBundle, TilemapPlugin,
 };
 
 use crate::{
-    camera::{update_cursor_pos, CursorPos},
-    loading::TextureAssets,
-    material::Material,
-    GameState,
+    control::{ControlSystem, CursorPos}, loading::TextureAssets, material::Material, GameState
 };
 
 pub const TILE_SIZE: u32 = 32;
@@ -30,9 +27,10 @@ impl Plugin for MapPlugin {
             .add_systems(
                 Update,
                 update_hovered_tile
-                    .after(update_cursor_pos)
+                    .after(ControlSystem)
                     .run_if(in_state(GameState::Running)),
-            );
+            )
+            .add_systems(Update, spawn_dirt.after(update_hovered_tile).run_if(input_just_pressed(MouseButton::Left)));
     }
 }
 
@@ -118,5 +116,18 @@ fn update_hovered_tile(
         };
 
         hovered_tile.0 = Some((tile_entity, tile_pos));
+    }
+}
+
+fn spawn_dirt(
+    hovered_tile_q: Query<&HoveredTile>,
+    mut texture_q: Query<&mut TileTextureIndex>,
+) {
+    for tile in hovered_tile_q.iter() {
+        if let Some((entity, pos)) = tile.0 {
+            if let Ok(mut texture) = texture_q.get_mut(entity) {
+                *texture = Material::Dirt.index(pos);
+            }
+        }
     }
 }

@@ -14,10 +14,9 @@ impl Plugin for ThemePlugin {
 
 #[derive(Resource)]
 pub struct Theme {
-    background: Color,
+    game_background: Color,
     text: Color,
-    #[allow(unused)]
-    detail1: Color,
+    ui_background: Color,
     #[allow(unused)]
     detail2: Color,
     #[allow(unused)]
@@ -31,8 +30,12 @@ pub struct Theme {
 }
 
 impl Theme {
-    pub fn background(&self) -> Color {
-        self.background
+    pub fn game_background(&self) -> Color {
+        self.game_background
+    }
+
+    pub fn ui_background(&self) -> Color {
+        self.ui_background
     }
 
     pub fn text(&self) -> Color {
@@ -55,9 +58,9 @@ impl Theme {
 impl Default for Theme {
     fn default() -> Self {
         Theme {
-            background: Color::rgb(0.031, 0.071, 0.027),
+            game_background: Color::rgb(0.031, 0.071, 0.027),
             text: Color::rgb(0.871, 0.863, 0.875),
-            detail1: Color::rgb(0.439, 0.431, 0.384),
+            ui_background: Color::rgb(0.439, 0.431, 0.384),
             detail2: Color::rgb(0.373, 0.278, 0.329),
             detail3: Color::rgb(0.553, 0.635, 0.561),
             accent1: Color::rgb(0.482, 0.698, 0.851),

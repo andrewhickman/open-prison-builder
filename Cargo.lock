@@ -1245,6 +1245,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f06daa26ffb82d90ba772256c0ba286f6c305c392f6976c9822717974805837c"
 dependencies = [
+ "approx",
  "glam 0.25.0",
  "serde",
 ]
@@ -2869,6 +2870,7 @@ version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "151665d9be52f9bb40fc7966565d39666f2d1e69233571b71b87791c7e0528b3"
 dependencies = [
+ "approx",
  "bytemuck",
  "mint",
  "serde",
@@ -3952,11 +3954,13 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 name = "open-prison-builder"
 version = "0.1.0"
 dependencies = [
+ "approx",
  "bevy 0.13.2",
  "bevy_asset_loader",
  "bevy_color",
  "bevy_ecs_tilemap",
  "bevy_kira_audio",
+ "bevy_math 0.13.2",
  "embed-resource",
  "image",
  "noise",

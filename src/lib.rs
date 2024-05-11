@@ -1,6 +1,6 @@
 #![allow(clippy::type_complexity)]
 
-mod camera;
+mod control;
 mod loading;
 mod map;
 mod material;
@@ -8,12 +8,14 @@ mod menu;
 mod theme;
 mod ui;
 
+pub use crate::theme::Theme;
+
 #[cfg(debug_assertions)]
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
+use control::ControlPlugin;
 use ui::UiPlugin;
 
-use crate::camera::InputPlugin;
 use crate::loading::LoadingPlugin;
 use crate::map::MapPlugin;
 use crate::menu::MenuPlugin;
@@ -33,11 +35,11 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>().add_plugins((
-            InputPlugin,
+            ControlPlugin,
             LoadingPlugin,
+            MapPlugin,
             MenuPlugin,
             ThemePlugin,
-            MapPlugin,
             UiPlugin,
         ));
 

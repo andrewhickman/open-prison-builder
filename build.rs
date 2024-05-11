@@ -9,7 +9,7 @@ fn main() {
     let target = env::var("TARGET").unwrap();
     if target.contains("windows") {
         println!("cargo::rerun-if-changed=build/windows/icon.rc");
-        println!("cargo::rerun-if-changed=build/windows/icon_1024x1024.png");
+        println!("cargo::rerun-if-changed=build/icon_1024x1024.png");
         embed_resource::compile("build/windows/icon.rc");
     }
 

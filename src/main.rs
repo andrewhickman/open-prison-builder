@@ -9,12 +9,13 @@ use bevy::winit::WinitWindows;
 use bevy::DefaultPlugins;
 use winit::window::Icon;
 
-use open_prison_builder::GamePlugin;
+use open_prison_builder::{GamePlugin, Theme};
 
 fn main() {
     App::new()
         .insert_resource(Msaa::Off)
         .insert_resource(AssetMetaCheck::Never)
+        .insert_resource(ClearColor(Theme::default().ui_background()))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Prison Manager".to_string(),

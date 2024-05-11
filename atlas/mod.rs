@@ -1,6 +1,6 @@
-use std::{f64, path::Path};
+use std::{f64, fs, io::Cursor, path::Path};
 
-use image::{ImageBuffer, Rgba};
+use image::{ImageBuffer, ImageFormat, Rgba};
 
 mod dirt;
 mod grass;
@@ -14,7 +14,11 @@ pub fn write_atlas(path: impl AsRef<Path>) {
     write_noise::<dirt::DirtNoise>(&mut image, 0);
     write_noise::<grass::GrassNoise>(&mut image, 1);
 
-    image.save(path).unwrap();
+    let mut buf = Vec::new();
+    image.write_to(&mut Cursor::new(&mut buf), ImageFormat::Png).unwrap();
+    if fs::read(path.as_ref()).unwrap() != buf {
+        fs::write(path, buf).unwrap();
+    }
 }
 
 trait Noise: Default {

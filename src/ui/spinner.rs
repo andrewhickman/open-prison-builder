@@ -118,7 +118,7 @@ pub fn update_spinners(
 
 fn spoke_color(original: BackgroundColor, progress: f32, index: u32) -> BackgroundColor {
     let step = (index as f32 + 0.5) / SPOKE_COUNT as f32;
-    let fade = (step + progress).rem_euclid(1.0);
+    let fade = (progress - step).rem_euclid(1.0);
 
     BackgroundColor(original.0.with_a(original.0.a() * fade))
 }

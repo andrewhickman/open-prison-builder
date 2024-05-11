@@ -70,6 +70,8 @@ webbrowser = { version = "0.8", features = ["hardened"] }
 winit = { version = "0.29", default-features = false }
 image = { version = "0.24", default-features = false }
 bevy_color = "0.12.3"
+bevy_math = { version = "0.13.2", features = ["approx"] }
+approx = "0.5.1"
 
 [build-dependencies]
 embed-resource = "1"

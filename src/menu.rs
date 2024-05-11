@@ -22,7 +22,7 @@ fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) 
     commands.spawn((
         Camera2dBundle {
             camera: Camera {
-                clear_color: theme.background().into(),
+                clear_color: theme.ui_background().into(),
                 ..Default::default()
             },
             ..Default::default()
