@@ -22,10 +22,7 @@ impl Material {
     }
 
     pub fn iter() -> Vec<Material> {
-        vec![
-            Material::Dirt,
-            Material::Grass,
-        ]
+        vec![Material::Dirt, Material::Grass]
     }
 
     fn is_large(&self) -> bool {

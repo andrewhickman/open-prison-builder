@@ -3,7 +3,7 @@ mod camera;
 use approx::abs_diff_eq;
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::{ui::GameContent, GameState};
+use crate::{ui::UiMarkers, GameState};
 
 use self::camera::{camera_movement, spawn_game_camera};
 
@@ -32,11 +32,12 @@ impl Plugin for ControlPlugin {
 }
 
 pub fn update_cursor_pos(
-    body_q: Query<Ref<Interaction>, With<GameContent>>,
+    ui_markers: Res<UiMarkers>,
+    body_q: Query<&Interaction>,
     mut q_cameras: Query<(Ref<GlobalTransform>, Ref<Camera>, &mut CursorPos)>,
     q_windows: Query<&Window, With<PrimaryWindow>>,
 ) {
-    if let Some(&Interaction::None) = body_q.iter().next().as_deref() {
+    if let Interaction::None = body_q.get(ui_markers.content).unwrap() {
         for (_, _, mut cursor_pos) in q_cameras.iter_mut() {
             set_cursor_if_changed(&mut cursor_pos, CursorPos(None));
         }

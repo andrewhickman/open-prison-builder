@@ -74,7 +74,12 @@ pub struct AudioAssets {}
 
 #[derive(AssetCollection, Resource)]
 pub struct TextureAssets {
-    #[asset(texture_atlas_layout(tile_size_x = 32.0, tile_size_y = 32.0, columns = 64, rows = 32))]
+    #[asset(texture_atlas_layout(
+        tile_size_x = 32.0,
+        tile_size_y = 32.0,
+        columns = 64,
+        rows = 32
+    ))]
     pub atlas_layout: Handle<TextureAtlasLayout>,
     #[asset(image(sampler = nearest))]
     #[asset(path = "textures/atlas.png")]

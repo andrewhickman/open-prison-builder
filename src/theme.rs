@@ -18,8 +18,9 @@ pub struct Theme {
     bold_button: Color,
 }
 
-#[derive(Component)]
-pub enum ButtonStyle {
+#[derive(Default, Component)]
+pub enum ButtonTheme {
+    #[default]
     Normal,
     Bold,
 }
@@ -90,14 +91,14 @@ fn mix(color1: Color, color2: Color, weight: f32) -> Color {
 pub fn update_button_color(
     theme: ResMut<Theme>,
     mut interaction_query: Query<
-        (&Interaction, &ButtonStyle, &mut BackgroundColor),
+        (&Interaction, &ButtonTheme, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
     for (interaction, style, mut color) in &mut interaction_query {
         let base_color = match style {
-            ButtonStyle::Normal => theme.button(),
-            ButtonStyle::Bold => theme.bold_button(),
+            ButtonTheme::Normal => theme.button(),
+            ButtonTheme::Bold => theme.bold_button(),
         };
 
         color.0 = match interaction {

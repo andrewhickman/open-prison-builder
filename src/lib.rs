@@ -1,10 +1,10 @@
 #![allow(clippy::type_complexity)]
 
+mod commands;
 mod control;
 mod loading;
 mod map;
 mod material;
-mod menu;
 mod theme;
 mod ui;
 
@@ -18,7 +18,6 @@ use ui::UiPlugin;
 
 use crate::loading::LoadingPlugin;
 use crate::map::MapPlugin;
-use crate::menu::MenuPlugin;
 use crate::theme::ThemePlugin;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
@@ -38,7 +37,6 @@ impl Plugin for GamePlugin {
             ControlPlugin,
             LoadingPlugin,
             MapPlugin,
-            MenuPlugin,
             ThemePlugin,
             UiPlugin,
         ));

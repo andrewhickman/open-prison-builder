@@ -1,20 +1,21 @@
-use crate::loading::TextureAssets;
-use crate::theme::{ButtonStyle, Theme};
-use crate::GameState;
 use bevy::prelude::*;
 
-pub struct MenuPlugin;
+use crate::loading::TextureAssets;
+use crate::theme::{ButtonTheme, Theme};
+use crate::ui::button::{register_button_command, ButtonBundle};
+use crate::{commands, GameState};
+
+pub struct MainMenuPlugin;
 
 /// This plugin is responsible for the game menu (containing only one button...)
 /// The menu is only drawn during the State `GameState::Menu` and is removed when that state is exited
-impl Plugin for MenuPlugin {
+impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Menu), setup_menu)
-            .add_systems(
-                Update,
-                on_play_button_clicked.run_if(in_state(GameState::Menu)),
-            )
             .add_systems(OnExit(GameState::Menu), cleanup_menu);
+
+        register_button_command(app, commands::PLAY, on_play_button_clicked);
+        register_button_command(app, commands::OPEN_BEVY, on_open_bevy_button_clicked);
     }
 }
 
@@ -50,20 +51,18 @@ fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) 
         ))
         .with_children(|children| {
             children
-                .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(140.0),
-                            height: Val::Px(50.0),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..Default::default()
-                        },
+                .spawn((ButtonBundle {
+                    theme: ButtonTheme::Bold,
+                    command: commands::PLAY,
+                    style: Style {
+                        width: Val::Px(140.0),
+                        height: Val::Px(50.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..Default::default()
                     },
-                    ButtonStyle::Bold,
-                    ChangeState(GameState::Running),
-                ))
+                    ..Default::default()
+                },))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
                         "Play",
@@ -93,21 +92,19 @@ fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) 
         ))
         .with_children(|children| {
             children
-                .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(170.0),
-                            height: Val::Px(50.0),
-                            justify_content: JustifyContent::SpaceAround,
-                            align_items: AlignItems::Center,
-                            padding: UiRect::all(Val::Px(5.)),
-                            ..Default::default()
-                        },
+                .spawn((ButtonBundle {
+                    theme: ButtonTheme::Normal,
+                    command: commands::OPEN_BEVY,
+                    style: Style {
+                        width: Val::Px(170.0),
+                        height: Val::Px(50.0),
+                        justify_content: JustifyContent::SpaceAround,
+                        align_items: AlignItems::Center,
+                        padding: UiRect::all(Val::Px(5.)),
                         ..Default::default()
                     },
-                    ButtonStyle::Normal,
-                    OpenLink("https://bevyengine.org"),
-                ))
+                    ..Default::default()
+                },))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
                         "Made with Bevy",
@@ -121,29 +118,13 @@ fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) 
         });
 }
 
-#[derive(Component)]
-struct ChangeState(GameState);
+fn on_play_button_clicked(mut next_state: ResMut<NextState<GameState>>) {
+    next_state.set(GameState::Running);
+}
 
-#[derive(Component)]
-struct OpenLink(&'static str);
-
-fn on_play_button_clicked(
-    mut next_state: ResMut<NextState<GameState>>,
-    mut interaction_query: Query<
-        (&Interaction, Option<&ChangeState>, Option<&OpenLink>),
-        (Changed<Interaction>, With<Button>),
-    >,
-) {
-    for (interaction, change_state, open_link) in &mut interaction_query {
-        if let Interaction::Pressed = *interaction {
-            if let Some(state) = change_state {
-                next_state.set(state.0.clone());
-            } else if let Some(link) = open_link {
-                if let Err(error) = webbrowser::open(link.0) {
-                    warn!("Failed to open link {error:?}");
-                }
-            }
-        }
+fn on_open_bevy_button_clicked() {
+    if let Err(error) = webbrowser::open("https://bevyengine.org") {
+        warn!("failed to open link {error:?}");
     }
 }
 
