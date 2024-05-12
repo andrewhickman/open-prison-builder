@@ -1,6 +1,6 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 
-use crate::theme::Theme;
+use crate::theme::{ButtonStyle, Theme};
 
 pub type ButtonCallback = Box<dyn Fn(&mut ChildBuilder) + Send + Sync>;
 
@@ -70,6 +70,7 @@ pub fn spawn_menu_bar<'a>(
                                 },
                                 ..Default::default()
                             },
+                            ButtonStyle::Normal,
                             MenuBarButton { parent, callback },
                             Outline {
                                 width: Val::Px(1.),

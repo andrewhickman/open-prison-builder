@@ -105,6 +105,7 @@ fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) 
                         },
                         ..Default::default()
                     },
+                    ButtonStyle::Normal,
                     OpenLink("https://bevyengine.org"),
                 ))
                 .with_children(|parent| {

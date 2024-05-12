@@ -41,24 +41,8 @@ impl Theme {
         self.button
     }
 
-    pub fn button_hot(&self) -> Color {
-        hot(self.button(), self.text)
-    }
-
-    pub fn button_active(&self) -> Color {
-        active(self.button(), self.text)
-    }
-
     pub fn bold_button(&self) -> Color {
         self.bold_button
-    }
-
-    pub fn bold_button_hot(&self) -> Color {
-        hot(self.bold_button(), self.text)
-    }
-
-    pub fn bold_button_active(&self) -> Color {
-        active(self.bold_button(), self.text)
     }
 }
 
@@ -106,18 +90,20 @@ fn mix(color1: Color, color2: Color, weight: f32) -> Color {
 pub fn update_button_color(
     theme: ResMut<Theme>,
     mut interaction_query: Query<
-        (&Interaction, Option<&ButtonStyle>, &mut BackgroundColor),
+        (&Interaction, &ButtonStyle, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
     for (interaction, style, mut color) in &mut interaction_query {
-        color.0 = match (interaction, style) {
-            (Interaction::None, None | Some(ButtonStyle::Normal)) => theme.button(),
-            (Interaction::None, Some(ButtonStyle::Bold)) => theme.bold_button(),
-            (Interaction::Hovered, None | Some(ButtonStyle::Normal)) => theme.button_hot(),
-            (Interaction::Hovered, Some(ButtonStyle::Bold)) => theme.bold_button_hot(),
-            (Interaction::Pressed, None | Some(ButtonStyle::Normal)) => theme.button_active(),
-            (Interaction::Pressed, Some(ButtonStyle::Bold)) => theme.bold_button_active(),
+        let base_color = match style {
+            ButtonStyle::Normal => theme.button(),
+            ButtonStyle::Bold => theme.bold_button(),
+        };
+
+        color.0 = match interaction {
+            Interaction::None => base_color,
+            Interaction::Hovered => hot(base_color, theme.text()),
+            Interaction::Pressed => active(base_color, theme.text()),
         };
     }
 }
