@@ -21,6 +21,13 @@ impl Material {
         }
     }
 
+    pub fn iter() -> Vec<Material> {
+        vec![
+            Material::Dirt,
+            Material::Grass,
+        ]
+    }
+
     fn is_large(&self) -> bool {
         matches!(self, Material::Dirt | Material::Grass)
     }

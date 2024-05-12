@@ -1,8 +1,8 @@
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy::{ecs::system::EntityCommands, prelude::*, ui::FocusPolicy};
 
-use crate::theme::{ButtonStyle, Theme};
+use crate::{loading::TextureAssets, theme::{ButtonStyle, Theme}};
 
-pub type ButtonCallback = Box<dyn Fn(&mut ChildBuilder) + Send + Sync>;
+pub type ButtonCallback = Box<dyn Fn(&mut ChildBuilder, &Theme, &TextureAssets) + Send + Sync>;
 
 #[derive(Component)]
 pub struct MenuBar {
@@ -49,12 +49,8 @@ pub fn spawn_menu_bar<'a>(
                         ..Default::default()
                     },
                     background_color: BackgroundColor(theme.ui_background()),
+                    focus_policy: FocusPolicy::Block,
                     ..Default::default()
-                },
-                Outline {
-                    width: Val::Px(1.),
-                    color: theme.text(),
-                    offset: Val::Px(-1.),
                 },
             ))
             .with_children(|builder| {
@@ -66,17 +62,14 @@ pub fn spawn_menu_bar<'a>(
                                     flex_grow: 1.0,
                                     justify_content: JustifyContent::Center,
                                     padding: UiRect::all(Val::Px(5.0)),
+                                    border: UiRect::all(Val::Px(1.)),
                                     ..Default::default()
                                 },
+                                border_color: BorderColor(theme.text()),
                                 ..Default::default()
                             },
                             ButtonStyle::Normal,
                             MenuBarButton { parent, callback },
-                            Outline {
-                                width: Val::Px(1.),
-                                color: theme.text(),
-                                offset: Val::Px(-1.),
-                            },
                         ))
                         .with_children(|builder| {
                             builder.spawn(TextBundle::from_section(
@@ -99,6 +92,8 @@ pub fn on_play_button_clicked(
     mut commands: Commands,
     mut menu_q: Query<(Entity, &mut MenuBar)>,
     interaction_q: Query<(Entity, &Interaction, &MenuBarButton), Changed<Interaction>>,
+    theme: Res<Theme>,
+    assets: Res<TextureAssets>,
 ) {
     for (button_entity, interaction, button) in &interaction_q {
         if let Interaction::Pressed = *interaction {
@@ -113,9 +108,15 @@ pub fn on_play_button_clicked(
 
                 let child = commands
                     .spawn(NodeBundle {
+                        style: Style {
+                            align_self: AlignSelf::Stretch,
+                            width: Val::Percent(100.),
+                            height: Val::Auto,
+                            ..Default::default()
+                        },
                         ..Default::default()
                     })
-                    .with_children(&button.callback)
+                    .with_children(|builder| (button.callback)(builder, &theme, &assets))
                     .set_parent(menu_entity)
                     .id();
                 menu_bar.child = Some((button_entity, child));
