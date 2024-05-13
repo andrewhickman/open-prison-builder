@@ -1,11 +1,21 @@
+mod action;
 mod camera;
 
 use approx::abs_diff_eq;
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::{ui::UiMarkers, GameState};
+pub use self::action::Action;
 
-use self::camera::{camera_movement, spawn_game_camera};
+use crate::{
+    commands,
+    ui::{self, UiMarkers},
+    GameState,
+};
+
+use self::{
+    action::select_material,
+    camera::{camera_movement, spawn_game_camera},
+};
 
 pub struct ControlPlugin;
 
@@ -28,6 +38,9 @@ impl Plugin for ControlPlugin {
                 .in_set(ControlSystem)
                 .run_if(in_state(GameState::Running)),
         );
+        app.init_resource::<Action>();
+
+        ui::register_button_command(app, commands::SELECT_MATERIAL, select_material);
     }
 }
 

@@ -1,12 +1,22 @@
+use std::{any::Any, sync::Arc};
+
 use bevy::{ecs::system::SystemId, prelude::*, ui::FocusPolicy, utils::HashMap};
 
 use crate::theme::ButtonTheme;
 
-#[derive(Clone, Copy, Default, Component, Hash, PartialEq, Eq)]
-pub struct ButtonCommand(pub &'static str);
+#[derive(Default, Component)]
+pub struct ButtonCommand {
+    id: &'static str,
+    input: ButtonCommandInput,
+}
+
+#[derive(Default, Clone)]
+pub struct ButtonCommandInput {
+    any: Option<Arc<dyn Any + Send + Sync>>,
+}
 
 #[derive(Default, Resource)]
-pub struct CallbackDefinitions(HashMap<ButtonCommand, SystemId>);
+pub struct ButtonCommandDefinitions(HashMap<&'static str, SystemId<ButtonCommandInput>>);
 
 #[derive(Default, Bundle)]
 pub struct ButtonBundle {
@@ -28,25 +38,63 @@ pub struct ButtonBundle {
     pub z_index: ZIndex,
 }
 
-pub fn register_button_command<M, S>(app: &mut App, id: ButtonCommand, system: S)
+pub fn register_button_command<M, S>(app: &mut App, command: ButtonCommand, system: S)
 where
-    S: IntoSystem<(), (), M> + 'static,
+    S: IntoSystem<ButtonCommandInput, (), M> + 'static,
 {
     let system_id = app.world.register_system(system);
     app.world
-        .get_resource_or_insert_with(CallbackDefinitions::default)
+        .get_resource_or_insert_with(ButtonCommandDefinitions::default)
         .0
-        .insert(id, system_id);
+        .insert(command.id, system_id);
 }
 
 pub fn on_button_press(
     mut commands: Commands,
-    definitions: Res<CallbackDefinitions>,
+    definitions: Res<ButtonCommandDefinitions>,
     interaction_q: Query<(&Interaction, &ButtonCommand), Changed<Interaction>>,
 ) {
-    for (&interaction, &button_callback) in &interaction_q {
-        if interaction == Interaction::Pressed && button_callback != ButtonCommand::default() {
-            commands.run_system(definitions.0[&button_callback]);
+    for (&interaction, button_callback) in &interaction_q {
+        if interaction == Interaction::Pressed && !button_callback.id.is_empty() {
+            info!("Invoking command {}", button_callback.id);
+            commands.run_system_with_input(
+                definitions.0[&button_callback.id],
+                button_callback.input.clone(),
+            );
         }
+    }
+}
+
+impl ButtonCommand {
+    pub const fn new(id: &'static str) -> Self {
+        ButtonCommand {
+            id,
+            input: ButtonCommandInput { any: None },
+        }
+    }
+
+    pub fn with_input<T>(self, input: T) -> Self
+    where
+        T: Any + Send + Sync,
+    {
+        ButtonCommand {
+            id: self.id,
+            input: ButtonCommandInput {
+                any: Some(Arc::new(input)),
+            },
+        }
+    }
+}
+
+impl ButtonCommandInput {
+    pub fn get<T>(&self) -> &T
+    where
+        T: Any,
+    {
+        self.any
+            .as_ref()
+            .expect("button input not set")
+            .downcast_ref::<T>()
+            .expect("button input type not of expected type")
     }
 }

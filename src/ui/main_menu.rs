@@ -5,6 +5,8 @@ use crate::theme::{ButtonTheme, Theme};
 use crate::ui::button::{register_button_command, ButtonBundle};
 use crate::{commands, GameState};
 
+use super::button::ButtonCommandInput;
+
 pub struct MainMenuPlugin;
 
 /// This plugin is responsible for the game menu (containing only one button...)
@@ -118,11 +120,11 @@ fn setup_menu(mut commands: Commands, theme: Res<Theme>, _: Res<TextureAssets>) 
         });
 }
 
-fn on_play_button_clicked(mut next_state: ResMut<NextState<GameState>>) {
+fn on_play_button_clicked(_: In<ButtonCommandInput>, mut next_state: ResMut<NextState<GameState>>) {
     next_state.set(GameState::Running);
 }
 
-fn on_open_bevy_button_clicked() {
+fn on_open_bevy_button_clicked(_: In<ButtonCommandInput>) {
     if let Err(error) = webbrowser::open("https://bevyengine.org") {
         warn!("failed to open link {error:?}");
     }

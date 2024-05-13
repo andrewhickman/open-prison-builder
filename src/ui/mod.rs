@@ -9,9 +9,12 @@ use bevy_ecs_tilemap::tiles::TilePos;
 
 use crate::commands;
 use crate::loading::TextureAssets;
+use crate::theme::ButtonTheme;
 use crate::{theme::Theme, GameState};
 
-pub use self::button::{register_button_command, ButtonCommand, CallbackDefinitions};
+pub use self::button::{
+    register_button_command, ButtonCommand, ButtonCommandDefinitions, ButtonCommandInput,
+};
 pub use self::menu_bar::spawn_menu_bar;
 pub use self::spinner::{spawn_spinner, Spinner, SpinnerBundle};
 
@@ -41,7 +44,7 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MainMenuPlugin);
 
-        app.init_resource::<CallbackDefinitions>();
+        app.init_resource::<ButtonCommandDefinitions>();
         app.add_systems(PreUpdate, button::on_button_press.after(UiSystem::Focus));
         app.add_systems(
             Update,
@@ -174,11 +177,12 @@ fn spawn_game_ui(mut commands: Commands, theme: Res<Theme>) {
     });
 }
 
-fn spawn_empty_menu() {
+fn spawn_empty_menu(_: In<ButtonCommandInput>) {
     info!("hello!");
 }
 
 fn spawn_build_menu(
+    _: In<ButtonCommandInput>,
     mut commands: Commands,
     markers: Res<UiMarkers>,
     theme: Res<Theme>,
@@ -226,14 +230,20 @@ fn spawn_build_menu(
         .set_parent(markers.bottom)
         .with_children(|builder| {
             for mat in Material::iter() {
-                builder.spawn((AtlasImageBundle {
-                    image: UiImage::new(assets.atlas.clone()),
-                    texture_atlas: TextureAtlas {
-                        index: mat.index(TilePos::default()).0 as usize,
-                        layout: assets.atlas_layout.clone(),
+                builder.spawn((
+                    AtlasImageBundle {
+                        image: UiImage::new(assets.materials.clone()),
+                        texture_atlas: TextureAtlas {
+                            index: mat.index(TilePos::default()).0 as usize,
+                            layout: assets.materials_layout.clone(),
+                        },
+                        ..Default::default()
                     },
-                    ..Default::default()
-                },));
+                    Button,
+                    ButtonTheme::Image,
+                    Interaction::default(),
+                    commands::SELECT_MATERIAL.with_input(mat),
+                ));
             }
         });
 }

@@ -80,8 +80,11 @@ pub struct TextureAssets {
         columns = 64,
         rows = 32
     ))]
-    pub atlas_layout: Handle<TextureAtlasLayout>,
-    #[asset(image(sampler = nearest))]
-    #[asset(path = "textures/atlas.png")]
-    pub atlas: Handle<Image>,
+    pub materials_layout: Handle<TextureAtlasLayout>,
+    #[asset(path = "textures/atlas.png", image(sampler = nearest))]
+    pub materials: Handle<Image>,
+    // #[asset(texture_atlas_layout(tile_size_x = 32.0, tile_size_y = 32.0, columns = 32, rows = 8))]
+    // pub wireframes_layout: Handle<TextureAtlasLayout>,
+    #[asset(path = "textures/wireframes.png", image(sampler = nearest))]
+    pub wireframes: Handle<Image>,
 }

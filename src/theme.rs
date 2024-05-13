@@ -13,6 +13,7 @@ impl Plugin for ThemePlugin {
 pub struct Theme {
     game_background: Color,
     text: Color,
+    dark_text: Color,
     ui_background: Color,
     button: Color,
     bold_button: Color,
@@ -23,6 +24,7 @@ pub enum ButtonTheme {
     #[default]
     Normal,
     Bold,
+    Image,
 }
 
 impl Theme {
@@ -36,6 +38,10 @@ impl Theme {
 
     pub fn text(&self) -> Color {
         self.text
+    }
+
+    pub fn dark_text(&self) -> Color {
+        self.dark_text
     }
 
     pub fn button(&self) -> Color {
@@ -52,6 +58,7 @@ impl Default for Theme {
         Theme {
             game_background: Color::hex("#081207").unwrap(),
             text: Color::hex("#f5f5f5").unwrap(),
+            dark_text: Color::hex("#0a0a0a").unwrap(),
             ui_background: Color::hex("#706e62").unwrap(),
             button: Color::hex("#5F4754").unwrap(),
             bold_button: Color::hex("#485921").unwrap(),
@@ -96,15 +103,16 @@ pub fn update_button_color(
     >,
 ) {
     for (interaction, style, mut color) in &mut interaction_query {
-        let base_color = match style {
-            ButtonTheme::Normal => theme.button(),
-            ButtonTheme::Bold => theme.bold_button(),
+        let (base_color, text) = match style {
+            ButtonTheme::Normal => (theme.button(), theme.text()),
+            ButtonTheme::Bold => (theme.bold_button(), theme.text()),
+            ButtonTheme::Image => (Color::default(), theme.dark_text()),
         };
 
         color.0 = match interaction {
             Interaction::None => base_color,
-            Interaction::Hovered => hot(base_color, theme.text()),
-            Interaction::Pressed => active(base_color, theme.text()),
+            Interaction::Hovered => hot(base_color, text),
+            Interaction::Pressed => active(base_color, text),
         };
     }
 }
