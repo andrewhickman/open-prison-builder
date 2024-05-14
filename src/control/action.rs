@@ -1,10 +1,14 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TilePos;
 
-use crate::{material::Material, ui::ButtonCommandInput};
+use crate::{
+    map::{HoveredTile, WireframeTilemap},
+    material::Material,
+    ui::ButtonCommandInput,
+};
 
 // State machine for user actions
-#[derive(Default, Resource)]
+#[derive(Debug, Default, Resource)]
 pub enum Action {
     #[default]
     None,
@@ -16,4 +20,19 @@ pub fn select_material(input: In<ButtonCommandInput>, mut action: ResMut<Action>
     let material = *input.get::<Material>();
 
     *action = Action::SelectStartPoint(material);
+}
+
+pub fn on_click(
+    mut action: ResMut<Action>,
+    hovered_q: Query<&HoveredTile, With<WireframeTilemap>>,
+) {
+    let hovered = hovered_q.single();
+
+    match (&*action, hovered) {
+        (Action::None, _) => (),
+        (&Action::SelectStartPoint(material), &HoveredTile(Some(position))) => {
+            *action = Action::SelectEndPoint(material, position);
+        }
+        _ => (),
+    }
 }

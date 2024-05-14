@@ -54,7 +54,12 @@ pub fn startup(mut commands: Commands, textures: Res<TextureAssets>) {
             storage: tile_storage,
             texture: TilemapTexture::Single(textures.materials.clone()),
             tile_size,
-            transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, MATERIAL_Z_INDEX),
+            transform: get_tilemap_center_transform(
+                &map_size,
+                &grid_size,
+                &map_type,
+                MATERIAL_Z_INDEX,
+            ),
             ..Default::default()
         },
         HoveredTile::default(),

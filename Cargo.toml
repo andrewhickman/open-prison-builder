@@ -62,7 +62,7 @@ bevy = { version = "0.13", default-features = false, features = [
 ] }
 bevy_kira_audio = { version = "0.19" }
 bevy_asset_loader = { version = "0.20", features = ["2d"] }
-bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap" }
+bevy_ecs_tilemap = { git = "https://github.com/andrewhickman/bevy_ecs_tilemap", branch = "impl-eq" }
 rand = { version = "0.8.3" }
 webbrowser = { version = "0.8", features = ["hardened"] }
 

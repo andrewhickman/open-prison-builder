@@ -2,12 +2,13 @@ mod action;
 mod camera;
 
 use approx::abs_diff_eq;
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 
 pub use self::action::Action;
 
 use crate::{
     commands,
+    map::update_hovered_tile,
     ui::{self, UiMarkers},
     GameState,
 };
@@ -31,6 +32,12 @@ pub struct CursorPos(pub Option<Vec2>);
 impl Plugin for ControlPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Running), spawn_game_camera);
+        app.add_systems(
+            Update,
+            action::on_click.after(update_hovered_tile).run_if(
+                input_just_pressed(MouseButton::Left).and_then(in_state(GameState::Running)),
+            ),
+        );
         app.add_systems(
             Update,
             (camera_movement, update_cursor_pos)
