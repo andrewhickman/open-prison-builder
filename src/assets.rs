@@ -7,12 +7,12 @@ use crate::{
     GameState,
 };
 
-pub struct LoadingPlugin;
+pub struct AssetsPlugin;
 
 #[derive(Component)]
 struct Loading;
 
-impl Plugin for LoadingPlugin {
+impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_loading_state(
             LoadingState::new(GameState::Loading)
@@ -75,16 +75,16 @@ pub struct AudioAssets {}
 #[derive(AssetCollection, Resource)]
 pub struct TextureAssets {
     #[asset(texture_atlas_layout(
-        tile_size_x = 32.0,
-        tile_size_y = 32.0,
-        columns = 64,
-        rows = 32
+        tile_size_x = 64.0,
+        tile_size_y = 64.0,
+        columns = 32,
+        rows = 16
     ))]
     pub materials_layout: Handle<TextureAtlasLayout>,
+    #[asset(texture_atlas_layout(tile_size_x = 64.0, tile_size_y = 64.0, columns = 32, rows = 8))]
+    pub wireframes_layout: Handle<TextureAtlasLayout>,
     #[asset(path = "textures/atlas.png", image(sampler = nearest))]
     pub materials: Handle<Image>,
-    // #[asset(texture_atlas_layout(tile_size_x = 32.0, tile_size_y = 32.0, columns = 32, rows = 8))]
-    // pub wireframes_layout: Handle<TextureAtlasLayout>,
     #[asset(path = "textures/wireframes.png", image(sampler = nearest))]
     pub wireframes: Handle<Image>,
 }

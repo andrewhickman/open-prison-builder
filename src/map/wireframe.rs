@@ -1,5 +1,3 @@
-use std::cmp::{max, min};
-
 use bevy::{prelude::*, utils::HashSet};
 use bevy_ecs_tilemap::{
     helpers::geometry::get_tilemap_center_transform,
@@ -11,9 +9,9 @@ use bevy_ecs_tilemap::{
     TilemapBundle,
 };
 
-use crate::{control::Action, loading::TextureAssets, map::TILE_SIZE};
+use crate::{control::Action, assets::TextureAssets, map::TILE_SIZE};
 
-use super::{test_texture_index, HoveredTile, WIREFRAME_Z_INDEX};
+use super::{test_texture_index, tiles_between, HoveredTile, WIREFRAME_Z_INDEX};
 
 #[derive(Component)]
 pub struct WireframeTilemap;
@@ -35,10 +33,7 @@ pub struct WireframeTileBundle {
 
 pub fn startup(mut commands: Commands, textures: Res<TextureAssets>) {
     let size = TilemapSize { x: 500, y: 500 };
-    let tile_size = TilemapTileSize {
-        x: TILE_SIZE as f32,
-        y: TILE_SIZE as f32,
-    };
+    let tile_size = TilemapTileSize { x: TILE_SIZE as f32, y: TILE_SIZE as f32 };
     let grid_size = tile_size.into();
     let map_type = TilemapType::Square;
 
@@ -123,10 +118,9 @@ fn action_preview(action: &Action, hovered: &HoveredTile) -> HashSet<TilePos> {
             HashSet::from([start])
         }
         (&Action::SelectEndPoint(_, start), &HoveredTile(None)) => HashSet::from([start]),
-        (&Action::SelectEndPoint(_, start), &HoveredTile(Some(end))) => (min(start.x, end.x)
-            ..=max(start.x, end.x))
-            .flat_map(|x| (min(start.y, end.y)..=max(start.y, end.y)).map(move |y| TilePos { x, y }))
-            .collect(),
+        (&Action::SelectEndPoint(_, start), &HoveredTile(Some(end))) => {
+            tiles_between(start, end).collect()
+        }
         _ => HashSet::new(),
     }
 }

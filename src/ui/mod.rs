@@ -8,7 +8,7 @@ use bevy::ui::{FocusPolicy, UiSystem};
 use bevy_ecs_tilemap::tiles::TilePos;
 
 use crate::commands;
-use crate::loading::TextureAssets;
+use crate::assets::TextureAssets;
 use crate::theme::ButtonTheme;
 use crate::{theme::Theme, GameState};
 

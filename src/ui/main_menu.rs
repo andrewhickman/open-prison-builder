@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::loading::TextureAssets;
+use crate::assets::TextureAssets;
 use crate::theme::{ButtonTheme, Theme};
 use crate::ui::button::{register_button_command, ButtonBundle};
 use crate::{commands, GameState};

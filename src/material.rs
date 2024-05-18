@@ -1,8 +1,9 @@
+use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::{TilePos, TileTextureIndex};
 
 use crate::map::{LARGE_TILE_OFFSET, LARGE_TILE_SIZE, TILE_SIZE};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Component, Copy, Clone, Debug)]
 pub enum Material {
     Dirt,
     Grass,

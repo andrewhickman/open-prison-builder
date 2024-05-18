@@ -1,7 +1,9 @@
 mod material;
 mod wireframe;
 
-pub use self::wireframe::WireframeTilemap;
+use std::cmp;
+
+pub use self::{material::MaterialTilemap, wireframe::WireframeTilemap};
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::{
@@ -16,7 +18,7 @@ use crate::{
     GameState,
 };
 
-pub const TILE_SIZE: u32 = 32;
+pub const TILE_SIZE: u32 = 64;
 pub const LARGE_TILE_SIZE: u32 = 1024;
 pub const LARGE_TILE_SUBTILES: u32 = LARGE_TILE_SIZE / TILE_SIZE;
 pub const LARGE_TILE_OFFSET: u32 = LARGE_TILE_SUBTILES * LARGE_TILE_SUBTILES;
@@ -175,4 +177,10 @@ fn wall_index(tl: bool, t: bool, tr: bool, r: bool, br: bool, b: bool, bl: bool,
         (false, true, true, true, true, true, true, true) => 45,
         (true, true, true, true, true, true, true, true) => 46,
     }
+}
+
+pub fn tiles_between(start: TilePos, end: TilePos) -> impl Iterator<Item = TilePos> {
+    (cmp::min(start.x, end.x)..=cmp::max(start.x, end.x)).flat_map(move |x| {
+        (cmp::min(start.y, end.y)..=cmp::max(start.y, end.y)).map(move |y| TilePos { x, y })
+    })
 }

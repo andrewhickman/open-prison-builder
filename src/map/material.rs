@@ -7,7 +7,7 @@ use bevy_ecs_tilemap::{
 };
 
 use crate::{
-    loading::TextureAssets,
+    assets::TextureAssets,
     map::{HoveredTile, TILE_SIZE},
     material::Material,
 };
@@ -27,12 +27,15 @@ pub fn startup(mut commands: Commands, textures: Res<TextureAssets>) {
             let tile_pos = TilePos { x, y };
             let material = Material::Grass;
             let tile_entity = commands
-                .spawn(TileBundle {
-                    position: tile_pos,
-                    tilemap_id: TilemapId(tilemap_entity),
-                    texture_index: material.index(tile_pos),
-                    ..Default::default()
-                })
+                .spawn((
+                    material,
+                    TileBundle {
+                        position: tile_pos,
+                        tilemap_id: TilemapId(tilemap_entity),
+                        texture_index: material.index(tile_pos),
+                        ..Default::default()
+                    },
+                ))
                 .id();
             tile_storage.set(&tile_pos, tile_entity);
         }

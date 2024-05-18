@@ -1,8 +1,8 @@
 #![allow(clippy::type_complexity)]
 
+mod assets;
 mod commands;
 mod control;
-mod loading;
 mod map;
 mod material;
 mod theme;
@@ -16,7 +16,7 @@ use bevy::prelude::*;
 use control::ControlPlugin;
 use ui::UiPlugin;
 
-use crate::loading::LoadingPlugin;
+use crate::assets::AssetsPlugin;
 use crate::map::MapPlugin;
 use crate::theme::ThemePlugin;
 
@@ -35,7 +35,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>().add_plugins((
             ControlPlugin,
-            LoadingPlugin,
+            AssetsPlugin,
             MapPlugin,
             ThemePlugin,
             UiPlugin,
