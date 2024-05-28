@@ -7,6 +7,9 @@ edition = "2021"
 exclude = ["dist", "build", "assets"]
 build = "build.rs"
 
+[workspace]
+members = ["pb-engine", "pb-render", "pb-ui"]
+
 [[bin]]
 name = "prison-builder"
 path = "src/main.rs"
@@ -44,7 +47,6 @@ bevy = { version = "0.13", default-features = false, features = [
     "bevy_scene",
     "bevy_winit",
     "bevy_core_pipeline",
-    "bevy_pbr",
     "bevy_gltf",
     "bevy_render",
     "bevy_sprite",
@@ -54,7 +56,6 @@ bevy = { version = "0.13", default-features = false, features = [
     "png",
     "hdr",
     "x11",
-    "bevy_gizmos",
     "tonemapping_luts",
     "default_font",
     "webgl2",

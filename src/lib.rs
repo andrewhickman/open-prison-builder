@@ -1,8 +1,10 @@
 #![allow(clippy::type_complexity)]
 
 mod assets;
+mod ai;
 mod commands;
 mod control;
+mod creature;
 mod map;
 mod material;
 mod theme;

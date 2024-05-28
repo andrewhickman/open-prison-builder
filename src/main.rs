@@ -40,7 +40,7 @@ fn set_window_icon(
     let Some(primary) = windows.get_window(primary_entity) else {
         return;
     };
-    let icon_buf = Cursor::new(include_bytes!("../build/icon_1024x1024.png"));
+    let icon_buf = Cursor::new(include_bytes!("../build/icon.png"));
     if let Ok(image) = image::load(icon_buf, image::ImageFormat::Png) {
         let image = image.into_rgba8();
         let (width, height) = image.dimensions();
