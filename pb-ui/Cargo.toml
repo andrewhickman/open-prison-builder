@@ -6,6 +6,8 @@ publish = false
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.13.2", default-features = false }
+bevy = { version = "0.13.2", default-features = false, features = ["bevy_render", "bevy_ui"] }
+bevy_eventlistener = "0.7.0"
 pb-engine = { path = "../pb-engine" }
 pb-render = { path = "../pb-render" }
+pb-util = { version = "0.1.0", path = "../pb-util" }

@@ -8,7 +8,7 @@ exclude = ["dist", "build", "assets"]
 build = "build.rs"
 
 [workspace]
-members = ["pb-engine", "pb-render", "pb-ui"]
+members = ["pb-engine", "pb-render", "pb-ui", "pb-util"]
 
 [[bin]]
 name = "pb"
@@ -46,6 +46,7 @@ bevy = { version = "0.13", default-features = false, features = [
     "bevy_asset",
     "bevy_render",
     "bevy_winit",
+    "default_font",
     "multi-threaded",
     "png",
     "webgl2",

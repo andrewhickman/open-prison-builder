@@ -1,0 +1,10 @@
+[package]
+name = "pb-util"
+version = "0.1.0"
+authors = ["Andrew Hickman <me@andrewhickman.dev>"]
+publish = false
+edition = "2021"
+
+[dependencies]
+anyhow = { version = "1.0.86" }
+tracing = "0.1.40"
