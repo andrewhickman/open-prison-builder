@@ -1,17 +1,5 @@
-use bevy::{
-    ecs::{
-        change_detection::DetectChangesMut,
-        schedule::States,
-        system::{Query, Res},
-    },
-    render::view::Visibility,
-    text::TextStyle,
-    ui::{
-        node_bundles::{ButtonBundle, NodeBundle, TextBundle},
-        AlignItems, FlexDirection, JustifyContent, Outline, Style, UiRect, Val,
-    },
-    utils::default,
-};
+use bevy::prelude::*;
+use bevy_mod_picking::prelude::*;
 
 use pb_util::try_res;
 
@@ -40,18 +28,14 @@ impl<'a> UiBuilder<'a> {
             NodeBundle {
                 style: Style {
                     margin: UiRect::all(Val::Auto),
-                    padding: UiRect::all(Val::Px(5.)),
+                    padding: UiRect::all(theme.gutter),
                     flex_direction: FlexDirection::Column,
                     ..default()
                 },
                 background_color: theme.panel.into(),
                 ..default()
             },
-            Outline {
-                color: theme.text,
-                width: Val::Px(1.),
-                ..default()
-            },
+            theme.outline,
         ));
 
         menu.main_menu_button(theme, "Play");
@@ -60,26 +44,21 @@ impl<'a> UiBuilder<'a> {
         menu
     }
 
-    fn main_menu_button(&mut self, theme: &Theme, text: impl Into<String>) {
-        self.spawn(ButtonBundle {
-            style: Style {
-                margin: UiRect::all(Val::Px(5.)),
-                width: Val::Px(150.),
-                height: Val::Px(80.),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
+    fn main_menu_button(&mut self, theme: &Theme, text: &'static str) {
+        self.spawn((
+            ButtonBundle {
+                style: Style {
+                    margin: UiRect::all(theme.gutter),
+                    padding: UiRect::all(theme.gutter),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                background_color: theme.accent.into(),
                 ..default()
             },
-            background_color: theme.accent.into(),
-            ..default()
-        })
-        .spawn(TextBundle::from_section(
-            text,
-            TextStyle {
-                color: theme.text,
-                font_size: 36.,
-                ..default()
-            },
-        ));
+            On::<Pointer<Click>>::run(move || info!("clicked {}", text)),
+        ))
+        .spawn(TextBundle::from_section(text, theme.header_text.clone()));
     }
 }

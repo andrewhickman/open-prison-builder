@@ -1,4 +1,4 @@
-use bevy::app::{App, Plugin};
+use bevy::prelude::*;
 
 pub struct EnginePlugin;
 

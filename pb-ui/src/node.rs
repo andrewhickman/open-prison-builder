@@ -1,11 +1,5 @@
-use bevy::{
-    ecs::{
-        entity::Entity,
-        system::{Commands, Res, Resource},
-    },
-    ui::{node_bundles::NodeBundle, Style, Val},
-    utils::default,
-};
+use bevy::prelude::*;
+use bevy_mod_picking::picking_core::Pickable;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
@@ -15,16 +9,19 @@ pub struct Nodes {
     pub menu: Entity,
 }
 
-pub fn spawn(mut commands: Commands, theme: Res<Theme>) {
+pub fn init(mut commands: Commands, theme: Res<Theme>) {
     let root = commands
-        .spawn(NodeBundle {
-            style: Style {
-                width: Val::Percent(100.),
-                height: Val::Percent(100.),
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    width: Val::Percent(100.),
+                    height: Val::Percent(100.),
+                    ..default()
+                },
                 ..default()
             },
-            ..default()
-        })
+            Pickable::IGNORE,
+        ))
         .id();
 
     let mut builder = UiBuilder::new(commands.reborrow(), root);

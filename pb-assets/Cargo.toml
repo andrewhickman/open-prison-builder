@@ -1,0 +1,9 @@
+[package]
+name = "pb-assets"
+version = "0.1.0"
+authors = ["Andrew Hickman <me@andrewhickman.dev>"]
+publish = false
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.13.2", default-features = false, features = [] }

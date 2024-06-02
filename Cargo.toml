@@ -8,7 +8,7 @@ exclude = ["dist", "build", "assets"]
 build = "build.rs"
 
 [workspace]
-members = ["pb-engine", "pb-render", "pb-ui", "pb-util"]
+members = ["pb-assets", "pb-engine", "pb-render", "pb-ui", "pb-util"]
 
 [[bin]]
 name = "pb"
@@ -46,7 +46,6 @@ bevy = { version = "0.13", default-features = false, features = [
     "bevy_asset",
     "bevy_render",
     "bevy_winit",
-    "default_font",
     "multi-threaded",
     "png",
     "webgl2",
@@ -55,6 +54,7 @@ bevy = { version = "0.13", default-features = false, features = [
 image = { version = "0.24", default-features = false, features = ["png"] }
 webbrowser = { version = "0.8", features = ["hardened"] }
 winit = { version = "0.29", default-features = false }
+pb-assets = { version = "0.1.0", path = "pb-assets" }
 
 [build-dependencies]
 embed-resource = "1"

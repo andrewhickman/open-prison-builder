@@ -1,7 +1,4 @@
-use bevy::{
-    ecs::{bundle::Bundle, entity::Entity, system::Commands},
-    hierarchy::BuildChildren,
-};
+use bevy::prelude::*;
 
 mod spinner;
 

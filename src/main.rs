@@ -9,6 +9,7 @@ use bevy::{
     DefaultPlugins,
 };
 
+use pb_assets::AssetsPlugin;
 use pb_engine::EnginePlugin;
 use pb_render::RenderPlugin;
 use pb_ui::UiPlugin;
@@ -22,7 +23,7 @@ fn main() {
     #[cfg(feature = "dev")]
     app.add_plugins(diagnostic::DiagnosticsPlugin);
 
-    app.add_plugins((EnginePlugin, RenderPlugin, UiPlugin));
+    app.add_plugins((AssetsPlugin, EnginePlugin, RenderPlugin, UiPlugin));
 
     app.run()
 }

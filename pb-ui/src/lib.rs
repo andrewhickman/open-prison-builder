@@ -4,26 +4,25 @@ mod theme;
 
 mod widget;
 
-use bevy::{
-    app::{App, Plugin, Startup},
-    core_pipeline::core_2d::Camera2dBundle,
-    ecs::{
-        schedule::OnEnter,
-        system::{Commands, Res},
-    },
-    render::camera::Camera,
-};
-use menu::MenuState;
+use bevy::prelude::*;
+use bevy_mod_picking::DefaultPickingPlugins;
 
+use crate::menu::MenuState;
 use crate::theme::Theme;
 
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Theme>();
+        app.add_plugins(DefaultPickingPlugins);
 
-        app.add_systems(Startup, (spawn_camera, node::spawn));
+        app.add_systems(
+            Startup,
+            (
+                theme::init.after(pb_assets::load),
+                (init_camera, node::init).after(theme::init),
+            ),
+        );
 
         app.init_state::<MenuState>();
         app.add_systems(OnEnter(MenuState::Shown), menu::show);
@@ -31,7 +30,7 @@ impl Plugin for UiPlugin {
     }
 }
 
-fn spawn_camera(mut commands: Commands, theme: Res<Theme>) {
+fn init_camera(mut commands: Commands, theme: Res<Theme>) {
     commands.spawn(Camera2dBundle {
         camera: Camera {
             clear_color: theme.background.into(),
