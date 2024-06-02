@@ -1,35 +1,36 @@
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
 
+use pb_assets::Assets;
 use pb_util::try_res;
 
 use crate::{node::Nodes, theme::Theme, widget::UiBuilder};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum MenuState {
-    #[default]
     Shown,
+    #[default]
     Hidden,
 }
 
-pub fn show(nodes: Res<Nodes>, mut visibility_q: Query<&mut Visibility>) {
-    let mut visibility = try_res!(visibility_q.get_mut(nodes.menu));
-    visibility.set_if_neq(Visibility::Visible);
+pub fn show(nodes: Res<Nodes>, mut style_q: Query<&mut Style>) {
+    let mut style = try_res!(style_q.get_mut(nodes.menu));
+    style.display = Display::Flex;
 }
 
-pub fn hide(nodes: Res<Nodes>, mut visibility_q: Query<&mut Visibility>) {
-    let mut visibility = try_res!(visibility_q.get_mut(nodes.menu));
-    visibility.set_if_neq(Visibility::Hidden);
+pub fn hide(nodes: Res<Nodes>, mut style_q: Query<&mut Style>) {
+    let mut style = try_res!(style_q.get_mut(nodes.menu));
+    style.display = Display::None;
 }
 
 impl<'a> UiBuilder<'a> {
-    pub fn main_menu(&mut self, theme: &Theme) -> UiBuilder<'_> {
+    pub fn main_menu(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'_> {
         let mut menu = self.spawn((
             NodeBundle {
                 style: Style {
                     margin: UiRect::all(Val::Auto),
                     padding: UiRect::all(theme.gutter),
                     flex_direction: FlexDirection::Column,
+                    display: Display::Flex,
                     ..default()
                 },
                 background_color: theme.panel.into(),
@@ -38,27 +39,31 @@ impl<'a> UiBuilder<'a> {
             theme.outline,
         ));
 
-        menu.main_menu_button(theme, "Play");
-        menu.main_menu_button(theme, "Play2");
+        menu.large_button(theme, "Play", play);
+
+        let mut icon_bar = menu.spawn(NodeBundle {
+            style: Style {
+                flex_direction: FlexDirection::RowReverse,
+                ..default()
+            },
+            ..default()
+        });
+
+        icon_bar.icon_button(theme, assets.bevy_icon_image.clone(), || {
+            open_url("https://bevyengine.org/")
+        });
+        icon_bar.icon_button(theme, assets.github_icon_image.clone(), || {
+            open_url("https://github.com/andrewhickman/open-prison-builder/")
+        });
 
         menu
     }
+}
 
-    fn main_menu_button(&mut self, theme: &Theme, text: &'static str) {
-        self.spawn((
-            ButtonBundle {
-                style: Style {
-                    margin: UiRect::all(theme.gutter),
-                    padding: UiRect::all(theme.gutter),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    ..default()
-                },
-                background_color: theme.accent.into(),
-                ..default()
-            },
-            On::<Pointer<Click>>::run(move || info!("clicked {}", text)),
-        ))
-        .spawn(TextBundle::from_section(text, theme.header_text.clone()));
+fn play() {}
+
+fn open_url(url: &str) {
+    if let Err(err) = webbrowser::open(url) {
+        error!("Failed to open url {url}: {err}");
     }
 }

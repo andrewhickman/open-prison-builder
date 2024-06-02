@@ -4,8 +4,10 @@ use bevy::{app::AppExit, asset, asset::UntypedAssetId, prelude::*};
 pub struct Assets {
     pub font_graduate: Handle<Font>,
     pub font_tomorrow: Handle<Font>,
-    pub font_tomorrow_bold: Handle<Font>,
-    pub font_tomorrow_italic: Handle<Font>,
+    pub tomorrow_italic_font: Handle<Font>,
+    pub button_image: Handle<Image>,
+    pub bevy_icon_image: Handle<Image>,
+    pub github_icon_image: Handle<Image>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
@@ -33,9 +35,11 @@ impl Plugin for AssetsPlugin {
 pub fn load(mut commands: Commands, server: Res<AssetServer>) {
     commands.insert_resource(Assets {
         font_graduate: server.load("fonts/Graduate-Regular.ttf"),
-        font_tomorrow: server.load("fonts/Tomorrow-Bold.ttf"),
-        font_tomorrow_bold: server.load("fonts/Tomorrow-Medium.ttf"),
-        font_tomorrow_italic: server.load("fonts/Tomorrow-MediumItalic.ttf"),
+        font_tomorrow: server.load("fonts/Tomorrow-Medium.ttf"),
+        tomorrow_italic_font: server.load("fonts/Tomorrow-MediumItalic.ttf"),
+        button_image: server.load("image/button.png"),
+        bevy_icon_image: server.load("image/bevy.png"),
+        github_icon_image: server.load("image/github.png"),
     });
 }
 
@@ -50,6 +54,7 @@ pub fn update_load_state(
         .filter_map(|id| server.get_load_state(id))
         .all(|state| state == asset::LoadState::Loaded);
     if succeeded {
+        info!("Loaded all assets successfully");
         state.set(LoadState::Ready);
     }
 
@@ -58,7 +63,7 @@ pub fn update_load_state(
         .filter_map(|id| server.get_load_state(id))
         .any(|state| state == asset::LoadState::Failed);
     if failed {
-        error_once!("Failed to load assets, exiting application");
+        error!("Failed to load assets, exiting application");
         exit_e.send(AppExit);
     }
 }
@@ -76,15 +81,19 @@ impl Assets {
         let Assets {
             font_graduate,
             font_tomorrow,
-            font_tomorrow_bold,
-            font_tomorrow_italic,
+            tomorrow_italic_font,
+            button_image,
+            bevy_icon_image,
+            github_icon_image,
         } = self;
 
         [
             font_graduate.into(),
             font_tomorrow.into(),
-            font_tomorrow_bold.into(),
-            font_tomorrow_italic.into(),
+            tomorrow_italic_font.into(),
+            button_image.into(),
+            bevy_icon_image.into(),
+            github_icon_image.into(),
         ]
         .into_iter()
     }

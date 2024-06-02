@@ -12,3 +12,4 @@ pb-assets = { version = "0.1.0", path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }
 pb-render = { path = "../pb-render" }
 pb-util = { version = "0.1.0", path = "../pb-util" }
+webbrowser = "1.0.1"
