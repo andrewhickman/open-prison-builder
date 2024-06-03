@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use pb_assets::Assets;
+use pb_engine::pawn::PawnBundle;
 use pb_util::try_res;
 
 use crate::{node::Nodes, theme::Theme, widget::UiBuilder};
@@ -60,7 +61,11 @@ impl<'a> UiBuilder<'a> {
     }
 }
 
-fn play() {}
+fn play(mut commands: Commands, mut menu_state: ResMut<NextState<MenuState>>) {
+    menu_state.set(MenuState::Hidden);
+
+    commands.spawn(PawnBundle::new(Vec2::default()));
+}
 
 fn open_url(url: &str) {
     if let Err(err) = webbrowser::open(url) {

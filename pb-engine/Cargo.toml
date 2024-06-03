@@ -5,5 +5,9 @@ authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 publish = false
 edition = "2021"
 
+[features]
+dev = ["bevy_rapier2d/debug-render-2d"]
+
 [dependencies]
 bevy = { version = "0.13.2", default-features = false }
+bevy_rapier2d = { version = "0.26.0", default-features = false, features = ["dim2", "debug-render-2d"] }

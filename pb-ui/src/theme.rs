@@ -3,18 +3,21 @@ use bevy::prelude::*;
 use pb_assets::Assets;
 
 #[derive(Resource)]
-#[allow(unused)]
 pub(crate) struct Theme {
     pub background: Color,
     pub text: Color,
     pub panel: Color,
+    #[allow(unused)]
     pub accent: Color,
     pub gutter: Val,
     pub outline: Outline,
+    #[allow(unused)]
     pub normal_text: TextStyle,
+    #[allow(unused)]
     pub emphasis_text: TextStyle,
+    #[allow(unused)]
     pub button_text: TextStyle,
-    pub header_text: TextStyle,
+    pub large_button_text: TextStyle,
     pub button_slice: ImageScaleMode,
     pub button_image: UiImage,
     pub button_padding: UiRect,
@@ -59,7 +62,7 @@ pub fn init(mut commands: Commands, assets: Res<Assets>) {
             font: assets.font_graduate.clone(),
             font_size: 14.,
         },
-        header_text: TextStyle {
+        large_button_text: TextStyle {
             color: text,
             font: assets.font_graduate.clone(),
             font_size: 60.,

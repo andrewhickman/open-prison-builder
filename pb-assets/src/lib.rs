@@ -8,6 +8,7 @@ pub struct Assets {
     pub button_image: Handle<Image>,
     pub bevy_icon_image: Handle<Image>,
     pub github_icon_image: Handle<Image>,
+    pub pawn_image: Handle<Image>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
@@ -40,6 +41,7 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
         button_image: server.load("image/button.png"),
         bevy_icon_image: server.load("image/bevy.png"),
         github_icon_image: server.load("image/github.png"),
+        pawn_image: server.load("image/pawn.png"),
     });
 }
 
@@ -85,6 +87,7 @@ impl Assets {
             button_image,
             bevy_icon_image,
             github_icon_image,
+            pawn_image,
         } = self;
 
         [
@@ -94,6 +97,7 @@ impl Assets {
             button_image.into(),
             bevy_icon_image.into(),
             github_icon_image.into(),
+            pawn_image.into(),
         ]
         .into_iter()
     }

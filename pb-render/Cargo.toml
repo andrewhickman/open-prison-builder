@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.13.2", default-features = false }
+pb-assets = { path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }

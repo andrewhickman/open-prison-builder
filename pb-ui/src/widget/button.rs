@@ -35,7 +35,7 @@ impl<'a> UiBuilder<'a> {
         ));
 
         button.spawn((
-            TextBundle::from_section(text, theme.header_text.clone()),
+            TextBundle::from_section(text, theme.large_button_text.clone()),
             Pickable::IGNORE,
         ));
         button
