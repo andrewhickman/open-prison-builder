@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use bevy::{prelude::*, reflect::TypeRegistryArc};
 
-use crate::{deserialize, serialize, DynStore, Store};
+use crate::{deserialize, serialize, DynStore, SaveMetadata, Store};
 
 pub fn init(mut commands: Commands, registry: Res<AppTypeRegistry>) {
     commands.insert_resource(DynStore(Arc::new(
@@ -31,10 +31,11 @@ impl FsStore {
 
 #[async_trait]
 impl Store for FsStore {
-    async fn save(&self, name: String, scene: DynamicScene) -> Result<()> {
-        let json = serialize(scene, &self.registry).context("failed to serialize JSON")?;
+    async fn save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()> {
+        let path = self.saves.join(format!("{}.json", metadata.name));
+        let json =
+            serialize(metadata, scene, &self.registry).context("failed to serialize JSON")?;
 
-        let path = self.saves.join(format!("{name}.json"));
         match async_fs::write(&path, &json).await {
             Ok(_) => (),
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
@@ -57,15 +58,15 @@ impl Store for FsStore {
         Ok(())
     }
 
-    async fn load(&self, name: String) -> Result<DynamicScene> {
+    async fn load(&self, name: String) -> Result<(SaveMetadata, DynamicScene)> {
         let path = self.saves.join(format!("{name}.json"));
         let json = async_fs::read(&path)
             .await
             .with_context(|| format!("failed to read from '{}'", path.display()))?;
 
-        let scene = deserialize(&json, &self.registry)
+        let save = deserialize(&json, &self.registry)
             .with_context(|| format!("failed to parse JSON at '{}'", path.display()))?;
         info!("Loaded from '{}'", path.display());
-        Ok(scene)
+        Ok(save)
     }
 }

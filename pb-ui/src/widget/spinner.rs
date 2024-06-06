@@ -6,7 +6,7 @@ use pb_util::try_res;
 use crate::{theme::Theme, widget::UiBuilder};
 
 impl<'a> UiBuilder<'a> {
-    pub fn spinner(&mut self, size: f32, style: Style, theme: &Theme) -> UiBuilder<'_> {
+    pub fn spinner(&mut self, theme: &Theme, size: f32, style: Style) -> UiBuilder<'_> {
         let mut parent = self.spawn((
             NodeBundle {
                 style: Style {

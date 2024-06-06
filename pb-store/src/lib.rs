@@ -14,10 +14,11 @@ use bevy::{
     scene::serde::{SceneDeserializer, SceneSerializer},
     tasks::IoTaskPool,
 };
-use pb_util::AsDynError;
-use serde::de::DeserializeSeed;
+use chrono::{DateTime, Utc};
+use serde::{de::DeserializeSeed, Deserialize, Serialize};
 
 use pb_engine::pawn::Pawn;
+use pb_util::AsDynError;
 
 pub const AUTOSAVE_INTERVAL: Duration = Duration::from_secs(5 * 60);
 
@@ -25,9 +26,9 @@ pub struct StorePlugin;
 
 #[async_trait]
 pub trait Store {
-    async fn save(&self, name: String, scene: DynamicScene) -> Result<()>;
+    async fn save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()>;
 
-    async fn load(&self, name: String) -> Result<DynamicScene>;
+    async fn load(&self, name: String) -> Result<(SaveMetadata, DynamicScene)>;
 }
 
 #[derive(Resource)]
@@ -36,7 +37,6 @@ pub struct DynStore(Arc<dyn Store + Send + Sync>);
 #[derive(Resource)]
 pub enum SaveState {
     Waiting(Timer),
-    Extracting,
     Running(Arc<OnceLock<Result<()>>>),
 }
 
@@ -46,6 +46,12 @@ pub struct SaveSystem(SystemId<SaveInput>);
 pub struct SaveInput {
     name: String,
     result: Arc<OnceLock<Result<()>>>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SaveMetadata {
+    pub name: String,
+    pub modified: DateTime<Utc>,
 }
 
 impl Plugin for StorePlugin {
@@ -84,30 +90,25 @@ pub fn trigger_save(
     save_system: Res<SaveSystem>,
     time: ResMut<Time<Real>>,
 ) {
-    let new_state = match state.as_mut() {
+    match state.as_mut() {
         SaveState::Waiting(timer) => {
             timer.tick(time.delta());
             if timer.just_finished() {
                 let input = SaveInput::new("autosave");
                 let result = input.result.clone();
                 commands.run_system_with_input(save_system.0, input);
-                SaveState::Running(result)
-            } else {
-                return;
+                *state = SaveState::Running(result)
             }
         }
-        SaveState::Extracting => return,
         SaveState::Running(result) => match result.get() {
-            Some(Ok(())) => SaveState::default(),
+            Some(Ok(())) => *state = SaveState::default(),
             Some(Err(error)) => {
                 error!(error = error.as_dyn_error(), "Failed to run autosave");
-                SaveState::default()
+                *state = SaveState::default()
             }
-            None => return,
+            None => (),
         },
-    };
-
-    *state = new_state;
+    }
 }
 
 pub fn save(
@@ -125,25 +126,42 @@ pub fn save(
     let store = store.0.clone();
     IoTaskPool::get()
         .spawn(async move {
-            let res = store.save(input.name, scene).await;
+            let metadata = SaveMetadata {
+                name: input.name,
+                modified: Utc::now(),
+            };
+            let res = store.save(metadata, scene).await;
             input.result.set(res).expect("result already set");
         })
         .detach();
 }
 
-fn serialize(scene: DynamicScene, registry: &TypeRegistryArc) -> Result<String, serde_json::Error> {
-    let serializer = SceneSerializer::new(&scene, registry);
-    serde_json::to_string_pretty(&serializer)
+fn serialize(
+    metadata: SaveMetadata,
+    scene: DynamicScene,
+    registry: &TypeRegistryArc,
+) -> Result<String, serde_json::Error> {
+    let mut buf = Vec::new();
+
+    serde_json::to_writer(&mut buf, &metadata)?;
+    buf.push(b'\n');
+    serde_json::to_writer(&mut buf, &SceneSerializer::new(&scene, registry))?;
+
+    Ok(String::from_utf8(buf).expect("JSON should be valid UTF-8"))
 }
 
-fn deserialize(json: &[u8], registry: &TypeRegistryArc) -> Result<DynamicScene, serde_json::Error> {
+fn deserialize(
+    json: &[u8],
+    registry: &TypeRegistryArc,
+) -> Result<(SaveMetadata, DynamicScene), serde_json::Error> {
     let mut deserializer = serde_json::Deserializer::from_slice(json);
     let scene_deserializer = SceneDeserializer {
         type_registry: &registry.read(),
     };
 
+    let metadata = SaveMetadata::deserialize(&mut deserializer)?;
     let scene = scene_deserializer.deserialize(&mut deserializer)?;
     deserializer.end()?;
 
-    Ok(scene)
+    Ok((metadata, scene))
 }

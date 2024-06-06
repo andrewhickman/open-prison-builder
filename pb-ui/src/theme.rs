@@ -65,7 +65,7 @@ pub fn init(mut commands: Commands, assets: Res<Assets>) {
         large_button_text: TextStyle {
             color: text,
             font: assets.font_graduate.clone(),
-            font_size: 60.,
+            font_size: 18.,
         },
         button_slice,
         button_image: UiImage::new(assets.button_image.clone()),

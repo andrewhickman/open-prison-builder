@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use bevy::{prelude::*, reflect::TypeRegistryArc};
 use wasm_bindgen::{JsCast, JsValue};
 
-use crate::{deserialize, serialize, DynStore, Store};
+use crate::{deserialize, serialize, DynStore, SaveMetadata, Store};
 
 pub fn init(mut commands: Commands, registry: Res<AppTypeRegistry>) {
     commands.insert_resource(DynStore(Arc::new(
@@ -25,11 +25,12 @@ impl WebStore {
 
 #[async_trait]
 impl Store for WebStore {
-    async fn save(&self, name: String, scene: DynamicScene) -> Result<()> {
+    async fn save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()> {
         let storage = self.storage()?;
-        let key = format!("saves/{name}");
+        let key = format!("saves/{}", metadata.name);
 
-        let json = serialize(scene, &self.registry).context("failed to serialize JSON")?;
+        let json =
+            serialize(metadata, scene, &self.registry).context("failed to serialize JSON")?;
         storage
             .set_item(&key, &json)
             .map_err(map_err)
@@ -38,7 +39,7 @@ impl Store for WebStore {
         Ok(())
     }
 
-    async fn load(&self, name: String) -> Result<DynamicScene> {
+    async fn load(&self, name: String) -> Result<(SaveMetadata, DynamicScene)> {
         let storage = self.storage()?;
         let key = format!("saves/{name}");
 
@@ -48,10 +49,10 @@ impl Store for WebStore {
             .with_context(|| format!("failed to read from '{key}'"))?;
 
         if let Some(json) = json {
-            let scene = deserialize(json.as_bytes(), &self.registry)
+            let save = deserialize(json.as_bytes(), &self.registry)
                 .with_context(|| format!("failed to parse JSON at '{}'", key))?;
             info!("Loaded from '{key}'");
-            Ok(scene)
+            Ok(save)
         } else {
             bail!("entry not found at '{key}'")
         }

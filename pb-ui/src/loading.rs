@@ -8,12 +8,12 @@ pub struct Loading;
 pub fn enter(commands: Commands, nodes: Res<Nodes>, theme: Res<Theme>) {
     UiBuilder::new(commands, nodes.root)
         .spinner(
+            &theme,
             60.,
             Style {
                 margin: UiRect::all(Val::Auto),
                 ..default()
             },
-            &theme,
         )
         .with(Loading);
 }

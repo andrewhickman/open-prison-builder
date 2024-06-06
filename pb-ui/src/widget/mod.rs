@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 pub mod button;
+pub mod panel;
 pub mod spinner;
 
 pub(crate) struct UiBuilder<'a> {
