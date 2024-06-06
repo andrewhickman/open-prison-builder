@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 anyhow = { version = "1.0.86" }
+bevy = { version = "0.13.2", default-features = false }
 tracing = "0.1.40"

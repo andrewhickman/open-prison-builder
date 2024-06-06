@@ -6,7 +6,7 @@ use pb_engine::{
     PIXELS_PER_METER,
 };
 
-pub fn init(mut commands: Commands, pawn_q: Query<Entity, Added<Pawn>>, assets: Res<Assets>) {
+pub fn init_pawn(mut commands: Commands, pawn_q: Query<Entity, Added<Pawn>>, assets: Res<Assets>) {
     for pawn in &pawn_q {
         commands.entity(pawn).insert((
             Sprite {
