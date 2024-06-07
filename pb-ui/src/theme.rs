@@ -17,10 +17,11 @@ pub(crate) struct Theme {
     pub emphasis_text: TextStyle,
     #[allow(unused)]
     pub button_text: TextStyle,
-    pub large_button_text: TextStyle,
+    pub header_text: TextStyle,
     pub button_slice: ImageScaleMode,
     pub button_image: UiImage,
     pub button_padding: UiRect,
+    pub large_icon_size: Val,
     pub icon_size: Val,
 }
 
@@ -41,7 +42,7 @@ pub fn init(mut commands: Commands, assets: Res<Assets>) {
         text: Color::hex("dedcdf").unwrap(),
         panel: Color::hex("5f4754").unwrap(),
         accent: Color::hex("b45627").unwrap(),
-        gutter: Val::Px(5.),
+        gutter: Val::Px(8.),
         outline: Outline {
             color: text,
             width: Val::Px(1.),
@@ -62,7 +63,7 @@ pub fn init(mut commands: Commands, assets: Res<Assets>) {
             font: assets.font_graduate.clone(),
             font_size: 14.,
         },
-        large_button_text: TextStyle {
+        header_text: TextStyle {
             color: text,
             font: assets.font_graduate.clone(),
             font_size: 18.,
@@ -70,6 +71,7 @@ pub fn init(mut commands: Commands, assets: Res<Assets>) {
         button_slice,
         button_image: UiImage::new(assets.button_image.clone()),
         button_padding: UiRect::all(Val::Px(button_border * 2.)),
-        icon_size: Val::Px(24.),
+        icon_size: Val::Px(18.),
+        large_icon_size: Val::Px(36.),
     });
 }

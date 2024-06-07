@@ -19,7 +19,6 @@ impl<'a> UiBuilder<'a> {
         let mut button = self.spawn((
             ButtonBundle {
                 style: Style {
-                    margin: UiRect::all(theme.gutter),
                     padding: theme.button_padding,
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
@@ -35,10 +34,19 @@ impl<'a> UiBuilder<'a> {
         ));
 
         button.spawn((
-            TextBundle::from_section(text, theme.large_button_text.clone()),
+            TextBundle::from_section(text, theme.header_text.clone()),
             Pickable::IGNORE,
         ));
         button
+    }
+
+    pub fn large_icon_button<Marker>(
+        &mut self,
+        theme: &Theme,
+        icon: Handle<Image>,
+        callback: impl IntoSystem<(), (), Marker>,
+    ) -> UiBuilder<'_> {
+        self.icon_button_with_size(icon, theme.large_icon_size, callback)
     }
 
     pub fn icon_button<Marker>(
@@ -47,12 +55,20 @@ impl<'a> UiBuilder<'a> {
         icon: Handle<Image>,
         callback: impl IntoSystem<(), (), Marker>,
     ) -> UiBuilder<'_> {
+        self.icon_button_with_size(icon, theme.icon_size, callback)
+    }
+
+    fn icon_button_with_size<Marker>(
+        &mut self,
+        icon: Handle<Image>,
+        height: Val,
+        callback: impl IntoSystem<(), (), Marker>,
+    ) -> UiBuilder<'_> {
         self.spawn((
             ButtonBundle {
                 style: Style {
-                    margin: UiRect::all(theme.gutter),
                     width: Val::Auto,
-                    height: theme.icon_size,
+                    height,
                     aspect_ratio: Some(1.),
                     ..default()
                 },

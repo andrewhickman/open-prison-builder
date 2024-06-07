@@ -4,11 +4,7 @@
 mod diagnostic;
 mod window;
 
-use bevy::{
-    app::{App, PluginGroup, Startup},
-    asset::AssetMetaCheck,
-    DefaultPlugins,
-};
+use bevy::{asset::AssetMetaCheck, prelude::*};
 
 use pb_assets::AssetsPlugin;
 use pb_engine::EnginePlugin;
@@ -19,7 +15,8 @@ use pb_ui::UiPlugin;
 fn main() {
     let mut app = App::new();
 
-    app.insert_resource(AssetMetaCheck::Never);
+    app.insert_resource(AssetMetaCheck::Never)
+        .insert_resource(Msaa::Sample4);
     app.add_plugins(DefaultPlugins.set(window::plugin()))
         .add_systems(Startup, window::set_icon);
 
