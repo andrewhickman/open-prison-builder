@@ -3,24 +3,24 @@ mod native;
 #[cfg(target_arch = "wasm32")]
 mod web;
 
-use std::{sync::Arc, sync::OnceLock, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use bevy::{
-    ecs::system::SystemId,
     prelude::*,
     reflect::TypeRegistryArc,
     scene::serde::{SceneDeserializer, SceneSerializer},
     tasks::IoTaskPool,
+    time::common_conditions::on_real_timer,
 };
 use chrono::{DateTime, Utc};
+use pb_util::AsDynError;
 use serde::{de::DeserializeSeed, Deserialize, Serialize};
 
 use pb_engine::pawn::Pawn;
-use pb_util::AsDynError;
 
-pub const AUTOSAVE_INTERVAL: Duration = Duration::from_secs(5 * 60);
+pub const AUTO_SAVE_INTERVAL: Duration = Duration::from_secs(5 * 60);
 
 pub struct StorePlugin;
 
@@ -31,22 +31,8 @@ pub trait Store {
     async fn load(&self, name: String) -> Result<(SaveMetadata, DynamicScene)>;
 }
 
-#[derive(Resource)]
+#[derive(Clone, Resource)]
 pub struct DynStore(Arc<dyn Store + Send + Sync>);
-
-#[derive(Resource)]
-pub enum SaveState {
-    Waiting(Timer),
-    Running(Arc<OnceLock<Result<()>>>),
-}
-
-#[derive(Resource)]
-pub struct SaveSystem(SystemId<SaveInput>);
-
-pub struct SaveInput {
-    name: String,
-    result: Arc<OnceLock<Result<()>>>,
-}
 
 #[derive(Serialize, Deserialize)]
 pub struct SaveMetadata {
@@ -56,82 +42,53 @@ pub struct SaveMetadata {
 
 impl Plugin for StorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, trigger_save);
-        let save_system_id = app.world.register_system(save);
-        app.insert_resource(SaveSystem(save_system_id));
-
-        app.init_resource::<SaveState>();
-
         #[cfg(not(target_arch = "wasm32"))]
         app.add_systems(Startup, native::init);
         #[cfg(target_arch = "wasm32")]
         app.add_systems(Startup, web::init);
+
+        app.add_systems(
+            PostUpdate,
+            auto_save.run_if(on_real_timer(AUTO_SAVE_INTERVAL)),
+        );
     }
 }
 
-impl SaveInput {
-    pub fn new(name: impl Into<String>) -> Self {
-        SaveInput {
-            name: name.into(),
-            result: default(),
-        }
-    }
-}
-
-impl Default for SaveState {
-    fn default() -> Self {
-        SaveState::Waiting(Timer::new(AUTOSAVE_INTERVAL, TimerMode::Once))
-    }
-}
-
-pub fn trigger_save(
-    mut commands: Commands,
-    mut state: ResMut<SaveState>,
-    save_system: Res<SaveSystem>,
-    time: ResMut<Time<Real>>,
-) {
-    match state.as_mut() {
-        SaveState::Waiting(timer) => {
-            timer.tick(time.delta());
-            if timer.just_finished() {
-                let input = SaveInput::new("autosave");
-                let result = input.result.clone();
-                commands.run_system_with_input(save_system.0, input);
-                *state = SaveState::Running(result)
+pub fn auto_save(world: &World, pawn_q: Query<Entity, With<Pawn>>, store: Res<DynStore>) {
+    save(
+        "autosave".to_owned(),
+        world,
+        &pawn_q,
+        store.clone(),
+        |res| {
+            if let Err(error) = res {
+                error!(error = error.as_dyn_error(), "Failed to auto-save");
             }
-        }
-        SaveState::Running(result) => match result.get() {
-            Some(Ok(())) => *state = SaveState::default(),
-            Some(Err(error)) => {
-                error!(error = error.as_dyn_error(), "Failed to run autosave");
-                *state = SaveState::default()
-            }
-            None => (),
         },
-    }
+    );
 }
 
 pub fn save(
-    In(input): In<SaveInput>,
+    name: String,
     world: &World,
-    store: Res<DynStore>,
-    pawn_q: Query<Entity, With<Pawn>>,
+    entities: impl IntoIterator<Item = Entity>,
+    store: DynStore,
+    callback: impl FnOnce(Result<()>) + Send + 'static,
 ) {
     let scene = DynamicSceneBuilder::from_world(world)
         .allow::<Pawn>()
         .allow::<Transform>()
-        .extract_entities(pawn_q.iter())
+        .extract_entities(entities.into_iter())
         .build();
 
-    let store = store.0.clone();
     IoTaskPool::get()
         .spawn(async move {
             let metadata = SaveMetadata {
-                name: input.name,
+                name,
                 modified: Utc::now(),
             };
-            let res = store.save(metadata, scene).await;
-            input.result.set(res).expect("result already set");
+            let res = store.0.save(metadata, scene).await;
+            callback(res);
         })
         .detach();
 }
