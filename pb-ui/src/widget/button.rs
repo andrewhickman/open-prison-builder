@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
+use pb_assets::Assets;
+
 use crate::{theme::Theme, widget::UiBuilder};
 
 #[derive(Component)]
@@ -9,66 +11,78 @@ pub enum ButtonStyle {
     Icon,
 }
 
-impl<'a> UiBuilder<'a> {
+impl<'w, 's> UiBuilder<'w, 's> {
     pub fn large_button<Marker>(
         &mut self,
         theme: &Theme,
+        assets: &Assets,
         text: impl Into<String>,
+        style: Style,
         callback: impl IntoSystem<(), (), Marker>,
-    ) -> UiBuilder<'_> {
+    ) -> UiBuilder<'w, '_> {
+        self.text_button(assets, text, theme.header_text.clone(), 8., style, callback)
+    }
+
+    pub fn button<Marker>(
+        &mut self,
+        theme: &Theme,
+        assets: &Assets,
+        text: impl Into<String>,
+        style: Style,
+        callback: impl IntoSystem<(), (), Marker>,
+    ) -> UiBuilder<'w, '_> {
+        self.text_button(assets, text, theme.button_text.clone(), 4., style, callback)
+    }
+
+    fn text_button<Marker>(
+        &mut self,
+        assets: &Assets,
+        text: impl Into<String>,
+        text_style: TextStyle,
+        button_border: f32,
+        style: Style,
+        callback: impl IntoSystem<(), (), Marker>,
+    ) -> UiBuilder<'w, '_> {
+        let button_image_border = 64.;
+        let button_slice = ImageScaleMode::Sliced(TextureSlicer {
+            border: BorderRect::square(button_image_border),
+            center_scale_mode: SliceScaleMode::Stretch,
+            sides_scale_mode: SliceScaleMode::Stretch,
+            max_corner_scale: button_border / button_image_border,
+        });
+
         let mut button = self.spawn((
             ButtonBundle {
                 style: Style {
-                    padding: theme.button_padding,
+                    padding: UiRect::all(Val::Px(button_border * 1.5)),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
-                    ..default()
+                    ..style
                 },
-                image: theme.button_image.clone(),
+                image: UiImage::new(assets.button_image.clone()),
                 ..default()
             },
-            theme.button_slice.clone(),
+            button_slice,
             On::<Pointer<Click>>::run(callback),
             PickableBundle::default(),
             ButtonStyle::Text,
         ));
 
-        button.spawn((
-            TextBundle::from_section(text, theme.header_text.clone()),
-            Pickable::IGNORE,
-        ));
+        button.spawn((TextBundle::from_section(text, text_style), Pickable::IGNORE));
         button
-    }
-
-    pub fn large_icon_button<Marker>(
-        &mut self,
-        theme: &Theme,
-        icon: Handle<Image>,
-        callback: impl IntoSystem<(), (), Marker>,
-    ) -> UiBuilder<'_> {
-        self.icon_button_with_size(icon, theme.large_icon_size, callback)
     }
 
     pub fn icon_button<Marker>(
         &mut self,
-        theme: &Theme,
         icon: Handle<Image>,
+        size: Val,
         callback: impl IntoSystem<(), (), Marker>,
-    ) -> UiBuilder<'_> {
-        self.icon_button_with_size(icon, theme.icon_size, callback)
-    }
-
-    fn icon_button_with_size<Marker>(
-        &mut self,
-        icon: Handle<Image>,
-        height: Val,
-        callback: impl IntoSystem<(), (), Marker>,
-    ) -> UiBuilder<'_> {
+    ) -> UiBuilder<'w, '_> {
         self.spawn((
             ButtonBundle {
                 style: Style {
                     width: Val::Auto,
-                    height,
+                    height: size,
                     aspect_ratio: Some(1.),
                     ..default()
                 },

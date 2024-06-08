@@ -11,6 +11,7 @@ use pb_engine::EnginePlugin;
 use pb_render::RenderPlugin;
 use pb_store::StorePlugin;
 use pb_ui::UiPlugin;
+use pb_util::CallbackPlugin;
 
 fn main() {
     let mut app = App::new();
@@ -24,6 +25,7 @@ fn main() {
     app.add_plugins(diagnostic::DiagnosticsPlugin);
 
     app.add_plugins((
+        CallbackPlugin,
         AssetsPlugin,
         EnginePlugin,
         RenderPlugin,

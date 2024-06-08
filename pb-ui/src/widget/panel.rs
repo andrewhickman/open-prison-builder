@@ -4,8 +4,8 @@ use pb_assets::Assets;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
-impl<'a> UiBuilder<'a> {
-    pub fn panel(&mut self, theme: &Theme, style: Style) -> UiBuilder<'_> {
+impl<'w, 's> UiBuilder<'w, 's> {
+    pub fn panel(&mut self, theme: &Theme, style: Style) -> UiBuilder<'w, '_> {
         self.spawn((
             NodeBundle {
                 style: Style {
@@ -24,7 +24,7 @@ impl<'a> UiBuilder<'a> {
         theme: &Theme,
         assets: &Assets,
         title: impl Into<String>,
-    ) -> UiBuilder<'_> {
+    ) -> UiBuilder<'w, '_> {
         let mut panel = self.panel(
             theme,
             Style {
@@ -36,22 +36,19 @@ impl<'a> UiBuilder<'a> {
         );
         let panel_id = panel.id();
 
-        let mut title_row = panel.spawn(NodeBundle {
-            style: Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Row,
-                justify_content: JustifyContent::SpaceBetween,
-                align_items: AlignItems::Center,
-                column_gap: theme.gutter,
-                ..default()
-            },
+        let mut title_row = panel.container(Style {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Row,
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            column_gap: theme.gutter,
             ..default()
         });
 
         title_row.spawn(TextBundle::from_section(title, theme.header_text.clone()));
         title_row.icon_button(
-            theme,
-            assets.close_icon_image.clone(),
+            assets.close_icon.clone(),
+            theme.icon_size(),
             move |mut commands: Commands| commands.entity(panel_id).despawn_recursive(),
         );
 

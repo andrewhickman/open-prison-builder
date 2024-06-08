@@ -1,8 +1,8 @@
-use std::{io, path::PathBuf, sync::Arc};
+use std::{ffi::OsStr, io, path::PathBuf, sync::Arc};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use bevy::{prelude::*, reflect::TypeRegistryArc};
+use bevy::{prelude::*, reflect::TypeRegistryArc, tasks::futures_lite::StreamExt};
 
 use crate::{deserialize, serialize, DynStore, SaveMetadata, Store};
 
@@ -31,10 +31,44 @@ impl FsStore {
 
 #[async_trait]
 impl Store for FsStore {
+    async fn list(&self) -> Result<Vec<SaveMetadata>> {
+        let mut files = match async_fs::read_dir(&self.saves).await {
+            Ok(files) => files.map(|res| {
+                res.with_context(|| format!("failed to read directory '{}'", self.saves.display()))
+            }),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(vec![]),
+            Err(error) => {
+                return Err(anyhow::Error::from(error).context(format!(
+                    "failed to read directory '{}'",
+                    self.saves.display()
+                )))
+            }
+        };
+
+        let mut results = Vec::new();
+        while let Some(entry) = files.try_next().await? {
+            let path = entry.path();
+            let Some(name) = path.file_stem().and_then(OsStr::to_str) else {
+                continue;
+            };
+
+            let metadata = entry
+                .metadata()
+                .await
+                .with_context(|| format!("failed to get metadata for '{}'", path.display()))?;
+
+            results.push(SaveMetadata {
+                name: name.to_owned(),
+                modified: metadata.modified()?.into(),
+            });
+        }
+
+        Ok(results)
+    }
+
     async fn save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()> {
         let path = self.saves.join(format!("{}.json", metadata.name));
-        let json =
-            serialize(metadata, scene, &self.registry).context("failed to serialize JSON")?;
+        let json = serialize(scene, &self.registry).context("failed to serialize JSON")?;
 
         match async_fs::write(&path, &json).await {
             Ok(_) => (),
@@ -44,9 +78,9 @@ impl Store for FsStore {
                     .with_context(|| {
                         format!("failed to create directory '{}'", self.saves.display())
                     })?;
-                async_fs::write(&path, &json).await.with_context(|| {
-                    format!("failed to create directory '{}'", self.saves.display())
-                })?;
+                async_fs::write(&path, &json)
+                    .await
+                    .with_context(|| format!("failed to write to '{}'", path.display()))?;
             }
             Err(error) => {
                 return Err(anyhow::Error::from(error)
@@ -58,7 +92,7 @@ impl Store for FsStore {
         Ok(())
     }
 
-    async fn load(&self, name: String) -> Result<(SaveMetadata, DynamicScene)> {
+    async fn load(&self, name: String) -> Result<DynamicScene> {
         let path = self.saves.join(format!("{name}.json"));
         let json = async_fs::read(&path)
             .await

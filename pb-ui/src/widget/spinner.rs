@@ -5,14 +5,15 @@ use pb_util::try_res;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
-impl<'a> UiBuilder<'a> {
-    pub fn spinner(&mut self, theme: &Theme, size: f32, style: Style) -> UiBuilder<'_> {
+impl<'w, 's> UiBuilder<'w, 's> {
+    pub fn spinner(&mut self, theme: &Theme, size: f32) -> UiBuilder<'w, '_> {
         let mut parent = self.spawn((
             NodeBundle {
                 style: Style {
                     width: Val::Px(size),
                     height: Val::Px(size),
-                    ..style
+                    margin: UiRect::all(Val::Auto),
+                    ..default()
                 },
                 ..default()
             },

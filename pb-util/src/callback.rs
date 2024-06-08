@@ -1,11 +1,22 @@
-use std::{any::TypeId, marker::PhantomData};
+use std::{any::TypeId, future::Future, marker::PhantomData};
 
 use bevy::{
     ecs::system::{BoxedSystem, Command, CommandQueue},
     prelude::*,
+    tasks::IoTaskPool,
     utils::HashMap,
 };
 use crossbeam_channel::{Receiver, Sender};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn spawn_io(f: impl Future<Output = ()> + Send + 'static) {
+    IoTaskPool::get().spawn(f).detach();
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn spawn_io(f: impl Future<Output = ()> + 'static) {
+    IoTaskPool::get().spawn(f).detach();
+}
 
 pub struct CallbackPlugin;
 

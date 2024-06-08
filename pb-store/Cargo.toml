@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0.86"
 async-trait = "0.1.80"
 bevy = { version = "0.13.2", default-features = false, features = ["bevy_scene"] }
-chrono = { version = "0.4.38", default-features = false, features = ["alloc", "serde", "now"] }
+chrono = { version = "0.4.38", default-features = false, features = ["alloc", "serde", "now", "clock", "wasmbind"] }
 pb-engine = { version = "0.1.0", path = "../pb-engine" }
 pb-util = { version = "0.1.0", path = "../pb-util" }
 serde = { version = "1.0.203", features = ["derive"] }

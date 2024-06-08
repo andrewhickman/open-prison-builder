@@ -9,39 +9,27 @@ pub(crate) struct Theme {
     pub panel: Color,
     #[allow(unused)]
     pub accent: Color,
+    #[allow(unused)]
+    pub error: Color,
     pub gutter: Val,
     pub outline: Outline,
-    #[allow(unused)]
     pub normal_text: TextStyle,
-    #[allow(unused)]
     pub emphasis_text: TextStyle,
-    #[allow(unused)]
     pub button_text: TextStyle,
     pub header_text: TextStyle,
-    pub button_slice: ImageScaleMode,
-    pub button_image: UiImage,
-    pub button_padding: UiRect,
-    pub large_icon_size: Val,
-    pub icon_size: Val,
+    pub large_icon_size_px: f32,
+    pub icon_size_px: f32,
 }
 
 pub fn init(mut commands: Commands, assets: Res<Assets>) {
     let text = Color::hex("dedcdf").unwrap();
-
-    let button_image_border = 64.;
-    let button_border = 5.;
-    let button_slice = ImageScaleMode::Sliced(TextureSlicer {
-        border: BorderRect::square(button_image_border),
-        center_scale_mode: SliceScaleMode::Stretch,
-        sides_scale_mode: SliceScaleMode::Stretch,
-        max_corner_scale: button_border / button_image_border,
-    });
 
     commands.insert_resource(Theme {
         background: Color::hex("192a28").unwrap(),
         text: Color::hex("dedcdf").unwrap(),
         panel: Color::hex("5f4754").unwrap(),
         accent: Color::hex("b45627").unwrap(),
+        error: Color::hex("f2200d").unwrap(),
         gutter: Val::Px(8.),
         outline: Outline {
             color: text,
@@ -66,12 +54,19 @@ pub fn init(mut commands: Commands, assets: Res<Assets>) {
         header_text: TextStyle {
             color: text,
             font: assets.font_graduate.clone(),
-            font_size: 18.,
+            font_size: 20.,
         },
-        button_slice,
-        button_image: UiImage::new(assets.button_image.clone()),
-        button_padding: UiRect::all(Val::Px(button_border * 2.)),
-        icon_size: Val::Px(18.),
-        large_icon_size: Val::Px(36.),
+        icon_size_px: 18.,
+        large_icon_size_px: 26.,
     });
+}
+
+impl Theme {
+    pub fn large_icon_size(&self) -> Val {
+        Val::Px(self.large_icon_size_px)
+    }
+
+    pub fn icon_size(&self) -> Val {
+        Val::Px(self.icon_size_px)
+    }
 }

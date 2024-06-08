@@ -11,11 +11,11 @@ use bevy::{
     prelude::*,
     reflect::TypeRegistryArc,
     scene::serde::{SceneDeserializer, SceneSerializer},
-    tasks::IoTaskPool,
     time::common_conditions::on_real_timer,
+    utils::BoxedFuture,
 };
-use chrono::{DateTime, Utc};
-use pb_util::AsDynError;
+use chrono::{DateTime, Local, Utc};
+use pb_util::{spawn_io, AsDynError};
 use serde::{de::DeserializeSeed, Deserialize, Serialize};
 
 use pb_engine::pawn::Pawn;
@@ -24,11 +24,14 @@ pub const AUTO_SAVE_INTERVAL: Duration = Duration::from_secs(5 * 60);
 
 pub struct StorePlugin;
 
-#[async_trait]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 pub trait Store {
+    async fn list(&self) -> Result<Vec<SaveMetadata>>;
+
     async fn save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()>;
 
-    async fn load(&self, name: String) -> Result<(SaveMetadata, DynamicScene)>;
+    async fn load(&self, name: String) -> Result<DynamicScene>;
 }
 
 #[derive(Clone, Resource)]
@@ -51,6 +54,30 @@ impl Plugin for StorePlugin {
             PostUpdate,
             auto_save.run_if(on_real_timer(AUTO_SAVE_INTERVAL)),
         );
+    }
+}
+
+impl Store for DynStore {
+    fn list<'a: 'b, 'b>(&'a self) -> BoxedFuture<'b, Result<Vec<SaveMetadata>>> {
+        self.0.list()
+    }
+
+    fn save<'a: 'b, 'b>(
+        &'a self,
+        metadata: SaveMetadata,
+        scene: DynamicScene,
+    ) -> BoxedFuture<'b, Result<()>> {
+        self.0.save(metadata, scene)
+    }
+
+    fn load<'a: 'b, 'b>(&'a self, name: String) -> BoxedFuture<'b, Result<DynamicScene>> {
+        self.0.load(name)
+    }
+}
+
+impl SaveMetadata {
+    pub fn modified_local(&self) -> DateTime<Local> {
+        self.modified.into()
     }
 }
 
@@ -81,44 +108,28 @@ pub fn save(
         .extract_entities(entities.into_iter())
         .build();
 
-    IoTaskPool::get()
-        .spawn(async move {
-            let metadata = SaveMetadata {
-                name,
-                modified: Utc::now(),
-            };
-            let res = store.0.save(metadata, scene).await;
-            callback(res);
-        })
-        .detach();
+    spawn_io(async move {
+        let metadata = SaveMetadata {
+            name,
+            modified: Utc::now(),
+        };
+        let res = store.save(metadata, scene).await;
+        callback(res);
+    });
 }
 
-fn serialize(
-    metadata: SaveMetadata,
-    scene: DynamicScene,
-    registry: &TypeRegistryArc,
-) -> Result<String, serde_json::Error> {
-    let mut buf = Vec::new();
-
-    serde_json::to_writer(&mut buf, &metadata)?;
-    buf.push(b'\n');
-    serde_json::to_writer(&mut buf, &SceneSerializer::new(&scene, registry))?;
-
-    Ok(String::from_utf8(buf).expect("JSON should be valid UTF-8"))
+fn serialize(scene: DynamicScene, registry: &TypeRegistryArc) -> Result<String, serde_json::Error> {
+    serde_json::to_string(&SceneSerializer::new(&scene, registry))
 }
 
-fn deserialize(
-    json: &[u8],
-    registry: &TypeRegistryArc,
-) -> Result<(SaveMetadata, DynamicScene), serde_json::Error> {
+fn deserialize(json: &[u8], registry: &TypeRegistryArc) -> Result<DynamicScene, serde_json::Error> {
     let mut deserializer = serde_json::Deserializer::from_slice(json);
     let scene_deserializer = SceneDeserializer {
         type_registry: &registry.read(),
     };
 
-    let metadata = SaveMetadata::deserialize(&mut deserializer)?;
     let scene = scene_deserializer.deserialize(&mut deserializer)?;
     deserializer.end()?;
 
-    Ok((metadata, scene))
+    Ok(scene)
 }

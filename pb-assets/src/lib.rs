@@ -6,10 +6,11 @@ pub struct Assets {
     pub font_tomorrow: Handle<Font>,
     pub tomorrow_italic_font: Handle<Font>,
     pub button_image: Handle<Image>,
-    pub bevy_icon_image: Handle<Image>,
-    pub github_icon_image: Handle<Image>,
+    pub bevy_icon: Handle<Image>,
+    pub github_icon: Handle<Image>,
     pub pawn_image: Handle<Image>,
-    pub close_icon_image: Handle<Image>,
+    pub close_icon: Handle<Image>,
+    pub error_icon: Handle<Image>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
@@ -40,10 +41,11 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
         font_tomorrow: server.load("fonts/Tomorrow-Medium.ttf"),
         tomorrow_italic_font: server.load("fonts/Tomorrow-MediumItalic.ttf"),
         button_image: server.load("image/button.png"),
-        bevy_icon_image: server.load("image/bevy.png"),
-        github_icon_image: server.load("image/github.png"),
+        bevy_icon: server.load("image/bevy.png"),
+        github_icon: server.load("image/github.png"),
         pawn_image: server.load("image/pawn.png"),
-        close_icon_image: server.load("image/close.png"),
+        close_icon: server.load("image/close.png"),
+        error_icon: server.load("image/error.png"),
     });
 }
 
@@ -87,10 +89,11 @@ impl Assets {
             font_tomorrow,
             tomorrow_italic_font,
             button_image,
-            bevy_icon_image,
-            github_icon_image,
+            bevy_icon,
+            github_icon,
             pawn_image,
-            close_icon_image,
+            close_icon,
+            error_icon,
         } = self;
 
         [
@@ -98,10 +101,11 @@ impl Assets {
             font_tomorrow.into(),
             tomorrow_italic_font.into(),
             button_image.into(),
-            bevy_icon_image.into(),
-            github_icon_image.into(),
+            bevy_icon.into(),
+            github_icon.into(),
             pawn_image.into(),
-            close_icon_image.into(),
+            close_icon.into(),
+            error_icon.into(),
         ]
         .into_iter()
     }

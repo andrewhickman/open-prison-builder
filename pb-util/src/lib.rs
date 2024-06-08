@@ -3,7 +3,9 @@ pub mod callback;
 pub use anyhow;
 pub use tracing;
 
-pub use self::callback::{run_oneshot_system, run_oneshot_system_with_input, CallbackPlugin};
+pub use self::callback::{
+    run_oneshot_system, run_oneshot_system_with_input, spawn_io, CallbackPlugin,
+};
 
 use bevy::ecs::query::QueryEntityError;
 
