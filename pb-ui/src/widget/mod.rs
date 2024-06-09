@@ -2,6 +2,7 @@ use bevy::{ecs::system::EntityCommands, prelude::*};
 
 pub mod button;
 pub mod error;
+pub mod input;
 pub mod panel;
 pub mod spinner;
 

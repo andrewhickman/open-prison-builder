@@ -25,8 +25,18 @@ pub enum MenuButton {
     OpenGithub,
 }
 
-#[derive(Component)]
-pub struct MenuPanel;
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Component)]
+pub enum MenuPanel {
+    Load,
+    Save,
+    Settings,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum SaveAction {
+    Save,
+    Load,
+}
 
 pub fn show(nodes: Res<Nodes>, mut style_q: Query<&mut Style>) {
     let mut style = try_res!(style_q.get_mut(nodes.menu));
@@ -59,15 +69,27 @@ impl<'w, 's> UiBuilder<'w, 's> {
             },
         );
 
-        menu.large_button(theme, assets, "New Prison", default(), new)
+        menu.large_button(theme, assets, "New Prison", default(), new_prison_button)
             .insert(MenuButton::New);
-        menu.large_button(theme, assets, "Save Prison", default(), noop)
-            .insert(MenuButton::Load);
-        menu.large_button(theme, assets, "Load Prison", default(), load)
-            .insert(MenuButton::Load);
-        menu.large_button(theme, assets, "Settings", default(), noop)
+        menu.large_button(
+            theme,
+            assets,
+            "Save Prison",
+            default(),
+            save_prison_panel_button,
+        )
+        .insert(MenuButton::Load);
+        menu.large_button(
+            theme,
+            assets,
+            "Load Prison",
+            default(),
+            load_prison_panel_button,
+        )
+        .insert(MenuButton::Load);
+        menu.large_button(theme, assets, "Settings", default(), settings_panel_button)
             .insert(MenuButton::Settings);
-        menu.large_button(theme, assets, "Exit", default(), exit)
+        menu.large_button(theme, assets, "Exit", default(), exit_button)
             .insert(MenuButton::Exit);
 
         let mut icon_bar = menu.container(Style {
@@ -91,6 +113,33 @@ impl<'w, 's> UiBuilder<'w, 's> {
         container
     }
 
+    fn save_panel(
+        &mut self,
+        theme: &Theme,
+        assets: &Assets,
+        store: DynStore,
+        callback: CallbackSender,
+    ) -> UiBuilder<'w, '_> {
+        let mut panel = self.titled_panel(theme, assets, "Save prison");
+        panel.saves_table(theme, store, callback, SaveAction::Save);
+
+        let mut save_row = panel.container(Style {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Row,
+            column_gap: theme.gutter,
+            align_items: AlignItems::Center,
+            ..default()
+        });
+
+        save_row.spawn(TextBundle::from_section("Name", theme.normal_text.clone()));
+        save_row.input(theme);
+        save_row.button(theme, assets, "Save", default(), move || {
+            info!("Save save with input name")
+        });
+
+        panel
+    }
+
     fn load_panel(
         &mut self,
         theme: &Theme,
@@ -99,62 +148,82 @@ impl<'w, 's> UiBuilder<'w, 's> {
         callback: CallbackSender,
     ) -> UiBuilder<'w, '_> {
         let mut panel = self.titled_panel(theme, assets, "Load prison");
-        panel.insert(MenuPanel);
-        let panel_id = panel.id();
-
-        let mut spinner_container = panel.container(Style {
-            flex_grow: 1.,
-            align_self: AlignSelf::Stretch,
-            ..default()
-        });
-        spinner_container.spinner(theme, theme.large_icon_size_px);
-        let spinner_container_id = spinner_container.id();
-
-        spawn_io(async move {
-            let res = store.list().await;
-            callback.send_oneshot_system_with_input(
-                move |In(res): In<Result<Vec<SaveMetadata>>>,
-                      mut commands: Commands,
-                      theme: Res<Theme>,
-                      assets: Res<Assets>| {
-                    let Some(mut panel) = commands.get_entity(panel_id) else {
-                        return;
-                    };
-
-                    panel
-                        .commands()
-                        .entity(spinner_container_id)
-                        .despawn_recursive();
-
-                    let mut builder = UiBuilder::from(&mut panel);
-
-                    match res {
-                        Ok(items) => {
-                            builder.load_panel_items(&theme, &assets, items);
-                        }
-                        Err(error) => {
-                            let error = error.as_dyn_error();
-                            error!(error, "failed to load saves");
-                            builder.error_message(&theme, &assets, error);
-                        }
-                    }
-                },
-                res,
-            );
-        });
-
+        panel.saves_table(theme, store, callback, SaveAction::Load);
         panel
     }
 
-    fn load_panel_items(
+    fn saves_table(
+        &mut self,
+        theme: &Theme,
+        store: DynStore,
+        callback: CallbackSender,
+        action: SaveAction,
+    ) -> UiBuilder<'w, '_> {
+        let mut container = self.container(Style {
+            flex_grow: 1.,
+            align_self: AlignSelf::Stretch,
+            min_width: Val::Px(400.),
+            ..default()
+        });
+        let container_id = container.id();
+
+        container.spinner(theme, theme.large_icon_size_px);
+
+        spawn_io(async move {
+            let res = store.list().await;
+            callback.send_oneshot_system_with_input(on_list_complete, (res, container_id, action));
+        });
+
+        fn on_list_complete(
+            In((res, container_id, action)): In<(Result<Vec<SaveMetadata>>, Entity, SaveAction)>,
+            mut commands: Commands,
+            theme: Res<Theme>,
+            assets: Res<Assets>,
+        ) {
+            let Some(mut container) = commands.get_entity(container_id) else {
+                return;
+            };
+
+            container.despawn_descendants();
+
+            let mut builder = UiBuilder::from(&mut container);
+
+            match res {
+                Ok(items) => {
+                    builder.saves_table_items(&theme, &assets, items, action);
+                }
+                Err(error) => {
+                    let error = error.as_dyn_error();
+                    error!(error, "failed to load saves");
+                    builder.error_message(&theme, &assets, error);
+                }
+            }
+        }
+
+        self.reborrow()
+    }
+
+    fn saves_table_items(
         &mut self,
         theme: &Theme,
         assets: &Assets,
         items: Vec<SaveMetadata>,
+        action: SaveAction,
     ) -> UiBuilder<'w, '_> {
         let mut container = self.container(Style {
             display: Display::Grid,
-            grid_template_columns: vec![GridTrack::fr(1.), GridTrack::auto(), GridTrack::auto()],
+            grid_template_columns: vec![
+                GridTrack::minmax(
+                    MinTrackSizingFunction::Auto,
+                    MaxTrackSizingFunction::Fraction(1.),
+                ),
+                GridTrack::minmax(
+                    MinTrackSizingFunction::Auto,
+                    MaxTrackSizingFunction::Fraction(1.),
+                ),
+                GridTrack::auto(),
+            ],
+            grid_auto_rows: vec![GridTrack::max_content()],
             row_gap: theme.gutter,
             column_gap: theme.gutter,
             align_items: AlignItems::Center,
@@ -197,53 +266,101 @@ impl<'w, 's> UiBuilder<'w, 's> {
                     ..default()
                 }),
             );
+
+            let button_text = match action {
+                SaveAction::Save => "Overwrite",
+                SaveAction::Load => "Load",
+            };
+
             container.button(
                 theme,
                 assets,
-                "Load",
+                button_text,
                 Style {
                     grid_row: GridPlacement::start(row as i16 + 2),
                     grid_column: GridPlacement::start(3),
                     ..default()
                 },
-                move || info!("Load save {}", item.name),
+                move || info!("{action:?} save {}", item.name),
             );
         }
 
         container
     }
+
+    fn settings_panel(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
+        self.titled_panel(theme, assets, "Settings")
+    }
 }
 
-fn new(mut commands: Commands, mut menu_state: ResMut<NextState<MenuState>>) {
+fn new_prison_button(mut commands: Commands, mut menu_state: ResMut<NextState<MenuState>>) {
     menu_state.set(MenuState::Hidden);
 
     commands.spawn(PawnBundle::new(Vec2::default()));
 }
 
-fn load(
+fn save_prison_panel_button(
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
     nodes: Res<Nodes>,
-    panel_q: Query<Entity, With<MenuPanel>>,
+    panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
     store: Res<DynStore>,
 ) {
-    for panel in &panel_q {
-        commands.entity(panel).despawn_recursive();
+    for (id, &panel) in &panel_q {
+        commands.entity(id).despawn_recursive();
+        if panel == MenuPanel::Save {
+            return;
+        }
     }
 
-    UiBuilder::new(commands, nodes.menu).load_panel(
-        &theme,
-        &assets,
-        store.clone(),
-        callback.clone(),
-    );
+    UiBuilder::new(commands, nodes.menu)
+        .save_panel(&theme, &assets, store.clone(), callback.clone())
+        .insert(MenuPanel::Save);
 }
 
-fn noop() {}
+fn load_prison_panel_button(
+    mut commands: Commands,
+    theme: Res<Theme>,
+    assets: Res<Assets>,
+    nodes: Res<Nodes>,
+    panel_q: Query<(Entity, &MenuPanel)>,
+    callback: Res<CallbackSender>,
+    store: Res<DynStore>,
+) {
+    for (id, &panel) in &panel_q {
+        commands.entity(id).despawn_recursive();
+        if panel == MenuPanel::Load {
+            return;
+        }
+    }
 
-fn exit(mut exit_e: EventWriter<AppExit>) {
+    UiBuilder::new(commands, nodes.menu)
+        .load_panel(&theme, &assets, store.clone(), callback.clone())
+        .insert(MenuPanel::Load);
+}
+
+fn settings_panel_button(
+    mut commands: Commands,
+    theme: Res<Theme>,
+    assets: Res<Assets>,
+    nodes: Res<Nodes>,
+    panel_q: Query<(Entity, &MenuPanel)>,
+) {
+    for (id, &panel) in &panel_q {
+        commands.entity(id).despawn_recursive();
+        if panel == MenuPanel::Settings {
+            return;
+        }
+    }
+
+    UiBuilder::new(commands, nodes.menu)
+        .settings_panel(&theme, &assets)
+        .insert(MenuPanel::Settings);
+}
+
+fn exit_button(mut exit_e: EventWriter<AppExit>) {
     exit_e.send(AppExit);
 }
 

@@ -8,16 +8,26 @@ mod widget;
 
 use bevy::prelude::*;
 use bevy_mod_picking::DefaultPickingPlugins;
+use bevy_simple_text_input::TextInputPlugin;
 use pb_assets::LoadState;
 
 use crate::menu::MenuState;
 use crate::theme::Theme;
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
+pub enum EngineState {
+    #[default]
+    Disabled,
+    Loading,
+    Running,
+}
 
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(DefaultPickingPlugins);
+        app.add_plugins(TextInputPlugin);
 
         app.add_systems(
             Startup,
@@ -34,7 +44,11 @@ impl Plugin for UiPlugin {
         app.add_systems(OnEnter(MenuState::Hidden), menu::hide);
 
         app.add_systems(OnEnter(LoadState::Pending), loading::enter);
-        app.add_systems(OnEnter(LoadState::Ready), loading::exit);
+        app.add_systems(OnExit(LoadState::Pending), loading::exit);
+
+        app.init_state::<EngineState>();
+        app.add_systems(OnEnter(EngineState::Loading), loading::enter);
+        app.add_systems(OnExit(EngineState::Loading), loading::exit);
     }
 }
 

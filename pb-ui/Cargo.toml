@@ -9,6 +9,7 @@ edition = "2021"
 anyhow = "1.0.86"
 bevy = { version = "0.13.2", default-features = false, features = ["bevy_render", "bevy_ui"] }
 bevy_mod_picking = { version = "0.18.2", default-features = false, features = ["selection", "backend_bevy_ui"] }
+bevy_simple_text_input = "0.7.0"
 pb-assets = { version = "0.1.0", path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }
 pb-render = { path = "../pb-render" }

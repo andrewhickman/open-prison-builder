@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, ui::FocusPolicy};
 
 use pb_assets::Assets;
 
@@ -13,6 +13,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
                     ..style
                 },
                 background_color: theme.panel.into(),
+                focus_policy: FocusPolicy::Block,
                 ..default()
             },
             theme.outline,
