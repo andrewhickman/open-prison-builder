@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 
-use bevy_simple_text_input::{TextInputBundle, TextInputSettings};
+use bevy_simple_text_input::{TextInputBundle, TextInputSettings, TextInputValue};
 
 use crate::{theme::Theme, widget::UiBuilder};
+
+use super::form::{FormField, FormUpdate};
 
 impl<'w, 's> UiBuilder<'w, 's> {
     pub fn input(&mut self, theme: &Theme) -> UiBuilder<'w, '_> {
@@ -25,5 +27,18 @@ impl<'w, 's> UiBuilder<'w, 's> {
                     ..default()
                 }),
         ))
+    }
+}
+
+pub fn update(
+    input_q: Query<(Entity, &FormField, &TextInputValue), Changed<TextInputValue>>,
+    mut update_e: EventWriter<FormUpdate>,
+) {
+    for (target, field, value) in &input_q {
+        update_e.send(FormUpdate {
+            target,
+            name: field.name().into(),
+            value: value.0.clone_value(),
+        });
     }
 }

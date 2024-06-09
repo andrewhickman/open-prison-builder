@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use bevy::{prelude::*, reflect::TypeRegistryArc};
+use smol_str::SmolStr;
 use wasm_bindgen::{JsCast, JsValue};
 
 use crate::{deserialize, serialize, DynStore, SaveMetadata, Store};
@@ -72,7 +73,7 @@ impl Store for WebStore {
         Ok(())
     }
 
-    async fn load(&self, name: String) -> Result<DynamicScene> {
+    async fn load(&self, name: SmolStr) -> Result<DynamicScene> {
         let storage = self.storage()?;
         let key = format!("saves/{name}.json");
 

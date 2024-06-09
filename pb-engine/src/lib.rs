@@ -7,11 +7,21 @@ use pawn::Pawn;
 
 pub const PIXELS_PER_METER: f32 = 128.;
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
+pub enum EngineState {
+    #[default]
+    Disabled,
+    Loading,
+    Running,
+}
+
 pub struct EnginePlugin;
 
 impl Plugin for EnginePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Pawn>();
+
+        app.init_state::<EngineState>();
 
         app.insert_resource(RapierConfiguration {
             gravity: Vec2::ZERO,

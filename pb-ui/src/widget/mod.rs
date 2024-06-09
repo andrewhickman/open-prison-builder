@@ -3,9 +3,13 @@ use bevy_mod_picking::picking_core::Pickable;
 
 pub mod button;
 pub mod error;
+pub mod form;
 pub mod input;
 pub mod panel;
 pub mod spinner;
+
+#[derive(Component, Debug, Clone, PartialEq, Eq)]
+pub struct Disabled(pub bool);
 
 pub(crate) struct UiBuilder<'w, 's> {
     commands: Commands<'w, 's>,
@@ -35,6 +39,10 @@ impl<'w, 's> UiBuilder<'w, 's> {
         self.reborrow()
     }
 
+    pub fn clear(&mut self) {
+        self.commands.entity(self.entity).despawn_descendants();
+    }
+
     pub fn id(&self) -> Entity {
         self.entity
     }
@@ -47,4 +55,9 @@ impl<'s> From<&'s mut EntityCommands<'s>> for UiBuilder<'s, 's> {
             commands: commands.commands(),
         }
     }
+}
+
+impl Disabled {
+    pub const ENABLED: Self = Disabled(false);
+    pub const DISABLED: Self = Disabled(true);
 }

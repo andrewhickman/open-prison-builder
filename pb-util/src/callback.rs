@@ -32,10 +32,7 @@ impl Plugin for CallbackPlugin {
         app.insert_resource(CallbackSender(sender));
         app.insert_resource(CallbackReceiver(receiver));
 
-        app.add_systems(
-            PostUpdate,
-            apply_callbacks.run_if(apply_callbacks_condition),
-        );
+        app.add_systems(Update, apply_callbacks.run_if(apply_callbacks_condition));
     }
 }
 

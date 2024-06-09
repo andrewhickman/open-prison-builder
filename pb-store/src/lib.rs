@@ -14,11 +14,13 @@ use bevy::{
     time::common_conditions::on_real_timer,
     utils::BoxedFuture,
 };
+use bevy_rapier2d::dynamics::Velocity;
 use chrono::{DateTime, Local, Utc};
 use pb_util::{spawn_io, AsDynError};
 use serde::{de::DeserializeSeed, Deserialize, Serialize};
+use smol_str::SmolStr;
 
-use pb_engine::pawn::Pawn;
+use pb_engine::{pawn::Pawn, EngineState};
 
 pub const AUTO_SAVE_INTERVAL: Duration = Duration::from_secs(5 * 60);
 
@@ -31,7 +33,7 @@ pub trait Store {
 
     async fn save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()>;
 
-    async fn load(&self, name: String) -> Result<DynamicScene>;
+    async fn load(&self, name: SmolStr) -> Result<DynamicScene>;
 }
 
 #[derive(Clone, Resource)]
@@ -39,9 +41,11 @@ pub struct DynStore(Arc<dyn Store + Send + Sync>);
 
 #[derive(Serialize, Deserialize, Component)]
 pub struct SaveMetadata {
-    pub name: String,
+    pub name: SmolStr,
     pub modified: DateTime<Utc>,
 }
+
+pub type SaveQuery<'world, 'state> = Query<'world, 'state, Entity, With<Pawn>>;
 
 impl Plugin for StorePlugin {
     fn build(&self, app: &mut App) {
@@ -52,7 +56,8 @@ impl Plugin for StorePlugin {
 
         app.add_systems(
             PostUpdate,
-            auto_save.run_if(on_real_timer(AUTO_SAVE_INTERVAL)),
+            auto_save
+                .run_if(in_state(EngineState::Running).and_then(on_real_timer(AUTO_SAVE_INTERVAL))),
         );
     }
 }
@@ -70,7 +75,7 @@ impl Store for DynStore {
         self.0.save(metadata, scene)
     }
 
-    fn load<'a: 'b, 'b>(&'a self, name: String) -> BoxedFuture<'b, Result<DynamicScene>> {
+    fn load<'a: 'b, 'b>(&'a self, name: SmolStr) -> BoxedFuture<'b, Result<DynamicScene>> {
         self.0.load(name)
     }
 }
@@ -81,32 +86,27 @@ impl SaveMetadata {
     }
 }
 
-pub fn auto_save(world: &World, pawn_q: Query<Entity, With<Pawn>>, store: Res<DynStore>) {
-    save(
-        "autosave".to_owned(),
-        world,
-        &pawn_q,
-        store.clone(),
-        |res| {
-            if let Err(error) = res {
-                error!(error = error.as_dyn_error(), "Failed to auto-save");
-            }
-        },
-    );
+pub fn auto_save(world: &World, pawn_q: SaveQuery, store: Res<DynStore>) {
+    save("autosave".into(), world, &pawn_q, store.clone(), |res| {
+        if let Err(error) = res {
+            error!(error = error.as_dyn_error(), "Failed to auto-save");
+        }
+    });
 }
 
 pub fn save(
-    name: String,
+    name: SmolStr,
     world: &World,
-    entities: impl IntoIterator<Item = Entity>,
+    entities: &SaveQuery,
     store: DynStore,
     callback: impl FnOnce(Result<()>) + Send + 'static,
 ) {
     let scene = DynamicSceneBuilder::from_world(world)
         .allow::<Pawn>()
         .allow::<Transform>()
+        .allow::<Velocity>()
         .allow::<GlobalTransform>()
-        .extract_entities(entities.into_iter())
+        .extract_entities(entities.iter())
         .build();
 
     spawn_io(async move {

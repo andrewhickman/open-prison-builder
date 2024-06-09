@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
+use bevy_mod_picking::picking_core::Pickable;
 use pb_assets::Assets;
 use pb_util::AsDynError;
 
@@ -15,6 +16,7 @@ pub struct Message {
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum MessageLevel {
+    Info,
     Error,
 }
 
@@ -22,6 +24,13 @@ pub enum MessageLevel {
 pub struct MessageExpiry(Duration);
 
 impl Message {
+    pub fn info(text: impl Into<String>) -> Self {
+        Message {
+            text: text.into(),
+            level: MessageLevel::Info,
+        }
+    }
+
     pub fn error<'a, M: ?Sized>(error: &impl AsDynError<'a, M>) -> Self {
         Message {
             text: error.to_string_compact(),
@@ -49,6 +58,15 @@ impl<'w, 's> UiBuilder<'w, 's> {
         message: &Message,
     ) -> UiBuilder<'w, '_> {
         match message.level {
+            MessageLevel::Info => self
+                .spawn(TextBundle::from_section(
+                    message.text.clone(),
+                    theme.normal_text.clone(),
+                ))
+                .insert(Pickable::IGNORE)
+                .insert(MessageExpiry(
+                    time.elapsed().saturating_add(Duration::from_secs(15)),
+                )),
             MessageLevel::Error => self
                 .error_message(theme, assets, message.text.clone())
                 .insert(MessageExpiry(

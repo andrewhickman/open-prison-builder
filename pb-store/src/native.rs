@@ -3,6 +3,7 @@ use std::{ffi::OsStr, io, path::PathBuf, sync::Arc};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use bevy::{prelude::*, reflect::TypeRegistryArc, tasks::futures_lite::StreamExt};
+use smol_str::SmolStr;
 
 use crate::{deserialize, serialize, DynStore, SaveMetadata, Store};
 
@@ -58,7 +59,7 @@ impl Store for FsStore {
                 .with_context(|| format!("failed to get metadata for '{}'", path.display()))?;
 
             results.push(SaveMetadata {
-                name: name.to_owned(),
+                name: name.into(),
                 modified: metadata.modified()?.into(),
             });
         }
@@ -92,7 +93,7 @@ impl Store for FsStore {
         Ok(())
     }
 
-    async fn load(&self, name: String) -> Result<DynamicScene> {
+    async fn load(&self, name: SmolStr) -> Result<DynamicScene> {
         let path = self.saves.join(format!("{name}.json"));
         let json = async_fs::read(&path)
             .await
