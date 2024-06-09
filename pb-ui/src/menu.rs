@@ -1,12 +1,13 @@
 use anyhow::Result;
 use bevy::{app::AppExit, prelude::*};
 
+use bevy_mod_picking::prelude::*;
 use pb_assets::Assets;
 use pb_engine::pawn::PawnBundle;
 use pb_store::{DynStore, SaveMetadata, Store};
 use pb_util::{callback::CallbackSender, spawn_io, try_res, AsDynError};
 
-use crate::{node::Nodes, theme::Theme, widget::UiBuilder};
+use crate::{layout::Layout, message::Message, theme::Theme, widget::UiBuilder, EngineState};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum MenuState {
@@ -38,19 +39,20 @@ enum SaveAction {
     Load,
 }
 
-pub fn show(nodes: Res<Nodes>, mut style_q: Query<&mut Style>) {
-    let mut style = try_res!(style_q.get_mut(nodes.menu));
+pub fn show(layout: Res<Layout>, mut style_q: Query<&mut Style>) {
+    let mut style = try_res!(style_q.get_mut(layout.menu));
     style.display = Display::Flex;
 }
 
-pub fn hide(nodes: Res<Nodes>, mut style_q: Query<&mut Style>) {
-    let mut style = try_res!(style_q.get_mut(nodes.menu));
+pub fn hide(layout: Res<Layout>, mut style_q: Query<&mut Style>) {
+    let mut style = try_res!(style_q.get_mut(layout.menu));
     style.display = Display::None;
 }
 
 impl<'w, 's> UiBuilder<'w, 's> {
-    pub fn main_menu(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
+    pub fn menu(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
         let mut container = self.container(Style {
+            position_type: PositionType::Absolute,
             margin: UiRect::all(Val::Auto),
             display: Display::Flex,
             flex_direction: FlexDirection::Row,
@@ -193,9 +195,8 @@ impl<'w, 's> UiBuilder<'w, 's> {
                     builder.saves_table_items(&theme, &assets, items, action);
                 }
                 Err(error) => {
-                    let error = error.as_dyn_error();
-                    error!(error, "failed to load saves");
-                    builder.error_message(&theme, &assets, error);
+                    error!(error = error.as_dyn_error(), "failed to load saves");
+                    builder.error_message(&theme, &assets, error.to_string_compact());
                 }
             }
         }
@@ -267,22 +268,32 @@ impl<'w, 's> UiBuilder<'w, 's> {
                 }),
             );
 
-            let button_text = match action {
-                SaveAction::Save => "Overwrite",
-                SaveAction::Load => "Load",
+            let mut button = match action {
+                SaveAction::Save => container.button(
+                    theme,
+                    assets,
+                    "Overwrite",
+                    Style {
+                        grid_row: GridPlacement::start(row as i16 + 2),
+                        grid_column: GridPlacement::start(3),
+                        ..default()
+                    },
+                    move || info!("{action:?} save"),
+                ),
+                SaveAction::Load => container.button(
+                    theme,
+                    assets,
+                    "Load",
+                    Style {
+                        grid_row: GridPlacement::start(row as i16 + 2),
+                        grid_column: GridPlacement::start(3),
+                        ..default()
+                    },
+                    load_prison_button,
+                ),
             };
 
-            container.button(
-                theme,
-                assets,
-                button_text,
-                Style {
-                    grid_row: GridPlacement::start(row as i16 + 2),
-                    grid_column: GridPlacement::start(3),
-                    ..default()
-                },
-                move || info!("{action:?} save {}", item.name),
-            );
+            button.insert(item);
         }
 
         container
@@ -303,7 +314,7 @@ fn save_prison_panel_button(
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
-    nodes: Res<Nodes>,
+    layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
     store: Res<DynStore>,
@@ -315,7 +326,7 @@ fn save_prison_panel_button(
         }
     }
 
-    UiBuilder::new(commands, nodes.menu)
+    UiBuilder::new(commands, layout.menu)
         .save_panel(&theme, &assets, store.clone(), callback.clone())
         .insert(MenuPanel::Save);
 }
@@ -324,7 +335,7 @@ fn load_prison_panel_button(
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
-    nodes: Res<Nodes>,
+    layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
     store: Res<DynStore>,
@@ -336,16 +347,63 @@ fn load_prison_panel_button(
         }
     }
 
-    UiBuilder::new(commands, nodes.menu)
+    UiBuilder::new(commands, layout.menu)
         .load_panel(&theme, &assets, store.clone(), callback.clone())
         .insert(MenuPanel::Load);
+}
+
+fn load_prison_button(
+    event: Listener<Pointer<Click>>,
+    save_q: Query<&SaveMetadata>,
+    mut menu_state: ResMut<NextState<MenuState>>,
+    mut engine_state: ResMut<NextState<EngineState>>,
+    callback: Res<CallbackSender>,
+    store: Res<DynStore>,
+) {
+    let save_name = try_res!(save_q.get(event.target())).name.clone();
+
+    menu_state.set(MenuState::Hidden);
+    engine_state.set(EngineState::Loading);
+
+    let store = store.clone();
+    let callback = callback.clone();
+    spawn_io(async move {
+        let res = store.load(save_name).await;
+        callback.send_oneshot_system_with_input(on_load_complete, res);
+    });
+
+    fn on_load_complete(
+        In(res): In<Result<DynamicScene>>,
+        mut menu_state: ResMut<NextState<MenuState>>,
+        mut engine_state: ResMut<NextState<EngineState>>,
+        assets: Res<AssetServer>,
+        mut spawner: ResMut<SceneSpawner>,
+        mut message_e: EventWriter<Message>,
+    ) {
+        match res {
+            Ok(scene) => {
+                engine_state.set(EngineState::Running);
+
+                spawner.spawn_dynamic(assets.add(scene));
+            }
+            Err(error) => {
+                menu_state.set(MenuState::Shown);
+                engine_state.set(EngineState::Disabled);
+
+                let error = error.as_dyn_error();
+                error!(error, "failed to load saves");
+
+                message_e.send(Message::error(&error));
+            }
+        }
+    }
 }
 
 fn settings_panel_button(
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
-    nodes: Res<Nodes>,
+    layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
 ) {
     for (id, &panel) in &panel_q {
@@ -355,7 +413,7 @@ fn settings_panel_button(
         }
     }
 
-    UiBuilder::new(commands, nodes.menu)
+    UiBuilder::new(commands, layout.menu)
         .settings_panel(&theme, &assets)
         .insert(MenuPanel::Settings);
 }

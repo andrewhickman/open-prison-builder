@@ -1,5 +1,3 @@
-use std::fmt::Write;
-
 use bevy::prelude::*;
 
 use pb_assets::Assets;
@@ -11,7 +9,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         &mut self,
         theme: &Theme,
         assets: &Assets,
-        error: &dyn std::error::Error,
+        message: String,
     ) -> UiBuilder<'w, '_> {
         let mut container = self.container(Style {
             display: Display::Flex,
@@ -31,19 +29,10 @@ impl<'w, 's> UiBuilder<'w, 's> {
             ..default()
         });
         container.spawn(TextBundle::from_section(
-            fmt_error(error),
+            message,
             theme.emphasis_text.clone(),
         ));
 
         container
     }
-}
-
-fn fmt_error(mut error: &dyn std::error::Error) -> String {
-    let mut buf = error.to_string();
-    while let Some(source) = error.source() {
-        write!(buf, ": {}", source).unwrap();
-        error = source;
-    }
-    buf
 }

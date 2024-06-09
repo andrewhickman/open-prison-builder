@@ -6,9 +6,10 @@ use pb_assets::Assets;
 use crate::{theme::Theme, widget::UiBuilder};
 
 #[derive(Resource)]
-pub struct Nodes {
+pub struct Layout {
     pub root: Entity,
     pub menu: Entity,
+    pub messages: Entity,
 }
 
 pub fn init(mut commands: Commands, theme: Res<Theme>, assets: Res<Assets>) {
@@ -28,7 +29,13 @@ pub fn init(mut commands: Commands, theme: Res<Theme>, assets: Res<Assets>) {
 
     let mut builder = UiBuilder::new(commands.reborrow(), root);
 
-    let menu = builder.main_menu(&theme, &assets).id();
+    let menu = builder.menu(&theme, &assets).id();
 
-    commands.insert_resource(Nodes { root, menu })
+    let messages = builder.messages().id();
+
+    commands.insert_resource(Layout {
+        root,
+        menu,
+        messages,
+    })
 }

@@ -5,7 +5,8 @@ use crate::PIXELS_PER_METER;
 
 pub const RADIUS: f32 = 0.16;
 
-#[derive(Default, Component, Serialize, Deserialize)]
+#[derive(Default, Component, Reflect, Serialize, Deserialize)]
+#[reflect(Component, Serialize, Deserialize)]
 pub struct Pawn;
 
 #[derive(Bundle)]

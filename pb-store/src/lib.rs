@@ -37,7 +37,7 @@ pub trait Store {
 #[derive(Clone, Resource)]
 pub struct DynStore(Arc<dyn Store + Send + Sync>);
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Component)]
 pub struct SaveMetadata {
     pub name: String,
     pub modified: DateTime<Utc>,
@@ -105,6 +105,7 @@ pub fn save(
     let scene = DynamicSceneBuilder::from_world(world)
         .allow::<Pawn>()
         .allow::<Transform>()
+        .allow::<GlobalTransform>()
         .extract_entities(entities.into_iter())
         .build();
 

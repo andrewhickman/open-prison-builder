@@ -1,4 +1,5 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy_mod_picking::picking_core::Pickable;
 
 pub mod button;
 pub mod error;
@@ -26,7 +27,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
     }
 
     pub fn container(&mut self, style: Style) -> UiBuilder<'w, '_> {
-        self.spawn(NodeBundle { style, ..default() })
+        self.spawn((NodeBundle { style, ..default() }, Pickable::IGNORE))
     }
 
     pub fn insert(&mut self, bundle: impl Bundle) -> UiBuilder<'w, '_> {

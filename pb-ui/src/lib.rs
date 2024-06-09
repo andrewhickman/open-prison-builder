@@ -1,15 +1,18 @@
-#![allow(clippy::type_complexity)]
+#![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
+mod layout;
 mod loading;
 mod menu;
-mod node;
+mod message;
 mod theme;
 mod widget;
 
 use bevy::prelude::*;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_simple_text_input::TextInputPlugin;
+use message::Message;
 use pb_assets::LoadState;
+use pb_util::set_state;
 
 use crate::menu::MenuState;
 use crate::theme::Theme;
@@ -33,7 +36,7 @@ impl Plugin for UiPlugin {
             Startup,
             (
                 theme::init.after(pb_assets::load),
-                (init_camera, node::init).after(theme::init),
+                (init_camera, layout::init).after(theme::init),
             ),
         );
 
@@ -44,11 +47,17 @@ impl Plugin for UiPlugin {
         app.add_systems(OnEnter(MenuState::Hidden), menu::hide);
 
         app.add_systems(OnEnter(LoadState::Pending), loading::enter);
-        app.add_systems(OnExit(LoadState::Pending), loading::exit);
+        app.add_systems(
+            OnExit(LoadState::Pending),
+            (loading::exit, set_state(MenuState::Shown)),
+        );
 
         app.init_state::<EngineState>();
         app.add_systems(OnEnter(EngineState::Loading), loading::enter);
         app.add_systems(OnExit(EngineState::Loading), loading::exit);
+
+        app.add_event::<Message>();
+        app.add_systems(Update, (message::spawn_messages, message::despawn_messages));
     }
 }
 
