@@ -13,7 +13,7 @@ bevy_simple_text_input = { git = "https://github.com/andrewhickman/bevy_simple_t
 pb-assets = { version = "0.1.0", path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }
 pb-render = { path = "../pb-render" }
-pb-store = { version = "0.1.0", path = "../pb-store" }
+pb-save = { version = "0.1.0", path = "../pb-save" }
 pb-util = { version = "0.1.0", path = "../pb-util" }
 smol_str = { version = "0.2.2", features = ["serde"] }
 webbrowser = "1.0.1"

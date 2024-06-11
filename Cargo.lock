@@ -2583,7 +2583,7 @@ dependencies = [
  "pb-assets",
  "pb-engine",
  "pb-render",
- "pb-store",
+ "pb-save",
  "pb-ui",
  "pb-util",
  "web-sys",
@@ -2713,7 +2713,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pb-store"
+name = "pb-save"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -2745,7 +2745,7 @@ dependencies = [
  "pb-assets",
  "pb-engine",
  "pb-render",
- "pb-store",
+ "pb-save",
  "pb-util",
  "smol_str",
  "webbrowser 1.0.1",

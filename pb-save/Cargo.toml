@@ -1,5 +1,5 @@
 [package]
-name = "pb-store"
+name = "pb-save"
 version = "0.1.0"
 authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 publish = false

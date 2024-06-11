@@ -9,7 +9,7 @@ use bevy::{asset::AssetMetaCheck, prelude::*};
 use pb_assets::AssetsPlugin;
 use pb_engine::EnginePlugin;
 use pb_render::RenderPlugin;
-use pb_store::StorePlugin;
+use pb_save::SavePlugin;
 use pb_ui::UiPlugin;
 use pb_util::CallbackPlugin;
 
@@ -29,7 +29,7 @@ fn main() {
         AssetsPlugin,
         EnginePlugin,
         RenderPlugin,
-        StorePlugin,
+        SavePlugin,
         UiPlugin,
     ));
 

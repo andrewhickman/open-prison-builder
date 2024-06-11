@@ -6,6 +6,6 @@ pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, sprite::init_pawn);
+        app.add_systems(PostUpdate, (sprite::init_root, sprite::init_pawn));
     }
 }

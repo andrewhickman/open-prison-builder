@@ -3,7 +3,7 @@ mod saves;
 use bevy::{app::AppExit, prelude::*};
 
 use pb_assets::Assets;
-use pb_engine::{pawn::PawnBundle, EngineState};
+use pb_engine::{pawn::PawnBundle, EngineState, RootBundle};
 use pb_util::try_res;
 
 use crate::{
@@ -64,7 +64,7 @@ pub fn toggle(
     mut next_state: ResMut<NextState<MenuState>>,
 ) {
     for ToggleMenuCommand in toggle_e.read() {
-        if *engine_state != EngineState::Running {
+        if !matches!(engine_state.get(), EngineState::Running(_)) {
             continue;
         }
 
@@ -88,13 +88,14 @@ pub fn update(mut button_q: Query<(&MenuButton, &mut Disabled)>, state: Res<Stat
             | MenuButton::OpenGithub => {
                 disabled.set_if_neq(Disabled::ENABLED);
             }
-            MenuButton::Save => {
-                if *state == EngineState::Running {
+            MenuButton::Save => match state.get() {
+                EngineState::Running(_) => {
                     disabled.set_if_neq(Disabled::ENABLED);
-                } else {
+                }
+                _ => {
                     disabled.set_if_neq(Disabled::DISABLED);
                 }
-            }
+            },
         }
     }
 }
@@ -177,10 +178,14 @@ fn new_prison_button(
     mut menu_state: ResMut<NextState<MenuState>>,
     mut engine_state: ResMut<NextState<EngineState>>,
 ) {
-    menu_state.set(MenuState::Hidden);
-    engine_state.set(EngineState::Running);
+    let parent = commands.spawn(RootBundle::default()).id();
 
-    commands.spawn(PawnBundle::new(Vec2::default()));
+    menu_state.set(MenuState::Hidden);
+    engine_state.set(EngineState::Running(parent));
+
+    commands
+        .spawn(PawnBundle::new(Vec2::default()))
+        .set_parent(parent);
 }
 
 fn settings_panel_button(

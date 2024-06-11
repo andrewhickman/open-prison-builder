@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
+mod autosave;
 mod input;
 mod layout;
 mod loading;
@@ -8,20 +9,21 @@ mod message;
 mod theme;
 mod widget;
 
-use bevy::input::InputSystem;
-use bevy::prelude::*;
-use bevy_mod_picking::prelude::EventListenerPlugin;
-use bevy_mod_picking::DefaultPickingPlugins;
+use bevy::{input::InputSystem, prelude::*};
+use bevy_mod_picking::prelude::*;
 use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
-use input::{CameraCommand, ToggleMenuCommand};
-use message::Message;
+
 use pb_assets::LoadState;
 use pb_engine::EngineState;
 use pb_util::set_state;
-use widget::form::{FormSubmit, FormUpdate};
 
-use crate::menu::MenuState;
-use crate::theme::Theme;
+use crate::{
+    input::{CameraCommand, ToggleMenuCommand},
+    menu::MenuState,
+    message::Message,
+    theme::Theme,
+    widget::form::{FormSubmit, FormUpdate},
+};
 
 pub struct UiPlugin;
 
@@ -65,6 +67,8 @@ impl Plugin for UiPlugin {
 
         app.add_event::<Message>();
         app.add_systems(Update, (message::spawn_messages, message::despawn_messages));
+
+        app.add_systems(PostUpdate, autosave::run.run_if(autosave::run_condition));
     }
 }
 

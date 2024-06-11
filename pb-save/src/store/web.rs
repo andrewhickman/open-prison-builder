@@ -6,7 +6,10 @@ use bevy::{prelude::*, reflect::TypeRegistryArc};
 use smol_str::SmolStr;
 use wasm_bindgen::{JsCast, JsValue};
 
-use crate::{deserialize, serialize, DynStore, SaveMetadata, Store};
+use crate::{
+    save::SaveMetadata,
+    store::{deserialize, serialize, DynStore, Store},
+};
 
 pub fn init(mut commands: Commands, registry: Res<AppTypeRegistry>) {
     commands.insert_resource(DynStore(Arc::new(

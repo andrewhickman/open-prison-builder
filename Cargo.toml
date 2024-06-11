@@ -8,7 +8,7 @@ exclude = ["dist", "build", "assets"]
 build = "build.rs"
 
 [workspace]
-members = ["pb-assets", "pb-engine", "pb-render", "pb-store", "pb-ui", "pb-util"]
+members = ["pb-assets", "pb-engine", "pb-render", "pb-save", "pb-ui", "pb-util"]
 
 [[bin]]
 name = "pb"
@@ -56,7 +56,7 @@ image = { version = "0.24", default-features = false, features = ["png"] }
 webbrowser = { version = "0.8", features = ["hardened"] }
 winit = { version = "0.29", default-features = false }
 pb-assets = { version = "0.1.0", path = "pb-assets" }
-pb-store = { version = "0.1.0", path = "pb-store" }
+pb-save = { version = "0.1.0", path = "pb-save" }
 pb-util = { version = "0.1.0", path = "pb-util" }
 
 [build-dependencies]

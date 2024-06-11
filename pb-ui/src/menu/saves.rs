@@ -1,14 +1,20 @@
 use anyhow::Result;
-use bevy::{ecs::system::CommandQueue, prelude::*};
-
+use bevy::{
+    ecs::system::{CommandQueue, SystemState},
+    prelude::*,
+};
 use bevy_mod_picking::prelude::*;
+use smol_str::SmolStr;
+
 use pb_assets::Assets;
-use pb_store::{save, DynStore, SaveMetadata, SaveQuery, Store};
+use pb_save::{
+    save::{load, save, LoadParam, SaveMetadata, SaveParam},
+    store::{DynStore, Store},
+};
 use pb_util::{
     callback::CallbackSender, run_oneshot_system, run_oneshot_system_with_input, spawn_io, try_res,
     AsDynError,
 };
-use smol_str::SmolStr;
 
 use crate::{
     layout::Layout,
@@ -92,43 +98,52 @@ fn refresh_save_panel(
 }
 
 fn load_button(
+    mut commands: Commands,
     event: Listener<Pointer<Click>>,
     save_q: Query<&SaveMetadata>,
     mut menu_state: ResMut<NextState<MenuState>>,
-    mut engine_state: ResMut<NextState<EngineState>>,
+    engine_state: Res<State<EngineState>>,
+    mut next_engine_state: ResMut<NextState<EngineState>>,
     callback: Res<CallbackSender>,
     store: Res<DynStore>,
 ) {
     let save_name = try_res!(save_q.get(event.target())).name.clone();
 
+    if let &EngineState::Running(root) = engine_state.get() {
+        commands.entity(root).despawn_recursive();
+    }
+
     menu_state.set(MenuState::Hidden);
-    engine_state.set(EngineState::Loading);
+    next_engine_state.set(EngineState::Loading);
 
     let store = store.clone();
     let callback = callback.clone();
     spawn_io(async move {
-        let res = store.load(save_name).await;
+        let res = store.load(save_name.clone()).await;
         callback.send_oneshot_system_with_input(on_load_complete, res);
     });
 
     fn on_load_complete(
-        In(res): In<Result<DynamicScene>>,
-        mut menu_state: ResMut<NextState<MenuState>>,
-        mut engine_state: ResMut<NextState<EngineState>>,
-        assets: Res<AssetServer>,
-        mut spawner: ResMut<SceneSpawner>,
-        mut message_e: EventWriter<Message>,
+        In(scene): In<Result<DynamicScene>>,
+        world: &mut World,
+        load_p: &mut SystemState<LoadParam>,
+        state: &mut SystemState<(
+            ResMut<NextState<MenuState>>,
+            ResMut<NextState<EngineState>>,
+            EventWriter<Message>,
+        )>,
     ) {
-        match res {
-            Ok(scene) => {
-                info!("Successfully loaded save");
-                engine_state.set(EngineState::Running);
+        let res = scene.and_then(|scene| load(world, load_p, scene));
+        let (mut menu_state, mut engine_state, mut message_e) = state.get_mut(world);
 
-                spawner.spawn_dynamic(assets.add(scene));
+        match res {
+            Ok(root) => {
+                engine_state.set(EngineState::Running(root));
+                info!("Successfully loaded save");
             }
             Err(error) => {
                 let error = error.as_dyn_error();
-                error!(error, "Failed to load saves");
+                error!(error, "Failed to load save");
 
                 menu_state.set(MenuState::Shown);
                 engine_state.set(EngineState::Disabled);
@@ -143,19 +158,28 @@ fn overwrite_button(
     world: &World,
     event: Listener<Pointer<Click>>,
     save_q: Query<&SaveMetadata>,
-    entity_q: SaveQuery,
+    save_p: SaveParam,
+    state: Res<State<EngineState>>,
     store: Res<DynStore>,
     callback: Res<CallbackSender>,
 ) {
     let save_name = try_res!(save_q.get(event.target())).name.clone();
-    save_impl(save_name, world, entity_q, store.clone(), callback.clone());
+    save_impl(
+        save_name,
+        world,
+        save_p,
+        state,
+        store.clone(),
+        callback.clone(),
+    );
 }
 
 fn save_button(
     world: &World,
     event: Listener<FormSubmit>,
     form_q: Query<&Form>,
-    entity_q: SaveQuery,
+    save_p: SaveParam,
+    state: Res<State<EngineState>>,
     store: Res<DynStore>,
     callback: Res<CallbackSender>,
 ) {
@@ -165,7 +189,8 @@ fn save_button(
     save_impl(
         SmolStr::from(&save_form.name),
         world,
-        entity_q,
+        save_p,
+        state,
         store.clone(),
         callback.clone(),
     );
@@ -174,7 +199,8 @@ fn save_button(
 fn save_impl(
     name: SmolStr,
     world: &World,
-    entity_q: SaveQuery,
+    save_p: SaveParam,
+    state: Res<State<EngineState>>,
     store: DynStore,
     callback: CallbackSender,
 ) {
@@ -182,7 +208,18 @@ fn save_impl(
         return;
     }
 
-    save(name.clone(), world, &entity_q, store.clone(), move |res| {
+    let &EngineState::Running(root) = state.get() else {
+        error!("Failed to save: not running");
+        return;
+    };
+
+    let scene = save(world, &save_p, root);
+
+    let store = store.clone();
+    let callback = callback.clone();
+    spawn_io(async move {
+        let res = store.save(SaveMetadata::new(name.clone()), scene).await;
+
         let mut queue = CommandQueue::default();
         queue.push(run_oneshot_system_with_input(on_save_complete, (name, res)));
         queue.push(run_oneshot_system(refresh_save_panel));

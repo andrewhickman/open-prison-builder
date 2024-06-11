@@ -5,7 +5,10 @@ use async_trait::async_trait;
 use bevy::{prelude::*, reflect::TypeRegistryArc, tasks::futures_lite::StreamExt};
 use smol_str::SmolStr;
 
-use crate::{deserialize, serialize, DynStore, SaveMetadata, Store};
+use crate::{
+    save::SaveMetadata,
+    store::{deserialize, serialize, DynStore, Store},
+};
 
 pub fn init(mut commands: Commands, registry: Res<AppTypeRegistry>) {
     commands.insert_resource(DynStore(Arc::new(

@@ -4,6 +4,7 @@ pub mod pawn;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use pawn::Pawn;
+use serde::{Deserialize, Serialize};
 
 pub const PIXELS_PER_METER: f32 = 128.;
 
@@ -12,14 +13,24 @@ pub enum EngineState {
     #[default]
     Disabled,
     Loading,
-    Running,
+    Running(Entity),
+}
+
+#[derive(Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
+#[reflect(Component, Serialize, Deserialize)]
+pub struct Root;
+
+#[derive(Default, Clone, Bundle)]
+pub struct RootBundle {
+    pub root: Root,
+    pub transform: TransformBundle,
 }
 
 pub struct EnginePlugin;
 
 impl Plugin for EnginePlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Pawn>();
+        app.register_type::<Root>().register_type::<Pawn>();
 
         app.init_state::<EngineState>();
 
