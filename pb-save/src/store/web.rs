@@ -8,6 +8,7 @@ use wasm_bindgen::{JsCast, JsValue};
 
 use crate::{
     save::SaveMetadata,
+    settings::Settings,
     store::{deserialize, serialize, DynStore, Store},
 };
 
@@ -29,7 +30,7 @@ impl WebStore {
 
 #[async_trait(?Send)]
 impl Store for WebStore {
-    async fn list(&self) -> Result<Vec<SaveMetadata>> {
+    async fn list_saves(&self) -> Result<Vec<SaveMetadata>> {
         let storage = self.storage()?;
         let length = storage.length().map_err(map_err)?;
 
@@ -57,7 +58,7 @@ impl Store for WebStore {
         Ok(results)
     }
 
-    async fn save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()> {
+    async fn store_save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()> {
         let storage = self.storage()?;
         let key = format!("saves/{}.json", metadata.name);
         let meta_key = format!("saves/{}.meta", metadata.name);
@@ -72,11 +73,11 @@ impl Store for WebStore {
             .set_item(&meta_key, &metadata_json)
             .map_err(map_err)
             .with_context(|| format!("failed to write to '{meta_key}'"))?;
-        info!("Saved to '{key}'");
+        info!("Stored save to '{key}'");
         Ok(())
     }
 
-    async fn load(&self, name: SmolStr) -> Result<DynamicScene> {
+    async fn load_save(&self, name: SmolStr) -> Result<DynamicScene> {
         let storage = self.storage()?;
         let key = format!("saves/{name}.json");
 
@@ -88,10 +89,42 @@ impl Store for WebStore {
         if let Some(json) = json {
             let save = deserialize(json.as_bytes(), &self.registry)
                 .with_context(|| format!("failed to parse JSON at '{}'", key))?;
-            info!("Loaded from '{key}'");
+            info!("Loaded save from '{key}'");
             Ok(save)
         } else {
-            bail!("entry not found at '{key}'")
+            bail!("save not found at '{key}'")
+        }
+    }
+
+    async fn store_settings(&self, settings: Settings) -> Result<()> {
+        let storage = self.storage()?;
+        let key = "settings.json";
+
+        let json = serde_json::to_string(&settings).context("failed to serialize JSON")?;
+        storage
+            .set_item(&key, &json)
+            .map_err(map_err)
+            .with_context(|| format!("failed to write to '{key}'"))?;
+        info!("Stored settings to '{key}'");
+        Ok(())
+    }
+
+    async fn load_settings(&self) -> Result<Settings> {
+        let storage = self.storage()?;
+        let key = "settings.json";
+
+        let json = storage
+            .get_item(&key)
+            .map_err(map_err)
+            .with_context(|| format!("failed to read from '{key}'"))?;
+        if let Some(json) = json {
+            let settings = serde_json::from_str(&json)
+                .with_context(|| format!("failed to parse JSON at '{}'", key))?;
+            info!("Loaded settings from '{key}'");
+            Ok(settings)
+        } else {
+            info!("Settings not found at '{key}'");
+            Ok(Settings::default())
         }
     }
 }

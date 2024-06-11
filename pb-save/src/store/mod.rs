@@ -18,38 +18,50 @@ use smol_str::SmolStr;
 #[cfg_attr(target_arch = "wasm32", path = "web.rs")]
 mod sys;
 
-use crate::save::SaveMetadata;
+use crate::{save::SaveMetadata, settings::Settings};
 
 pub use self::sys::init;
 
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 pub trait Store {
-    async fn list(&self) -> Result<Vec<SaveMetadata>>;
+    async fn list_saves(&self) -> Result<Vec<SaveMetadata>>;
 
-    async fn save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()>;
+    async fn store_save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()>;
 
-    async fn load(&self, name: SmolStr) -> Result<DynamicScene>;
+    async fn load_save(&self, name: SmolStr) -> Result<DynamicScene>;
+
+    async fn store_settings(&self, settings: Settings) -> Result<()>;
+
+    async fn load_settings(&self) -> Result<Settings>;
 }
 
 #[derive(Clone, Resource)]
 pub struct DynStore(Arc<dyn Store + Send + Sync>);
 
 impl Store for DynStore {
-    fn list<'a: 'b, 'b>(&'a self) -> BoxedFuture<'b, Result<Vec<SaveMetadata>>> {
-        self.0.list()
+    fn list_saves<'a: 'b, 'b>(&'a self) -> BoxedFuture<'b, Result<Vec<SaveMetadata>>> {
+        self.0.list_saves()
     }
 
-    fn save<'a: 'b, 'b>(
+    fn store_save<'a: 'b, 'b>(
         &'a self,
         metadata: SaveMetadata,
         scene: DynamicScene,
     ) -> BoxedFuture<'b, Result<()>> {
-        self.0.save(metadata, scene)
+        self.0.store_save(metadata, scene)
     }
 
-    fn load<'a: 'b, 'b>(&'a self, name: SmolStr) -> BoxedFuture<'b, Result<DynamicScene>> {
-        self.0.load(name)
+    fn load_save<'a: 'b, 'b>(&'a self, name: SmolStr) -> BoxedFuture<'b, Result<DynamicScene>> {
+        self.0.load_save(name)
+    }
+
+    fn store_settings<'a: 'b, 'b>(&'a self, settings: Settings) -> BoxedFuture<'b, Result<()>> {
+        self.0.store_settings(settings)
+    }
+
+    fn load_settings<'a: 'b, 'b>(&'a self) -> BoxedFuture<'b, Result<Settings>> {
+        self.0.load_settings()
     }
 }
 

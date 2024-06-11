@@ -45,7 +45,7 @@ pub fn run(
     let store = store.clone();
     let callback = callback.clone();
     spawn_io(async move {
-        let res = store.save(SaveMetadata::new("autosave"), scene).await;
+        let res = store.store_save(SaveMetadata::new("autosave"), scene).await;
         callback.send_oneshot_system_with_input(on_save_complete, res);
     });
 

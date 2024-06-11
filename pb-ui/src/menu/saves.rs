@@ -119,7 +119,7 @@ fn load_button(
     let store = store.clone();
     let callback = callback.clone();
     spawn_io(async move {
-        let res = store.load(save_name.clone()).await;
+        let res = store.load_save(save_name.clone()).await;
         callback.send_oneshot_system_with_input(on_load_complete, res);
     });
 
@@ -218,7 +218,9 @@ fn save_impl(
     let store = store.clone();
     let callback = callback.clone();
     spawn_io(async move {
-        let res = store.save(SaveMetadata::new(name.clone()), scene).await;
+        let res = store
+            .store_save(SaveMetadata::new(name.clone()), scene)
+            .await;
 
         let mut queue = CommandQueue::default();
         queue.push(run_oneshot_system_with_input(on_save_complete, (name, res)));
@@ -306,7 +308,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         container.spinner(theme, theme.large_icon_size_px);
 
         spawn_io(async move {
-            let res = store.list().await;
+            let res = store.list_saves().await;
             callback.send_oneshot_system_with_input(on_list_complete, (res, container_id, action));
         });
 

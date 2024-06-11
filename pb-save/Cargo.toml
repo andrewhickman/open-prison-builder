@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 async-trait = "0.1.80"
-bevy = { version = "0.13.2", default-features = false, features = ["bevy_scene"] }
+bevy = { version = "0.13.2", default-features = false, features = ["bevy_scene", "serialize"] }
 bevy_rapier2d = { version = "0.26.0", default-features = false, features = ["dim2"] }
 chrono = { version = "0.4.38", default-features = false, features = ["alloc", "serde", "now", "clock", "wasmbind"] }
 pb-engine = { version = "0.1.0", path = "../pb-engine" }

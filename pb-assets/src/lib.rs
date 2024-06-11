@@ -1,4 +1,7 @@
-use bevy::{app::AppExit, asset, asset::UntypedAssetId, prelude::*};
+use bevy::{
+    asset::{LoadState, UntypedAssetId},
+    prelude::*,
+};
 
 #[derive(Resource)]
 pub struct Assets {
@@ -13,25 +16,11 @@ pub struct Assets {
     pub error_icon: Handle<Image>,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
-pub enum LoadState {
-    #[default]
-    Pending,
-    Ready,
-}
-
 pub struct AssetsPlugin;
 
 impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<LoadState>();
-
         app.add_systems(Startup, load);
-
-        app.add_systems(
-            PreUpdate,
-            update_load_state.run_if(update_load_state_condition),
-        );
     }
 }
 
@@ -49,40 +38,18 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
     });
 }
 
-pub fn update_load_state(
-    mut state: ResMut<NextState<LoadState>>,
-    assets: Res<Assets>,
-    server: Res<AssetServer>,
-    mut exit_e: EventWriter<AppExit>,
-) {
-    let succeeded = assets
-        .asset_ids()
-        .filter_map(|id| server.get_load_state(id))
-        .all(|state| state == asset::LoadState::Loaded);
-    if succeeded {
-        info!("Loaded all assets successfully");
-        state.set(LoadState::Ready);
-    }
-
-    let failed = assets
-        .asset_ids()
-        .filter_map(|id| server.get_load_state(id))
-        .any(|state| state == asset::LoadState::Failed);
-    if failed {
-        error!("Failed to load assets, exiting application");
-        exit_e.send(AppExit);
-    }
-}
-
-pub fn update_load_state_condition(
-    load_state: Res<State<LoadState>>,
-    mut font_e: EventReader<AssetEvent<Font>>,
-    mut image_e: EventReader<AssetEvent<Image>>,
-) -> bool {
-    *load_state == LoadState::Pending && (font_e.read().count() > 0 || image_e.read().count() > 0)
-}
-
 impl Assets {
+    pub fn load_state(&self, server: &AssetServer) -> LoadState {
+        self.asset_ids()
+            .map(|id| server.get_load_state(id).unwrap_or(LoadState::NotLoaded))
+            .fold(LoadState::Loaded, |l, r| match (l, r) {
+                (LoadState::Failed, _) | (_, LoadState::Failed) => LoadState::Failed,
+                (LoadState::NotLoaded | LoadState::Loading, _)
+                | (_, LoadState::NotLoaded | LoadState::Loading) => LoadState::Loading,
+                (LoadState::Loaded, LoadState::Loaded) => LoadState::Loaded,
+            })
+    }
+
     fn asset_ids(&self) -> impl Iterator<Item = UntypedAssetId> {
         let Assets {
             font_graduate,

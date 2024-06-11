@@ -6,6 +6,7 @@ mod layout;
 mod loading;
 mod menu;
 mod message;
+mod startup;
 mod theme;
 mod widget;
 
@@ -13,7 +14,6 @@ use bevy::{input::InputSystem, prelude::*};
 use bevy_mod_picking::prelude::*;
 use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
-use pb_assets::LoadState;
 use pb_engine::EngineState;
 use pb_util::set_state;
 
@@ -21,6 +21,7 @@ use crate::{
     input::{CameraCommand, ToggleMenuCommand},
     menu::MenuState,
     message::Message,
+    startup::StartupState,
     theme::Theme,
     widget::form::{FormSubmit, FormUpdate},
 };
@@ -44,6 +45,11 @@ impl Plugin for UiPlugin {
             ),
         );
 
+        app.init_state::<StartupState>().add_systems(
+            PreUpdate,
+            startup::update.run_if(in_state(StartupState::Pending)),
+        );
+
         app.add_event::<ToggleMenuCommand>();
         app.init_resource::<CameraCommand>();
         app.add_systems(PreUpdate, input::update.after(InputSystem));
@@ -51,22 +57,22 @@ impl Plugin for UiPlugin {
         app.add_systems(Update, (widget::button::update, widget::spinner::update));
         app.add_systems(Update, widget::input::update.after(TextInputSystem));
 
-        app.init_state::<MenuState>();
-        app.add_systems(OnEnter(MenuState::Shown), (menu::show, menu::update));
-        app.add_systems(OnEnter(MenuState::Hidden), menu::hide);
-        app.add_systems(Update, menu::toggle);
+        app.init_state::<MenuState>()
+            .add_systems(OnEnter(MenuState::Shown), (menu::show, menu::update))
+            .add_systems(OnEnter(MenuState::Hidden), menu::hide)
+            .add_systems(Update, menu::toggle);
 
-        app.add_systems(OnEnter(LoadState::Pending), loading::enter);
-        app.add_systems(
-            OnExit(LoadState::Pending),
-            (loading::exit, set_state(MenuState::Shown)),
-        );
+        app.add_systems(OnEnter(StartupState::Pending), loading::enter)
+            .add_systems(
+                OnExit(StartupState::Pending),
+                (loading::exit, set_state(MenuState::Shown)),
+            );
 
-        app.add_systems(OnEnter(EngineState::Loading), loading::enter);
-        app.add_systems(OnExit(EngineState::Loading), loading::exit);
+        app.add_systems(OnEnter(EngineState::Loading), loading::enter)
+            .add_systems(OnExit(EngineState::Loading), loading::exit);
 
-        app.add_event::<Message>();
-        app.add_systems(Update, (message::spawn_messages, message::despawn_messages));
+        app.add_event::<Message>()
+            .add_systems(Update, (message::spawn_messages, message::despawn_messages));
 
         app.add_systems(PostUpdate, autosave::run.run_if(autosave::run_condition));
     }
