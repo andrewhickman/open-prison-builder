@@ -1,4 +1,4 @@
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy::{ecs::system::EntityCommands, prelude::*, ui::FocusPolicy};
 use bevy_mod_picking::picking_core::Pickable;
 
 pub mod button;
@@ -31,7 +31,14 @@ impl<'w, 's> UiBuilder<'w, 's> {
     }
 
     pub fn container(&mut self, style: Style) -> UiBuilder<'w, '_> {
-        self.spawn((NodeBundle { style, ..default() }, Pickable::IGNORE))
+        self.spawn((
+            NodeBundle {
+                style,
+                focus_policy: FocusPolicy::Pass,
+                ..default()
+            },
+            Pickable::IGNORE,
+        ))
     }
 
     pub fn insert(&mut self, bundle: impl Bundle) -> UiBuilder<'w, '_> {

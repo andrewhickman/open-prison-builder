@@ -4,7 +4,6 @@ use bevy::{app::AppExit, prelude::*};
 
 use pb_assets::Assets;
 use pb_engine::{pawn::PawnBundle, EngineState, RootBundle};
-use pb_util::try_res;
 
 use crate::{
     input::ToggleMenuCommand,
@@ -38,23 +37,12 @@ pub enum MenuPanel {
     Settings,
 }
 
-pub fn show(layout: Res<Layout>, mut style_q: Query<&mut Style>) {
-    let mut style = try_res!(style_q.get_mut(layout.menu));
-    style.display = Display::Flex;
+pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>, assets: Res<Assets>) {
+    UiBuilder::new(commands, layout.menu).menu(&theme, &assets);
 }
 
-pub fn hide(
-    mut commands: Commands,
-    layout: Res<Layout>,
-    mut style_q: Query<&mut Style>,
-    panel_q: Query<Entity, With<MenuPanel>>,
-) {
-    let mut style = try_res!(style_q.get_mut(layout.menu));
-    style.display = Display::None;
-
-    for id in &panel_q {
-        commands.entity(id).despawn_recursive();
-    }
+pub fn hide(mut commands: Commands, layout: Res<Layout>) {
+    commands.entity(layout.menu).despawn_descendants();
 }
 
 pub fn toggle(
@@ -101,8 +89,8 @@ pub fn update(mut button_q: Query<(&MenuButton, &mut Disabled)>, state: Res<Stat
 }
 
 impl<'w, 's> UiBuilder<'w, 's> {
-    pub fn menu(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
-        let mut container = self.container(Style {
+    pub fn menu_root(&mut self, theme: &Theme) -> UiBuilder<'w, '_> {
+        self.container(Style {
             position_type: PositionType::Absolute,
             margin: UiRect::all(Val::Auto),
             display: Display::Flex,
@@ -110,9 +98,11 @@ impl<'w, 's> UiBuilder<'w, 's> {
             align_items: AlignItems::Stretch,
             column_gap: theme.gutter,
             ..default()
-        });
+        })
+    }
 
-        let mut menu = container.panel(
+    pub fn menu(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
+        let mut menu = self.panel(
             theme,
             Style {
                 display: Display::Flex,
@@ -165,7 +155,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
             })
             .insert(MenuButton::OpenGithub);
 
-        container
+        self.reborrow()
     }
 
     fn settings_panel(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {

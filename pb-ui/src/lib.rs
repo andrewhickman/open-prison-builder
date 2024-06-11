@@ -58,7 +58,10 @@ impl Plugin for UiPlugin {
         app.add_systems(Update, widget::input::update.after(TextInputSystem));
 
         app.init_state::<MenuState>()
-            .add_systems(OnEnter(MenuState::Shown), (menu::show, menu::update))
+            .add_systems(
+                OnEnter(MenuState::Shown),
+                (menu::show, menu::update).chain(),
+            )
             .add_systems(OnEnter(MenuState::Hidden), menu::hide)
             .add_systems(Update, menu::toggle);
 
