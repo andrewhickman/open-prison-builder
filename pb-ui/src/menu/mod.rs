@@ -6,7 +6,6 @@ use pb_assets::Assets;
 use pb_engine::{pawn::PawnBundle, EngineState, RootBundle};
 
 use crate::{
-    input::ToggleMenuCommand,
     layout::Layout,
     theme::Theme,
     widget::{Disabled, UiBuilder},
@@ -43,26 +42,6 @@ pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>, assets: 
 
 pub fn hide(mut commands: Commands, layout: Res<Layout>) {
     commands.entity(layout.menu).despawn_descendants();
-}
-
-pub fn toggle(
-    mut toggle_e: EventReader<ToggleMenuCommand>,
-    state: Res<State<MenuState>>,
-    engine_state: Res<State<EngineState>>,
-    mut next_state: ResMut<NextState<MenuState>>,
-) {
-    for ToggleMenuCommand in toggle_e.read() {
-        if !matches!(engine_state.get(), EngineState::Running(_)) {
-            continue;
-        }
-
-        let toggled_state = match state.get() {
-            MenuState::Shown => MenuState::Hidden,
-            MenuState::Hidden => MenuState::Shown,
-        };
-
-        next_state.set(toggled_state);
-    }
 }
 
 pub fn update(mut button_q: Query<(&MenuButton, &mut Disabled)>, state: Res<State<EngineState>>) {

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{layout::Layout, theme::Theme, widget::UiBuilder};
 
-#[derive(Component)]
+#[derive(Default, Copy, Clone, Component)]
 pub struct Loading;
 
 pub fn enter(commands: Commands, layout: Res<Layout>, theme: Res<Theme>) {

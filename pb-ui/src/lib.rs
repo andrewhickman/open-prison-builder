@@ -1,6 +1,7 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
 mod autosave;
+mod camera;
 mod input;
 mod layout;
 mod loading;
@@ -16,13 +17,13 @@ use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
 use pb_engine::EngineState;
 use pb_util::set_state;
+use widget::panel::PanelStack;
 
 use crate::{
-    input::{CameraCommand, ToggleMenuCommand},
+    input::{CameraCommand, CancelCommand},
     menu::MenuState,
     message::Message,
     startup::StartupState,
-    theme::Theme,
     widget::form::{FormSubmit, FormUpdate},
 };
 
@@ -41,7 +42,7 @@ impl Plugin for UiPlugin {
             Startup,
             (
                 theme::init.after(pb_assets::load),
-                (init_camera, layout::init).after(theme::init),
+                (camera::init, layout::init).after(theme::init),
             ),
         );
 
@@ -50,20 +51,32 @@ impl Plugin for UiPlugin {
             startup::update.run_if(in_state(StartupState::Pending)),
         );
 
-        app.add_event::<ToggleMenuCommand>();
-        app.init_resource::<CameraCommand>();
-        app.add_systems(PreUpdate, input::update.after(InputSystem));
+        app.add_event::<CancelCommand>()
+            .init_resource::<CameraCommand>()
+            .add_systems(
+                PreUpdate,
+                input::update
+                    .after(InputSystem)
+                    .run_if(in_state(StartupState::Ready)),
+            )
+            .add_systems(
+                Update,
+                input::cancel_command.run_if(on_event::<CancelCommand>()),
+            );
 
         app.add_systems(Update, (widget::button::update, widget::spinner::update));
+
         app.add_systems(Update, widget::input::update.after(TextInputSystem));
+
+        app.init_resource::<PanelStack>()
+            .add_systems(Update, widget::panel::update);
 
         app.init_state::<MenuState>()
             .add_systems(
                 OnEnter(MenuState::Shown),
                 (menu::show, menu::update).chain(),
             )
-            .add_systems(OnEnter(MenuState::Hidden), menu::hide)
-            .add_systems(Update, menu::toggle);
+            .add_systems(OnEnter(MenuState::Hidden), menu::hide);
 
         app.add_systems(OnEnter(StartupState::Pending), loading::enter)
             .add_systems(
@@ -79,14 +92,4 @@ impl Plugin for UiPlugin {
 
         app.add_systems(PostUpdate, autosave::run.run_if(autosave::run_condition));
     }
-}
-
-fn init_camera(mut commands: Commands, theme: Res<Theme>) {
-    commands.spawn(Camera2dBundle {
-        camera: Camera {
-            clear_color: theme.background.into(),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
 }

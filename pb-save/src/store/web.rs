@@ -102,7 +102,7 @@ impl Store for WebStore {
 
         let json = serde_json::to_string(&settings).context("failed to serialize JSON")?;
         storage
-            .set_item(&key, &json)
+            .set_item(key, &json)
             .map_err(map_err)
             .with_context(|| format!("failed to write to '{key}'"))?;
         info!("Stored settings to '{key}'");
@@ -114,7 +114,7 @@ impl Store for WebStore {
         let key = "settings.json";
 
         let json = storage
-            .get_item(&key)
+            .get_item(key)
             .map_err(map_err)
             .with_context(|| format!("failed to read from '{key}'"))?;
         if let Some(json) = json {

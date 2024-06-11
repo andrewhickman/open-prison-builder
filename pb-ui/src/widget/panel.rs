@@ -4,9 +4,48 @@ use pb_assets::Assets;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
+#[derive(Default, Resource)]
+pub struct PanelStack {
+    entities: Vec<Entity>,
+}
+
+#[derive(Default, Copy, Clone, Component)]
+pub struct Panel;
+
+pub fn update(
+    mut stack: ResMut<PanelStack>,
+    added: Query<Entity, Added<Panel>>,
+    mut removed: RemovedComponents<Panel>,
+) {
+    for entity in &added {
+        stack.entities.push(entity);
+    }
+
+    for entity in removed.read() {
+        if let Some(pos) = stack.entities.iter().position(|&e| e == entity) {
+            stack.entities.remove(pos);
+        }
+    }
+}
+
+impl PanelStack {
+    pub fn pop(&mut self) -> Option<Entity> {
+        self.entities.pop()
+    }
+
+    pub fn pop_child(&mut self) -> Option<Entity> {
+        if self.entities.len() > 1 {
+            self.entities.pop()
+        } else {
+            None
+        }
+    }
+}
+
 impl<'w, 's> UiBuilder<'w, 's> {
     pub fn panel(&mut self, theme: &Theme, style: Style) -> UiBuilder<'w, '_> {
         self.spawn((
+            Panel,
             NodeBundle {
                 style: Style {
                     padding: UiRect::all(theme.gutter),
