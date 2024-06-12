@@ -11,16 +11,19 @@ mod startup;
 mod theme;
 mod widget;
 
-use bevy::{input::InputSystem, prelude::*};
+use bevy::{
+    input::{keyboard::KeyboardInput, InputSystem},
+    prelude::*,
+};
 use bevy_mod_picking::prelude::*;
 use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
+use camera::CameraInput;
 use pb_engine::EngineState;
 use pb_util::set_state;
 use widget::panel::PanelStack;
 
 use crate::{
-    input::{CameraCommand, CancelCommand},
     menu::MenuState,
     message::Message,
     startup::StartupState,
@@ -51,18 +54,14 @@ impl Plugin for UiPlugin {
             startup::update.run_if(in_state(StartupState::Pending)),
         );
 
-        app.add_event::<CancelCommand>()
-            .init_resource::<CameraCommand>()
+        app.init_resource::<CameraInput>()
             .add_systems(
                 PreUpdate,
-                input::update
+                input::read
                     .after(InputSystem)
-                    .run_if(in_state(StartupState::Ready)),
+                    .run_if(in_state(StartupState::Ready).and_then(on_event::<KeyboardInput>())),
             )
-            .add_systems(
-                Update,
-                input::cancel_command.run_if(on_event::<CancelCommand>()),
-            );
+            .add_systems(Update, camera::update);
 
         app.add_systems(Update, (widget::button::update, widget::spinner::update));
 

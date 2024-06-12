@@ -6,8 +6,6 @@ use bevy_rapier2d::prelude::*;
 use pawn::Pawn;
 use serde::{Deserialize, Serialize};
 
-pub const PIXELS_PER_METER: f32 = 128.;
-
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum EngineState {
     #[default]
@@ -38,9 +36,7 @@ impl Plugin for EnginePlugin {
             gravity: Vec2::ZERO,
             ..RapierConfiguration::new(1.)
         });
-        app.add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
-            PIXELS_PER_METER,
-        ));
+        app.add_plugins(RapierPhysicsPlugin::<NoUserData>::default());
 
         app.add_systems(PostUpdate, collider::init_pawn);
 

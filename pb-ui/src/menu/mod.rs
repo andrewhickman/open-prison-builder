@@ -81,7 +81,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
     }
 
     pub fn menu(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
-        let mut menu = self.panel(
+        let mut menu = self.empty_panel(
             theme,
             Style {
                 display: Display::Flex,
@@ -138,7 +138,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
     }
 
     fn settings_panel(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
-        self.titled_panel(theme, assets, "Settings")
+        self.panel(theme, assets, "Settings")
     }
 }
 

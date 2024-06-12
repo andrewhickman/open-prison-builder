@@ -2,8 +2,6 @@ use bevy::prelude::*;
 use bevy_rapier2d::dynamics::Velocity;
 use serde::{Deserialize, Serialize};
 
-use crate::PIXELS_PER_METER;
-
 pub const RADIUS: f32 = 0.16;
 
 #[derive(Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
@@ -22,7 +20,7 @@ impl PawnBundle {
         Self {
             pawn: default(),
             velocity: Velocity::default(),
-            transform: Transform::from_translation(position.extend(0.) * PIXELS_PER_METER).into(),
+            transform: Transform::from_translation(position.extend(0.)).into(),
         }
     }
 }

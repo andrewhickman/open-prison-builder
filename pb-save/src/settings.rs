@@ -21,19 +21,35 @@ pub fn init(store: Res<DynStore>, callback: Res<CallbackSender>) {
     });
 }
 
-#[derive(Serialize, Default, Deserialize, Resource)]
+#[derive(Serialize, Deserialize, Resource)]
 pub struct Settings {
-    binds: HashMap<KeyCode, Action>,
+    pub binds: HashMap<KeyCode, Action>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Action {
-    ToggleMenu,
-    CameraLeft,
-    CameraUp,
-    CameraRight,
-    CameraDown,
+    Cancel,
+    PanLeft,
+    PanUp,
+    PanRight,
+    PanDown,
     ZoomIn,
     ZoomOut,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            binds: HashMap::from_iter([
+                (KeyCode::Escape, Action::Cancel),
+                (KeyCode::KeyW, Action::PanUp),
+                (KeyCode::KeyA, Action::PanLeft),
+                (KeyCode::KeyS, Action::PanDown),
+                (KeyCode::KeyD, Action::PanRight),
+                (KeyCode::KeyQ, Action::ZoomIn),
+                (KeyCode::KeyE, Action::ZoomOut),
+            ]),
+        }
+    }
 }

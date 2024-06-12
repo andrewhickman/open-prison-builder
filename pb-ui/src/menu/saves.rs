@@ -254,7 +254,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         store: DynStore,
         callback: CallbackSender,
     ) -> UiBuilder<'w, '_> {
-        let mut panel = self.titled_panel(theme, assets, "Save prison");
+        let mut panel = self.panel(theme, assets, "Save prison");
         panel.saves_table(theme, store, callback, SaveAction::Save);
 
         let mut save_form = panel.form(
@@ -285,7 +285,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         store: DynStore,
         callback: CallbackSender,
     ) -> UiBuilder<'w, '_> {
-        let mut panel = self.titled_panel(theme, assets, "Load prison");
+        let mut panel = self.panel(theme, assets, "Load prison");
         panel.saves_table(theme, store, callback, SaveAction::Load);
         panel
     }

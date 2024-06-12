@@ -32,20 +32,11 @@ impl PanelStack {
     pub fn pop(&mut self) -> Option<Entity> {
         self.entities.pop()
     }
-
-    pub fn pop_child(&mut self) -> Option<Entity> {
-        if self.entities.len() > 1 {
-            self.entities.pop()
-        } else {
-            None
-        }
-    }
 }
 
 impl<'w, 's> UiBuilder<'w, 's> {
-    pub fn panel(&mut self, theme: &Theme, style: Style) -> UiBuilder<'w, '_> {
+    pub fn empty_panel(&mut self, theme: &Theme, style: Style) -> UiBuilder<'w, '_> {
         self.spawn((
-            Panel,
             NodeBundle {
                 style: Style {
                     padding: UiRect::all(theme.gutter),
@@ -59,13 +50,13 @@ impl<'w, 's> UiBuilder<'w, 's> {
         ))
     }
 
-    pub fn titled_panel(
+    pub fn panel(
         &mut self,
         theme: &Theme,
         assets: &Assets,
         title: impl Into<String>,
     ) -> UiBuilder<'w, '_> {
-        let mut panel = self.panel(
+        let mut panel = self.empty_panel(
             theme,
             Style {
                 display: Display::Flex,
@@ -74,6 +65,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
                 ..default()
             },
         );
+        panel.insert(Panel);
         let panel_id = panel.id();
 
         let mut title_row = panel.container(Style {

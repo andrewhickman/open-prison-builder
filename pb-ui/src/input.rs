@@ -3,66 +3,66 @@ use bevy::{
     prelude::*,
 };
 use pb_engine::EngineState;
+use pb_save::settings::{Action, Settings};
+use pb_util::run_oneshot_system;
 
-use crate::{menu::MenuState, widget::panel::PanelStack};
+use crate::{camera::CameraInput, menu::MenuState, widget::panel::PanelStack};
 
-#[derive(Event, Debug, Clone)]
-pub struct CancelCommand;
-
-#[derive(Resource, Default, Debug, Clone, PartialEq, Eq)]
-pub struct CameraCommand {
-    move_up: bool,
-    move_left: bool,
-    move_right: bool,
-    move_down: bool,
-    zoom_in: bool,
-    zoom_out: bool,
-}
-
-pub fn update(
+pub fn read(
+    mut commands: Commands,
+    settings: Res<Settings>,
     mut keyboard_e: EventReader<KeyboardInput>,
-    mut toggle_menu_cmd: EventWriter<CancelCommand>,
-    _camera_cmd: ResMut<CameraCommand>,
+    keyboard_state: Res<ButtonInput<KeyCode>>,
+    mut camera: ResMut<CameraInput>,
 ) {
     for event in keyboard_e.read() {
-        match event.key_code {
-            KeyCode::Escape if event.state == ButtonState::Released => {
-                toggle_menu_cmd.send(CancelCommand);
+        if let Some(action) = settings.binds.get(&event.key_code) {
+            match event.state {
+                ButtonState::Pressed if !keyboard_state.just_pressed(event.key_code) => continue,
+                ButtonState::Released if !keyboard_state.just_released(event.key_code) => continue,
+                _ => (),
             }
-            _ => (),
+
+            match action {
+                Action::Cancel if event.state == ButtonState::Released => {
+                    commands.add(run_oneshot_system(cancel_command))
+                }
+                Action::PanLeft => camera.pan_left(event.state),
+                Action::PanUp => camera.pan_up(event.state),
+                Action::PanRight => camera.pan_right(event.state),
+                Action::PanDown => camera.pan_down(event.state),
+                Action::ZoomIn => camera.zoom_in(event.state),
+                Action::ZoomOut => camera.zoom_out(event.state),
+                _ => (),
+            }
         }
     }
 }
 
 pub fn cancel_command(
     mut commands: Commands,
-    mut cancel_e: EventReader<CancelCommand>,
     mut panels: ResMut<PanelStack>,
     engine_state: Res<State<EngineState>>,
     menu_state: Res<State<MenuState>>,
     mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {
-    for CancelCommand in cancel_e.read() {
-        if matches!(engine_state.get(), EngineState::Loading) {
-            continue;
-        }
+    if matches!(engine_state.get(), EngineState::Loading) {
+        return;
+    }
 
-        let top_panel = match menu_state.get() {
-            MenuState::Shown => panels.pop_child(),
-            MenuState::Hidden => panels.pop(),
+    if let Some(entity) = panels.pop() {
+        if let Some(entity) = commands.get_entity(entity) {
+            entity.despawn_recursive();
+            return;
+        }
+    }
+
+    if matches!(engine_state.get(), EngineState::Running(_)) {
+        let toggled_menu = match menu_state.get() {
+            MenuState::Shown => MenuState::Hidden,
+            MenuState::Hidden => MenuState::Shown,
         };
 
-        if let Some(entity) = top_panel {
-            if let Some(entity) = commands.get_entity(entity) {
-                entity.despawn_recursive();
-            }
-        } else {
-            let toggled_menu = match menu_state.get() {
-                MenuState::Shown => MenuState::Hidden,
-                MenuState::Hidden => MenuState::Shown,
-            };
-
-            next_menu_state.set(toggled_menu);
-        }
+        next_menu_state.set(toggled_menu);
     }
 }
