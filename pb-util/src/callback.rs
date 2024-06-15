@@ -1,7 +1,10 @@
 use std::{any::TypeId, future::Future, marker::PhantomData};
 
 use bevy::{
-    ecs::system::{BoxedSystem, Command, CommandQueue},
+    ecs::{
+        system::BoxedSystem,
+        world::{Command, CommandQueue},
+    },
     prelude::*,
     tasks::IoTaskPool,
     utils::HashMap,
@@ -122,7 +125,6 @@ where
         };
 
         system.run(self.input, world);
-        system.apply_deferred(world);
 
         world
             .get_resource_mut::<SystemMap<I>>()

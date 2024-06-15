@@ -3,7 +3,8 @@ use bevy::{input::ButtonState, prelude::*, render::camera::ScalingMode};
 use crate::theme::Theme;
 
 /// Camera speed, in metres per second
-pub const CAMERA_MOVE_SPEED: f32 = 1.;
+pub const CAMERA_PAN_SPEED: f32 = 1.;
+pub const CAMERA_ZOOM_SPEED: f32 = 1.;
 pub const CAMERA_PIXELS_PER_METER: f32 = 64.;
 
 #[derive(Resource, Default, Debug, Clone, PartialEq)]
@@ -74,8 +75,9 @@ impl CameraInput {
         delta: f32,
     ) {
         transform.translation += self.pan.extend(0.)
-            * (CAMERA_MOVE_SPEED * CAMERA_PIXELS_PER_METER * projection.scale * delta);
-        projection.scale = (projection.scale + self.zoom * delta).clamp(0.1, 5.);
+            * (CAMERA_PAN_SPEED * CAMERA_PIXELS_PER_METER * projection.scale * delta);
+        projection.scale =
+            (projection.scale + self.zoom * CAMERA_ZOOM_SPEED * delta).clamp(0.1, 5.);
     }
 }
 

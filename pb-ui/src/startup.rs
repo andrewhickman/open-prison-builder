@@ -1,7 +1,10 @@
+use std::num::NonZeroU8;
+
 use bevy::{app::AppExit, asset::LoadState, prelude::*};
 
 use pb_assets::Assets;
 use pb_save::settings::Settings;
+use pb_util::AsDynError;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum StartupState {
@@ -20,9 +23,12 @@ pub fn update(
     match assets.load_state(&asset_server) {
         LoadState::NotLoaded | LoadState::Loading => return,
         LoadState::Loaded => (),
-        LoadState::Failed => {
-            error!("Failed to load all assets, exiting");
-            exit_e.send(AppExit);
+        LoadState::Failed(error) => {
+            error!(
+                error = error.as_dyn_error(),
+                "Failed to load all assets, exiting"
+            );
+            exit_e.send(AppExit::Error(NonZeroU8::new(1).unwrap()));
         }
     }
 

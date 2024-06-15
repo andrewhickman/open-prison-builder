@@ -1,6 +1,6 @@
 use anyhow::Result;
 use bevy::{
-    ecs::system::{CommandQueue, SystemState},
+    ecs::{system::SystemState, world::CommandQueue},
     prelude::*,
 };
 use bevy_mod_picking::prelude::*;

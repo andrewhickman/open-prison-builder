@@ -22,14 +22,14 @@ pub(crate) struct Theme {
 }
 
 pub fn init(mut commands: Commands, assets: Res<Assets>) {
-    let text = Color::hex("dedcdf").unwrap();
+    let text = Srgba::hex("dedcdf").unwrap().into();
 
     commands.insert_resource(Theme {
-        background: Color::hex("192a28").unwrap(),
-        text: Color::hex("dedcdf").unwrap(),
-        panel: Color::hex("5f4754").unwrap(),
-        accent: Color::hex("b45627").unwrap(),
-        error: Color::hex("f2200d").unwrap(),
+        background: Srgba::hex("192a28").unwrap().into(),
+        text: Srgba::hex("dedcdf").unwrap().into(),
+        panel: Srgba::hex("5f4754").unwrap().into(),
+        accent: Srgba::hex("b45627").unwrap().into(),
+        error: Srgba::hex("f2200d").unwrap().into(),
         gutter: Val::Px(8.),
         outline: Outline {
             color: text,

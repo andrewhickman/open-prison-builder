@@ -20,7 +20,7 @@ pub struct AssetsPlugin;
 
 impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, load);
+        app.add_systems(PreStartup, load);
     }
 }
 
@@ -43,7 +43,9 @@ impl Assets {
         self.asset_ids()
             .map(|id| server.get_load_state(id).unwrap_or(LoadState::NotLoaded))
             .fold(LoadState::Loaded, |l, r| match (l, r) {
-                (LoadState::Failed, _) | (_, LoadState::Failed) => LoadState::Failed,
+                (LoadState::Failed(error), _) | (_, LoadState::Failed(error)) => {
+                    LoadState::Failed(error)
+                }
                 (LoadState::NotLoaded | LoadState::Loading, _)
                 | (_, LoadState::NotLoaded | LoadState::Loading) => LoadState::Loading,
                 (LoadState::Loaded, LoadState::Loaded) => LoadState::Loaded,

@@ -1,15 +1,14 @@
-use std::sync::Arc;
+use std::{future::Future, pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use bevy::{
     ecs::system::Resource,
-    reflect::TypeRegistryArc,
+    reflect::{TypeRegistry, TypeRegistryArc},
     scene::{
         serde::{SceneDeserializer, SceneSerializer},
         DynamicScene,
     },
-    utils::BoxedFuture,
 };
 use serde::de::DeserializeSeed;
 use smol_str::SmolStr;
@@ -39,6 +38,11 @@ pub trait Store {
 #[derive(Clone, Resource)]
 pub struct DynStore(Arc<dyn Store + Send + Sync>);
 
+#[cfg(not(target_arch = "wasm32"))]
+type BoxedFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+#[cfg(target_arch = "wasm32")]
+type BoxedFuture<'a, T> = Pin<Box<dyn Future<Output = T> + 'a>>;
+
 impl Store for DynStore {
     fn list_saves<'a: 'b, 'b>(&'a self) -> BoxedFuture<'b, Result<Vec<SaveMetadata>>> {
         self.0.list_saves()
@@ -65,7 +69,7 @@ impl Store for DynStore {
     }
 }
 
-fn serialize(scene: DynamicScene, registry: &TypeRegistryArc) -> Result<String, serde_json::Error> {
+fn serialize(scene: DynamicScene, registry: &TypeRegistry) -> Result<String, serde_json::Error> {
     serde_json::to_string(&SceneSerializer::new(&scene, registry))
 }
 

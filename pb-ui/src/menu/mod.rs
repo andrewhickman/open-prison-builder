@@ -177,7 +177,7 @@ fn settings_panel_button(
 }
 
 fn exit_button(mut exit_e: EventWriter<AppExit>) {
-    exit_e.send(AppExit);
+    exit_e.send(AppExit::Success);
 }
 
 fn open_url(url: &str) {

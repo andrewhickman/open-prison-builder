@@ -63,7 +63,7 @@ impl Store for WebStore {
         let key = format!("saves/{}.json", metadata.name);
         let meta_key = format!("saves/{}.meta", metadata.name);
 
-        let json = serialize(scene, &self.registry).context("failed to serialize JSON")?;
+        let json = serialize(scene, &self.registry.read()).context("failed to serialize JSON")?;
         let metadata_json = serde_json::to_string(&metadata).context("failed to serialize JSON")?;
         storage
             .set_item(&key, &json)

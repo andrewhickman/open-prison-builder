@@ -91,5 +91,5 @@ fn spoke_color(theme: &Theme, progress: f32, index: u32) -> BackgroundColor {
     let step = (index as f32 + 0.5) / SPOKE_COUNT as f32;
     let fade = (progress - step).rem_euclid(1.0);
 
-    BackgroundColor(theme.text.with_a(theme.text.a() * fade))
+    BackgroundColor(theme.text.with_alpha(theme.text.alpha() * fade))
 }

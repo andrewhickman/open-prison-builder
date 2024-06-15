@@ -109,7 +109,6 @@ pub fn update(
             &Disabled,
             &ButtonStyle,
             &mut UiImage,
-            &mut BackgroundColor,
             &mut Pickable,
         ),
         (
@@ -118,12 +117,12 @@ pub fn update(
         ),
     >,
 ) {
-    for (interaction, disabled, style, mut image, mut color, mut pickable) in &mut changed {
+    for (interaction, disabled, style, mut image, mut pickable) in &mut changed {
         if disabled.0 {
             pickable.set_if_neq(Pickable::IGNORE);
-            color.0 = theme.text.with_a(0.30);
             image.flip_x = false;
             image.flip_y = false;
+            image.color = theme.text.with_alpha(0.30);
             continue;
         } else {
             pickable.set_if_neq(Pickable::default());
@@ -134,28 +133,28 @@ pub fn update(
                 PickingInteraction::None => {
                     image.flip_x = false;
                     image.flip_y = false;
-                    color.0 = theme.text;
+                    image.color = theme.text;
                 }
                 PickingInteraction::Hovered => {
                     image.flip_x = false;
                     image.flip_y = false;
-                    color.0 = theme.text.with_a(0.88);
+                    image.color = theme.text.with_alpha(0.88);
                 }
                 PickingInteraction::Pressed => {
                     image.flip_x = true;
                     image.flip_y = true;
-                    color.0 = theme.text.with_a(0.88);
+                    image.color = theme.text.with_alpha(0.88);
                 }
             },
             ButtonStyle::Icon => match interaction {
                 PickingInteraction::None => {
-                    color.0 = theme.text;
+                    image.color = theme.text;
                 }
                 PickingInteraction::Hovered => {
-                    color.0 = theme.text.with_a(0.80);
+                    image.color = theme.text.with_alpha(0.80);
                 }
                 PickingInteraction::Pressed => {
-                    color.0 = theme.text.with_a(0.60);
+                    image.color = theme.text.with_alpha(0.60);
                 }
             },
         }

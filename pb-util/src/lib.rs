@@ -1,9 +1,9 @@
 pub mod callback;
 
 pub use anyhow;
-use bevy::ecs::{
-    schedule::{NextState, States},
-    system::{BoxedSystem, IntoSystem, ResMut},
+use bevy::{
+    ecs::system::{BoxedSystem, IntoSystem, ResMut},
+    state::state::{FreelyMutableState, NextState},
 };
 pub use tracing;
 
@@ -15,7 +15,7 @@ use std::fmt::Write;
 
 pub fn set_state<S>(state: S) -> BoxedSystem
 where
-    S: States + Clone,
+    S: FreelyMutableState + Clone,
 {
     Box::new(IntoSystem::into_system(
         move |mut next_state: ResMut<NextState<S>>| next_state.set(state.clone()),

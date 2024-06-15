@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
-bevy = { version = "0.13.2", default-features = false, features = ["bevy_render", "bevy_ui"] }
-bevy_mod_picking = { version = "0.18.2", default-features = false, features = ["selection", "backend_bevy_ui"] }
-bevy_simple_text_input = { git = "https://github.com/andrewhickman/bevy_simple_text_input.git" }
+bevy = { version = "0.14.0-rc.2", default-features = false, features = ["bevy_render", "bevy_ui", "bevy_state"] }
+bevy_mod_picking = { version = "0.20.0-rc.0", default-features = false, features = ["selection", "backend_bevy_ui"] }
+bevy_simple_text_input = { git = "https://github.com/rparrett/bevy_simple_text_input.git", branch = "bevy-0.14" }
 pb-assets = { version = "0.1.0", path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }
 pb-render = { path = "../pb-render" }

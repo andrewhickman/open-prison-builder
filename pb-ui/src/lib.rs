@@ -42,9 +42,9 @@ impl Plugin for UiPlugin {
         ));
 
         app.add_systems(
-            Startup,
+            PreStartup,
             (
-                theme::init.after(pb_assets::load),
+                (theme::init, layout::init).chain().after(pb_assets::load),
                 (camera::init, layout::init).after(theme::init),
             ),
         );

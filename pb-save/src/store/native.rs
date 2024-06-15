@@ -84,7 +84,7 @@ impl Store for FsStore {
 
     async fn store_save(&self, metadata: SaveMetadata, scene: DynamicScene) -> Result<()> {
         let path = self.saves.join(format!("{}.json", metadata.name));
-        let json = serialize(scene, &self.registry).context("failed to serialize JSON")?;
+        let json = serialize(scene, &self.registry.read()).context("failed to serialize JSON")?;
 
         write_create_dir(&path, &json).await?;
         info!("Stored save at '{}'", path.display());

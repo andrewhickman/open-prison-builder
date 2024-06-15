@@ -9,6 +9,6 @@ edition = "2021"
 dev = ["bevy_rapier2d/debug-render-2d"]
 
 [dependencies]
-bevy = { version = "0.13.2", default-features = false, features = ["bevy_render"] }
-bevy_rapier2d = { version = "0.26.0", default-features = false, features = ["dim2"] }
+bevy = { version = "0.14.0-rc.2", default-features = false, features = ["bevy_render", "bevy_state"] }
+bevy_rapier2d = { git = "https://github.com/dimforge/bevy_rapier.git", default-features = false, features = ["dim2"] }
 serde = { version = "1.0.203", features = ["derive"] }
