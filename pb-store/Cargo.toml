@@ -1,5 +1,5 @@
 [package]
-name = "pb-save"
+name = "pb-store"
 version = "0.1.0"
 authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 publish = false
@@ -7,11 +7,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
-async-trait = "0.1.80"
 bevy = { version = "0.14.0-rc.2", default-features = false, features = ["bevy_scene", "serialize"] }
 bevy_rapier2d = { git = "https://github.com/dimforge/bevy_rapier.git", default-features = false, features = ["dim2"] }
 chrono = { version = "0.4.38", default-features = false, features = ["alloc", "serde", "now", "clock", "wasmbind"] }
-pb-engine = { version = "0.1.0", path = "../pb-engine" }
 pb-util = { version = "0.1.0", path = "../pb-util" }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"

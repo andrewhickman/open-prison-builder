@@ -3,11 +3,11 @@ use std::time::Duration;
 use anyhow::Result;
 
 use bevy::prelude::*;
-use pb_engine::EngineState;
-use pb_save::{
-    save::{save, SaveMetadata, SaveParam},
-    store::{DynStore, Store},
+use pb_engine::{
+    save::{save, SaveParam},
+    EngineState,
 };
+use pb_store::Store;
 use pb_util::{callback::CallbackSender, spawn_io, AsDynError};
 
 use crate::message::Message;
@@ -32,7 +32,7 @@ pub fn run(
     world: &World,
     save_p: SaveParam,
     state: Res<State<EngineState>>,
-    store: Res<DynStore>,
+    store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
     let &EngineState::Running(root) = state.get() else {
@@ -45,7 +45,7 @@ pub fn run(
     let store = store.clone();
     let callback = callback.clone();
     spawn_io(async move {
-        let res = store.store_save(SaveMetadata::new("autosave"), scene).await;
+        let res = store.set("saves/autosave", scene).await;
         callback.send_oneshot_system_with_input(on_save_complete, res);
     });
 

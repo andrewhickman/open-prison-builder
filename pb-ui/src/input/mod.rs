@@ -1,12 +1,17 @@
+pub mod settings;
+
+pub use self::settings::Settings;
+
 use bevy::{
     input::{keyboard::KeyboardInput, ButtonState},
     prelude::*,
 };
 use pb_engine::EngineState;
-use pb_save::settings::{Action, Settings};
 use pb_util::run_oneshot_system;
 
-use crate::{camera::CameraInput, menu::MenuState, widget::panel::PanelStack};
+use crate::{
+    camera::CameraInput, input::settings::Action, menu::MenuState, widget::panel::PanelStack,
+};
 
 pub fn read(
     mut commands: Commands,

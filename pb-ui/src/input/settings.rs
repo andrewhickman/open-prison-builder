@@ -1,16 +1,21 @@
 use bevy::{prelude::*, utils::HashMap};
+use pb_store::Store;
 use pb_util::{callback::CallbackSender, spawn_io, AsDynError};
 use serde::{Deserialize, Serialize};
 
-use crate::store::{DynStore, Store};
+pub const KEY: &str = "settings";
 
-pub fn init(store: Res<DynStore>, callback: Res<CallbackSender>) {
+pub fn init(store: Res<Store>, callback: Res<CallbackSender>) {
     let store = store.clone();
     let callback = callback.clone();
     spawn_io(async move {
-        let res = store.load_settings().await;
+        let res = store.try_get::<Settings>(KEY).await;
         let settings = match res {
-            Ok(settings) => settings,
+            Ok(Some(settings)) => settings,
+            Ok(None) => {
+                info!("No settings file found, using default settings");
+                Settings::default()
+            }
             Err(error) => {
                 error!(error = error.as_dyn_error(), "Failed to load settings");
                 Settings::default()
@@ -21,7 +26,7 @@ pub fn init(store: Res<DynStore>, callback: Res<CallbackSender>) {
     });
 }
 
-#[derive(Serialize, Deserialize, Resource)]
+#[derive(Serialize, Deserialize, Resource, TypePath)]
 pub struct Settings {
     pub binds: HashMap<KeyCode, Action>,
 }

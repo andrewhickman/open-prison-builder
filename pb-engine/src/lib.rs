@@ -1,5 +1,6 @@
 pub mod collider;
 pub mod pawn;
+pub mod save;
 
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;

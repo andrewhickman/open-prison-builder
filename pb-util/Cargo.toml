@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = { version = "1.0.86" }
-bevy = { version = "0.14.0-rc.2", default-features = false }
+bevy = { version = "0.14.0-rc.2", default-features = false, features = ["bevy_state", "bevy_render"] }
 crossbeam-channel = "0.5.13"
 tracing = "0.1.40"

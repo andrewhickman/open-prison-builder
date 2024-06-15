@@ -3,8 +3,9 @@ use std::num::NonZeroU8;
 use bevy::{app::AppExit, asset::LoadState, prelude::*};
 
 use pb_assets::Assets;
-use pb_save::settings::Settings;
 use pb_util::AsDynError;
+
+use crate::input::Settings;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum StartupState {

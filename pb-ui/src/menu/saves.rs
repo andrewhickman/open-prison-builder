@@ -4,13 +4,11 @@ use bevy::{
     prelude::*,
 };
 use bevy_mod_picking::prelude::*;
+use pb_engine::save::{load, save, LoadParam, LoadSeed, Save, SaveParam};
+use pb_store::{Metadata, Store};
 use smol_str::SmolStr;
 
 use pb_assets::Assets;
-use pb_save::{
-    save::{load, save, LoadParam, SaveMetadata, SaveParam},
-    store::{DynStore, Store},
-};
 use pb_util::{
     callback::CallbackSender, run_oneshot_system, run_oneshot_system_with_input, spawn_io, try_res,
     AsDynError,
@@ -34,6 +32,9 @@ enum SaveAction {
     Load,
 }
 
+#[derive(Component)]
+struct SaveItem(Metadata);
+
 #[derive(Debug, Clone, Reflect)]
 struct SaveForm {
     name: String,
@@ -46,7 +47,7 @@ pub fn save_panel_button(
     layout: Res<Layout>,
     panel_q: Query<Entity, With<MenuPanel>>,
     callback: Res<CallbackSender>,
-    store: Res<DynStore>,
+    store: Res<Store>,
 ) {
     for id in &panel_q {
         commands.entity(id).despawn_recursive();
@@ -64,7 +65,7 @@ pub fn load_panel_button(
     layout: Res<Layout>,
     panel_q: Query<Entity, With<MenuPanel>>,
     callback: Res<CallbackSender>,
-    store: Res<DynStore>,
+    store: Res<Store>,
 ) {
     for id in &panel_q {
         commands.entity(id).despawn_recursive();
@@ -82,7 +83,7 @@ fn refresh_save_panel(
     layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
-    store: Res<DynStore>,
+    store: Res<Store>,
 ) {
     if !panel_q.iter().any(|(_, &panel)| panel == MenuPanel::Save) {
         return;
@@ -100,14 +101,15 @@ fn refresh_save_panel(
 fn load_button(
     mut commands: Commands,
     event: Listener<Pointer<Click>>,
-    save_q: Query<&SaveMetadata>,
+    save_q: Query<&SaveItem>,
     mut menu_state: ResMut<NextState<MenuState>>,
     engine_state: Res<State<EngineState>>,
     mut next_engine_state: ResMut<NextState<EngineState>>,
+    registry: Res<AppTypeRegistry>,
     callback: Res<CallbackSender>,
-    store: Res<DynStore>,
+    store: Res<Store>,
 ) {
-    let save_name = try_res!(save_q.get(event.target())).name.clone();
+    let save_name = try_res!(save_q.get(event.target())).0.name.clone();
 
     if let &EngineState::Running(root) = engine_state.get() {
         commands.entity(root).despawn_recursive();
@@ -118,13 +120,16 @@ fn load_button(
 
     let store = store.clone();
     let callback = callback.clone();
+    let seed = LoadSeed::new(registry.0.clone());
     spawn_io(async move {
-        let res = store.load_save(save_name.clone()).await;
+        let res = store
+            .get_with(&format!("saves/{save_name}.json"), seed)
+            .await;
         callback.send_oneshot_system_with_input(on_load_complete, res);
     });
 
     fn on_load_complete(
-        In(scene): In<Result<DynamicScene>>,
+        In(save): In<Result<Save>>,
         world: &mut World,
         load_p: &mut SystemState<LoadParam>,
         state: &mut SystemState<(
@@ -133,7 +138,7 @@ fn load_button(
             EventWriter<Message>,
         )>,
     ) {
-        let res = scene.and_then(|scene| load(world, load_p, scene));
+        let res = save.and_then(|save| load(world, load_p, &save));
         let (mut menu_state, mut engine_state, mut message_e) = state.get_mut(world);
 
         match res {
@@ -157,13 +162,13 @@ fn load_button(
 fn overwrite_button(
     world: &World,
     event: Listener<Pointer<Click>>,
-    save_q: Query<&SaveMetadata>,
+    save_q: Query<&SaveItem>,
     save_p: SaveParam,
     state: Res<State<EngineState>>,
-    store: Res<DynStore>,
+    store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
-    let save_name = try_res!(save_q.get(event.target())).name.clone();
+    let save_name = try_res!(save_q.get(event.target())).0.name.clone();
     save_impl(
         save_name,
         world,
@@ -180,7 +185,7 @@ fn save_button(
     form_q: Query<&Form>,
     save_p: SaveParam,
     state: Res<State<EngineState>>,
-    store: Res<DynStore>,
+    store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
     let save_form = try_res!(form_q.get(event.listener()))
@@ -201,7 +206,7 @@ fn save_impl(
     world: &World,
     save_p: SaveParam,
     state: Res<State<EngineState>>,
-    store: DynStore,
+    store: Store,
     callback: CallbackSender,
 ) {
     if name.is_empty() {
@@ -218,9 +223,7 @@ fn save_impl(
     let store = store.clone();
     let callback = callback.clone();
     spawn_io(async move {
-        let res = store
-            .store_save(SaveMetadata::new(name.clone()), scene)
-            .await;
+        let res = store.set(&format!("saves/{name}.json"), scene).await;
 
         let mut queue = CommandQueue::default();
         queue.push(run_oneshot_system_with_input(on_save_complete, (name, res)));
@@ -251,7 +254,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         &mut self,
         theme: &Theme,
         assets: &Assets,
-        store: DynStore,
+        store: Store,
         callback: CallbackSender,
     ) -> UiBuilder<'w, '_> {
         let mut panel = self.panel(theme, assets, "Save prison");
@@ -282,7 +285,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         &mut self,
         theme: &Theme,
         assets: &Assets,
-        store: DynStore,
+        store: Store,
         callback: CallbackSender,
     ) -> UiBuilder<'w, '_> {
         let mut panel = self.panel(theme, assets, "Load prison");
@@ -293,7 +296,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
     fn saves_table(
         &mut self,
         theme: &Theme,
-        store: DynStore,
+        store: Store,
         callback: CallbackSender,
         action: SaveAction,
     ) -> UiBuilder<'w, '_> {
@@ -308,12 +311,12 @@ impl<'w, 's> UiBuilder<'w, 's> {
         container.spinner(theme, theme.large_icon_size_px);
 
         spawn_io(async move {
-            let res = store.list_saves().await;
+            let res = store.iter("saves/").await;
             callback.send_oneshot_system_with_input(on_list_complete, (res, container_id, action));
         });
 
         fn on_list_complete(
-            In((res, container_id, action)): In<(Result<Vec<SaveMetadata>>, Entity, SaveAction)>,
+            In((res, container_id, action)): In<(Result<Vec<Metadata>>, Entity, SaveAction)>,
             mut commands: Commands,
             theme: Res<Theme>,
             assets: Res<Assets>,
@@ -343,7 +346,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         &mut self,
         theme: &Theme,
         assets: &Assets,
-        items: Vec<SaveMetadata>,
+        items: Vec<Metadata>,
         action: SaveAction,
     ) -> UiBuilder<'w, '_> {
         let mut container = self.container(Style {
@@ -429,7 +432,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
                 ),
             };
 
-            button.insert(item);
+            button.insert(SaveItem(item));
         }
 
         container

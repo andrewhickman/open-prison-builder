@@ -43,10 +43,11 @@ impl Plugin for UiPlugin {
 
         app.add_systems(
             PreStartup,
-            (
-                (theme::init, layout::init).chain().after(pb_assets::load),
-                (camera::init, layout::init).after(theme::init),
-            ),
+            (theme::init, layout::init).chain().after(pb_assets::load),
+        );
+        app.add_systems(
+            Startup,
+            (camera::init, input::settings::init.after(pb_store::init)),
         );
 
         app.init_state::<StartupState>().add_systems(
