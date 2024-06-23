@@ -3021,9 +3021,12 @@ dependencies = [
 name = "pb-render"
 version = "0.1.0"
 dependencies = [
+ "approx",
  "bevy",
  "pb-assets",
  "pb-engine",
+ "pb-util",
+ "smallvec",
 ]
 
 [[package]]

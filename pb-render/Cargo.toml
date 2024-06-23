@@ -6,6 +6,9 @@ publish = false
 edition = "2021"
 
 [dependencies]
+approx = "0.5.1"
 bevy = { version = "0.14.0-rc.2", default-features = false }
 pb-assets = { path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }
+pb-util = { version = "0.1.0", path = "../pb-util" }
+smallvec = "1.13.2"

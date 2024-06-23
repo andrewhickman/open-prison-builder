@@ -13,7 +13,11 @@ use bevy::{
 use bevy_rapier2d::dynamics::Velocity;
 use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
 
-use crate::{pawn::Pawn, Root};
+use crate::{
+    pawn::Pawn,
+    wall::{Vertex, Wall},
+    Root,
+};
 
 #[derive(TypePath)]
 pub struct Save {
@@ -40,6 +44,8 @@ pub struct LoadParam<'w, 's> {
 pub fn save(world: &World, param: &SaveParam, root: Entity) -> Save {
     let scene = DynamicSceneBuilder::from_world(world)
         .allow::<Pawn>()
+        .allow::<Wall>()
+        .allow::<Vertex>()
         .allow::<Root>()
         .allow::<Transform>()
         .allow::<Velocity>()

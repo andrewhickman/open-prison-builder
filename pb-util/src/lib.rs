@@ -66,3 +66,13 @@ macro_rules! try_res {
         }
     };
 }
+
+#[macro_export]
+macro_rules! try_opt {
+    ($res:expr) => {
+        match ($res) {
+            Some(val) => val,
+            None => return,
+        }
+    };
+}

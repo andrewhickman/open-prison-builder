@@ -3,7 +3,11 @@ mod saves;
 use bevy::{app::AppExit, prelude::*};
 
 use pb_assets::Assets;
-use pb_engine::{pawn::PawnBundle, EngineState, RootBundle};
+use pb_engine::{
+    pawn::PawnBundle,
+    wall::{VertexBundle, Wall},
+    EngineState, RootBundle,
+};
 
 use crate::{
     layout::Layout,
@@ -154,6 +158,42 @@ fn new_prison_button(
 
     commands
         .spawn(PawnBundle::new(Vec2::default()))
+        .set_parent(parent);
+    let v1 = commands
+        .spawn(VertexBundle::new(Vec2::new(4.0, -4.0)))
+        .set_parent(parent)
+        .id();
+    let v2 = commands
+        .spawn(VertexBundle::new(Vec2::new(-2.0, -2.0)))
+        .set_parent(parent)
+        .id();
+    let v3 = commands
+        .spawn(VertexBundle::new(Vec2::new(-2.0, 2.0)))
+        .set_parent(parent)
+        .id();
+    let v4 = commands
+        .spawn(VertexBundle::new(Vec2::new(7.0, 7.0)))
+        .set_parent(parent)
+        .id();
+    let v5 = commands
+        .spawn(VertexBundle::new(Vec2::new(13.0, 15.0)))
+        .set_parent(parent)
+        .id();
+
+    commands
+        .spawn(Wall { start: v1, end: v2 })
+        .set_parent(parent);
+    commands
+        .spawn(Wall { start: v2, end: v3 })
+        .set_parent(parent);
+    commands
+        .spawn(Wall { start: v3, end: v4 })
+        .set_parent(parent);
+    commands
+        .spawn(Wall { start: v4, end: v1 })
+        .set_parent(parent);
+    commands
+        .spawn(Wall { start: v4, end: v5 })
         .set_parent(parent);
 }
 
