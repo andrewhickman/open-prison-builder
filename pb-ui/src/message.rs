@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use bevy_mod_picking::picking_core::Pickable;
 use pb_assets::Assets;
 use pb_util::AsDynError;
 
@@ -39,9 +38,9 @@ impl Message {
     }
 }
 
-impl<'w, 's> UiBuilder<'w, 's> {
+impl<'w> UiBuilder<'w, '_> {
     pub fn messages(&mut self) -> UiBuilder<'w, '_> {
-        self.container(Style {
+        self.container(Node {
             position_type: PositionType::Absolute,
             margin: UiRect::new(Val::ZERO, Val::Auto, Val::ZERO, Val::Auto),
             display: Display::Flex,
@@ -59,11 +58,8 @@ impl<'w, 's> UiBuilder<'w, 's> {
     ) -> UiBuilder<'w, '_> {
         match message.level {
             MessageLevel::Info => self
-                .spawn(TextBundle::from_section(
-                    message.text.clone(),
-                    theme.normal_text.clone(),
-                ))
-                .insert(Pickable::IGNORE)
+                .spawn((Text::new(message.text.clone()), theme.normal_text.clone()))
+                .insert(PickingBehavior::IGNORE)
                 .insert(MessageExpiry(
                     time.elapsed().saturating_add(Duration::from_secs(15)),
                 )),

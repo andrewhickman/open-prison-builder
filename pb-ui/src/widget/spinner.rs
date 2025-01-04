@@ -1,20 +1,17 @@
 use std::f32;
 
 use bevy::prelude::*;
-use pb_util::try_res;
+use pb_util::try_res_s;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
-impl<'w, 's> UiBuilder<'w, 's> {
+impl<'w> UiBuilder<'w, '_> {
     pub fn spinner(&mut self, theme: &Theme, size: f32) -> UiBuilder<'w, '_> {
         let mut parent = self.spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Px(size),
-                    height: Val::Px(size),
-                    margin: UiRect::all(Val::Auto),
-                    ..default()
-                },
+            Node {
+                width: Val::Px(size),
+                height: Val::Px(size),
+                margin: UiRect::all(Val::Auto),
                 ..default()
             },
             Spinner::default(),
@@ -39,19 +36,16 @@ impl<'w, 's> UiBuilder<'w, 's> {
 
             parent.spawn((
                 SpinnerSpoke { index },
-                NodeBundle {
-                    style: Style {
-                        position_type: PositionType::Absolute,
-                        left: Val::Px(rotated_center.x - spoke_rect.width() / 2.0),
-                        top: Val::Px(rotated_center.y - spoke_rect.height() / 2.0),
-                        width: Val::Px(spoke_rect.width()),
-                        height: Val::Px(spoke_rect.height()),
-                        ..Default::default()
-                    },
-                    background_color: spoke_color(theme, 0.0, index),
-                    transform: Transform::from_rotation(transform.rotation),
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(rotated_center.x - spoke_rect.width() / 2.0),
+                    top: Val::Px(rotated_center.y - spoke_rect.height() / 2.0),
+                    width: Val::Px(spoke_rect.width()),
+                    height: Val::Px(spoke_rect.height()),
                     ..Default::default()
                 },
+                spoke_color(theme, 0.0, index),
+                Transform::from_rotation(transform.rotation),
             ));
         }
 
@@ -78,10 +72,10 @@ pub fn update(
     mut spoke_q: Query<(&SpinnerSpoke, &mut BackgroundColor)>,
 ) {
     for (mut spinner, children) in spinner_q.iter_mut() {
-        spinner.progress = (spinner.progress + time.delta_seconds()).rem_euclid(1.0);
+        spinner.progress = (spinner.progress + time.delta_secs()).rem_euclid(1.0);
 
         for &spoke in children {
-            let (spoke, mut color) = try_res!(spoke_q.get_mut(spoke));
+            let (spoke, mut color) = try_res_s!(spoke_q.get_mut(spoke));
             *color = spoke_color(&theme, spinner.progress, spoke.index)
         }
     }

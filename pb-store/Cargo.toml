@@ -7,8 +7,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
-bevy = { version = "0.14.0-rc.3", default-features = false, features = ["bevy_scene", "serialize"] }
-bevy_rapier2d = { git = "https://github.com/dimforge/bevy_rapier.git", default-features = false, features = ["dim2"] }
+bevy = { version = "0.15.0", default-features = false, features = ["bevy_scene", "serialize"] }
+bevy_rapier2d = { version = "0.28.0", default-features = false, features = ["dim2"] }
 chrono = { version = "0.4.38", default-features = false, features = ["alloc", "serde", "now", "clock", "wasmbind"] }
 pb-util = { version = "0.1.0", path = "../pb-util" }
 serde = { version = "1.0.203", features = ["derive"] }

@@ -1,5 +1,7 @@
 use bevy::{
+    app::MainScheduleOrder,
     asset::{LoadState, UntypedAssetId},
+    ecs::schedule::ScheduleLabel,
     prelude::*,
 };
 
@@ -18,9 +20,15 @@ pub struct Assets {
 
 pub struct AssetsPlugin;
 
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct FirstStartup;
+
 impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, load);
+        let mut schedule = app.world_mut().resource_mut::<MainScheduleOrder>();
+        schedule.insert_startup_before(StateTransition, FirstStartup);
+
+        app.add_systems(FirstStartup, load);
     }
 }
 

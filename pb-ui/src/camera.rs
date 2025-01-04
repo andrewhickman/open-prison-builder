@@ -3,7 +3,7 @@ use bevy::{input::ButtonState, prelude::*, render::camera::ScalingMode};
 use crate::theme::Theme;
 
 /// Camera speed, in metres per second
-pub const CAMERA_PAN_SPEED: f32 = 1.;
+pub const CAMERA_PAN_SPEED: f32 = 0.5;
 pub const CAMERA_ZOOM_SPEED: f32 = 1.;
 pub const CAMERA_PIXELS_PER_METER: f32 = 64.;
 
@@ -14,19 +14,19 @@ pub struct CameraInput {
 }
 
 pub fn init(mut commands: Commands, theme: Res<Theme>) {
-    commands.spawn(Camera2dBundle {
-        camera: Camera {
+    commands.spawn((
+        Camera2d,
+        Camera {
             clear_color: theme.background.into(),
             ..Default::default()
         },
-        projection: OrthographicProjection {
-            far: 1000.,
-            near: -1000.,
-            scaling_mode: ScalingMode::WindowSize(CAMERA_PIXELS_PER_METER),
-            ..Default::default()
+        OrthographicProjection {
+            scaling_mode: ScalingMode::WindowSize,
+            scale: CAMERA_PIXELS_PER_METER.recip(),
+            ..OrthographicProjection::default_2d()
         },
-        ..Default::default()
-    });
+        Msaa::Sample4,
+    ));
 }
 
 pub fn update(
@@ -39,7 +39,7 @@ pub fn update(
     }
 
     for (mut transform, mut camera_projection) in &mut camera_transform_q {
-        input.apply(&mut transform, &mut camera_projection, time.delta_seconds());
+        input.apply(&mut transform, &mut camera_projection, time.delta_secs());
     }
 }
 
@@ -75,9 +75,14 @@ impl CameraInput {
         delta: f32,
     ) {
         transform.translation += self.pan.extend(0.)
-            * (CAMERA_PAN_SPEED * CAMERA_PIXELS_PER_METER * projection.scale * delta);
-        projection.scale =
-            (projection.scale + self.zoom * CAMERA_ZOOM_SPEED * delta).clamp(0.1, 5.);
+            * (CAMERA_PAN_SPEED
+                * CAMERA_PIXELS_PER_METER
+                * projection.scale
+                * CAMERA_PIXELS_PER_METER
+                * delta);
+        projection.scale = (projection.scale
+            + self.zoom * CAMERA_ZOOM_SPEED * delta / CAMERA_PIXELS_PER_METER)
+            .clamp(0.1 / CAMERA_PIXELS_PER_METER, 5. / CAMERA_PIXELS_PER_METER);
     }
 }
 

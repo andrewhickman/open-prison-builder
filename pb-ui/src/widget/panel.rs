@@ -34,18 +34,15 @@ impl PanelStack {
     }
 }
 
-impl<'w, 's> UiBuilder<'w, 's> {
-    pub fn empty_panel(&mut self, theme: &Theme, style: Style) -> UiBuilder<'w, '_> {
+impl<'w> UiBuilder<'w, '_> {
+    pub fn empty_panel(&mut self, theme: &Theme, style: Node) -> UiBuilder<'w, '_> {
         self.spawn((
-            NodeBundle {
-                style: Style {
-                    padding: UiRect::all(theme.gutter),
-                    ..style
-                },
-                background_color: theme.panel.into(),
-                focus_policy: FocusPolicy::Block,
-                ..default()
+            Node {
+                padding: UiRect::all(theme.gutter),
+                ..style
             },
+            BackgroundColor(theme.panel),
+            FocusPolicy::Block,
             theme.outline,
         ))
     }
@@ -58,7 +55,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
     ) -> UiBuilder<'w, '_> {
         let mut panel = self.empty_panel(
             theme,
-            Style {
+            Node {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
                 row_gap: theme.gutter,
@@ -68,7 +65,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         panel.insert(Panel);
         let panel_id = panel.id();
 
-        let mut title_row = panel.container(Style {
+        let mut title_row = panel.container(Node {
             display: Display::Flex,
             flex_direction: FlexDirection::Row,
             justify_content: JustifyContent::SpaceBetween,
@@ -77,12 +74,14 @@ impl<'w, 's> UiBuilder<'w, 's> {
             ..default()
         });
 
-        title_row.spawn(TextBundle::from_section(title, theme.header_text.clone()));
-        title_row.icon_button(
-            assets.close_icon.clone(),
-            theme.icon_size(),
-            move |mut commands: Commands| commands.entity(panel_id).despawn_recursive(),
-        );
+        title_row.spawn((Text::new(title), theme.header_text.clone()));
+        title_row
+            .icon_button(theme, assets.close_icon.clone(), theme.icon_size())
+            .on_click(
+                move |_: Trigger<'_, Pointer<Click>>, mut commands: Commands| {
+                    commands.entity(panel_id).despawn_recursive()
+                },
+            );
 
         panel
     }

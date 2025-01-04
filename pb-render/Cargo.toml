@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 approx = "0.5.1"
-bevy = { version = "0.14.0-rc.3", default-features = false }
+bevy = { version = "0.15.0", default-features = false }
 pb-assets = { path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }
 pb-util = { version = "0.1.0", path = "../pb-util" }

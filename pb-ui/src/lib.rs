@@ -15,10 +15,10 @@ use bevy::{
     input::{keyboard::KeyboardInput, InputSystem},
     prelude::*,
 };
-use bevy_mod_picking::prelude::*;
 use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
 use camera::CameraInput;
+use pb_assets::FirstStartup;
 use pb_engine::EngineState;
 use pb_util::set_state;
 use widget::panel::PanelStack;
@@ -34,15 +34,12 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            DefaultPickingPlugins,
-            TextInputPlugin,
-            EventListenerPlugin::<FormUpdate>::default(),
-            EventListenerPlugin::<FormSubmit>::default(),
-        ));
+        app.add_plugins(TextInputPlugin);
+
+        app.add_event::<FormUpdate>().add_event::<FormSubmit>();
 
         app.add_systems(
-            PreStartup,
+            FirstStartup,
             (theme::init, layout::init).chain().after(pb_assets::load),
         );
         app.add_systems(
@@ -60,7 +57,7 @@ impl Plugin for UiPlugin {
                 PreUpdate,
                 input::read
                     .after(InputSystem)
-                    .run_if(in_state(StartupState::Ready).and_then(on_event::<KeyboardInput>())),
+                    .run_if(in_state(StartupState::Ready).and(on_event::<KeyboardInput>)),
             )
             .add_systems(Update, camera::update);
 

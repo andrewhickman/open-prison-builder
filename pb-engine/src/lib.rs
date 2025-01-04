@@ -3,6 +3,8 @@ pub mod pawn;
 pub mod save;
 pub mod wall;
 
+mod rapier;
+
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use pawn::Pawn;
@@ -24,7 +26,7 @@ pub struct Root;
 #[derive(Default, Clone, Bundle)]
 pub struct RootBundle {
     pub root: Root,
-    pub transform: TransformBundle,
+    pub transform: Transform,
 }
 
 pub struct EnginePlugin;
@@ -38,11 +40,8 @@ impl Plugin for EnginePlugin {
 
         app.init_state::<EngineState>();
 
-        app.insert_resource(RapierConfiguration {
-            gravity: Vec2::ZERO,
-            ..RapierConfiguration::new(1.)
-        });
-        app.add_plugins(RapierPhysicsPlugin::<NoUserData>::default());
+        app.add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+            .add_systems(Startup, rapier::startup);
 
         app.add_systems(PostUpdate, (collider::init_pawn, collider::init_wall));
 

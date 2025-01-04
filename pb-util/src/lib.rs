@@ -1,11 +1,12 @@
 pub mod callback;
 
 pub use anyhow;
+pub use tracing;
+
 use bevy::{
     ecs::system::{BoxedSystem, IntoSystem, ResMut},
     state::state::{FreelyMutableState, NextState},
 };
-pub use tracing;
 
 pub use self::callback::{
     run_oneshot_system, run_oneshot_system_with_input, spawn_io, CallbackPlugin,
@@ -61,6 +62,20 @@ macro_rules! try_res {
             Err(error) => {
                 use $crate::AsDynError;
                 $crate::tracing::error!(error = error.as_dyn_error());
+                return;
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! try_res_s {
+    ($res:expr) => {
+        match ($res) {
+            Ok(val) => val,
+            Err(error) => {
+                use $crate::AsDynError;
+                $crate::tracing::error!(error = error.to_string_compact());
                 return;
             }
         }

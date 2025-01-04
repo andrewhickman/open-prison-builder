@@ -30,7 +30,7 @@ pub fn read(
 
             match action {
                 Action::Cancel if event.state == ButtonState::Released => {
-                    commands.add(run_oneshot_system(cancel_command))
+                    commands.queue(run_oneshot_system(cancel_command))
                 }
                 Action::PanLeft => camera.pan_left(event.state),
                 Action::PanUp => camera.pan_up(event.state),

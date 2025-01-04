@@ -1,5 +1,4 @@
-use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
+use bevy::{picking::focus::PickingInteraction, prelude::*, ui::widget::NodeImageMode};
 
 use pb_assets::Assets;
 
@@ -14,87 +13,79 @@ pub enum ButtonStyle {
     Icon,
 }
 
-impl<'w, 's> UiBuilder<'w, 's> {
-    pub fn large_button<Marker>(
+impl<'w> UiBuilder<'w, '_> {
+    pub fn large_button(
         &mut self,
         theme: &Theme,
         assets: &Assets,
         text: impl Into<String>,
-        style: Style,
-        callback: impl IntoSystem<(), (), Marker>,
+        style: Node,
     ) -> UiBuilder<'w, '_> {
-        self.text_button(assets, text, theme.header_text.clone(), 8., style, callback)
+        self.text_button(theme, assets, text, theme.header_text.clone(), 8., style)
     }
 
-    pub fn button<Marker>(
+    pub fn button(
         &mut self,
         theme: &Theme,
         assets: &Assets,
         text: impl Into<String>,
-        style: Style,
-        callback: impl IntoSystem<(), (), Marker>,
+        style: Node,
     ) -> UiBuilder<'w, '_> {
-        self.text_button(assets, text, theme.button_text.clone(), 4., style, callback)
+        self.text_button(theme, assets, text, theme.button_text.clone(), 4., style)
     }
 
-    fn text_button<Marker>(
+    fn text_button(
         &mut self,
+        theme: &Theme,
         assets: &Assets,
         text: impl Into<String>,
-        text_style: TextStyle,
+        text_style: TextFont,
         button_border: f32,
-        style: Style,
-        callback: impl IntoSystem<(), (), Marker>,
+        style: Node,
     ) -> UiBuilder<'w, '_> {
         let button_image_border = 64.;
-        let button_slice = ImageScaleMode::Sliced(TextureSlicer {
+        let slicer = TextureSlicer {
             border: BorderRect::square(button_image_border),
             center_scale_mode: SliceScaleMode::Stretch,
             sides_scale_mode: SliceScaleMode::Stretch,
             max_corner_scale: button_border / button_image_border,
-        });
+        };
 
         let mut button = self.spawn((
-            ButtonBundle {
-                style: Style {
-                    padding: UiRect::all(Val::Px(button_border * 1.5)),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    ..style
-                },
-                image: UiImage::new(assets.button_image.clone()),
-                ..default()
+            Button,
+            Node {
+                padding: UiRect::all(Val::Px(button_border * 1.5)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..style
             },
-            button_slice,
-            On::<Pointer<Click>>::run(callback),
-            PickableBundle::default(),
+            ImageNode::new(assets.button_image.clone())
+                .with_color(theme.text)
+                .with_mode(NodeImageMode::Sliced(slicer)),
             ButtonStyle::Text,
             Disabled(false),
         ));
 
-        button.spawn((TextBundle::from_section(text, text_style), Pickable::IGNORE));
+        button.spawn((Text::new(text), text_style, PickingBehavior::IGNORE));
         button
     }
 
-    pub fn icon_button<Marker>(
+    pub fn icon_button(
         &mut self,
+        theme: &Theme,
         icon: Handle<Image>,
         size: Val,
-        callback: impl IntoSystem<(), (), Marker>,
     ) -> UiBuilder<'w, '_> {
         self.spawn((
-            ButtonBundle {
-                style: Style {
-                    width: Val::Auto,
-                    height: size,
-                    aspect_ratio: Some(1.),
-                    ..default()
-                },
-                image: UiImage::new(icon.clone()),
+            Button,
+            Node {
+                width: Val::Auto,
+                height: size,
+                aspect_ratio: Some(1.),
                 ..default()
             },
-            On::<Pointer<Click>>::run(callback),
-            PickableBundle::default(),
+            ImageNode::new(icon.clone()).with_color(theme.text),
+            PickingBehavior::default(),
             ButtonStyle::Icon,
             Disabled(false),
         ))
@@ -108,8 +99,8 @@ pub fn update(
             &PickingInteraction,
             &Disabled,
             &ButtonStyle,
-            &mut UiImage,
-            &mut Pickable,
+            &mut ImageNode,
+            &mut PickingBehavior,
         ),
         (
             With<Button>,
@@ -119,13 +110,13 @@ pub fn update(
 ) {
     for (interaction, disabled, style, mut image, mut pickable) in &mut changed {
         if disabled.0 {
-            pickable.set_if_neq(Pickable::IGNORE);
+            pickable.set_if_neq(PickingBehavior::IGNORE);
             image.flip_x = false;
             image.flip_y = false;
             image.color = theme.text.with_alpha(0.30);
             continue;
         } else {
-            pickable.set_if_neq(Pickable::default());
+            pickable.set_if_neq(PickingBehavior::default());
         }
 
         match style {

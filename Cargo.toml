@@ -43,7 +43,7 @@ dev = [
 pb-engine = { path = "pb-engine" }
 pb-render = { path = "pb-render" }
 pb-ui = { path = "pb-ui" }
-bevy = { version = "0.14.0-rc.3", default-features = false, features = [
+bevy = { version = "0.15.0", default-features = false, features = [
     "sysinfo_plugin",
     "bevy_asset",
     "bevy_render",

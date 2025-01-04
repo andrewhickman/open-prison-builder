@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_mod_picking::picking_core::Pickable;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
@@ -13,15 +12,12 @@ pub struct Layout {
 pub fn init(mut commands: Commands, theme: Res<Theme>) {
     let root = commands
         .spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.),
-                    height: Val::Percent(100.),
-                    ..default()
-                },
+            Node {
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
                 ..default()
             },
-            Pickable::IGNORE,
+            PickingBehavior::IGNORE,
         ))
         .id();
 

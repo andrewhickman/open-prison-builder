@@ -16,7 +16,6 @@ use pb_util::CallbackPlugin;
 fn main() -> AppExit {
     let mut app = App::new();
 
-    app.insert_resource(Msaa::Sample4);
     app.add_plugins(DefaultPlugins.set(window::plugin()).set(AssetPlugin {
         meta_check: AssetMetaCheck::Never,
         ..default()

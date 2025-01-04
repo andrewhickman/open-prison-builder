@@ -3,15 +3,14 @@ use bevy::{
     ecs::{system::SystemState, world::CommandQueue},
     prelude::*,
 };
-use bevy_mod_picking::prelude::*;
 use pb_engine::save::{load, save, LoadParam, LoadSeed, Save, SaveParam};
 use pb_store::{Metadata, Store};
 use smol_str::SmolStr;
 
 use pb_assets::Assets;
 use pb_util::{
-    callback::CallbackSender, run_oneshot_system, run_oneshot_system_with_input, spawn_io, try_res,
-    AsDynError,
+    callback::CallbackSender, run_oneshot_system, run_oneshot_system_with_input, spawn_io,
+    try_res_s, AsDynError,
 };
 
 use crate::{
@@ -41,6 +40,7 @@ struct SaveForm {
 }
 
 pub fn save_panel_button(
+    _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
@@ -59,6 +59,7 @@ pub fn save_panel_button(
 }
 
 pub fn load_panel_button(
+    _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
@@ -99,8 +100,8 @@ fn refresh_save_panel(
 }
 
 fn load_button(
+    event: Trigger<Pointer<Click>>,
     mut commands: Commands,
-    event: Listener<Pointer<Click>>,
     save_q: Query<&SaveItem>,
     mut menu_state: ResMut<NextState<MenuState>>,
     engine_state: Res<State<EngineState>>,
@@ -109,7 +110,7 @@ fn load_button(
     callback: Res<CallbackSender>,
     store: Res<Store>,
 ) {
-    let save_name = try_res!(save_q.get(event.target())).0.name.clone();
+    let save_name = try_res_s!(save_q.get(event.target)).0.name.clone();
 
     if let &EngineState::Running(root) = engine_state.get() {
         commands.entity(root).despawn_recursive();
@@ -160,15 +161,15 @@ fn load_button(
 }
 
 fn overwrite_button(
+    event: Trigger<Pointer<Click>>,
     world: &World,
-    event: Listener<Pointer<Click>>,
     save_q: Query<&SaveItem>,
     save_p: SaveParam,
     state: Res<State<EngineState>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
-    let save_name = try_res!(save_q.get(event.target())).0.name.clone();
+    let save_name = try_res_s!(save_q.get(event.target)).0.name.clone();
     save_impl(
         save_name,
         world,
@@ -180,15 +181,15 @@ fn overwrite_button(
 }
 
 fn save_button(
+    event: Trigger<FormSubmit>,
     world: &World,
-    event: Listener<FormSubmit>,
     form_q: Query<&Form>,
     save_p: SaveParam,
     state: Res<State<EngineState>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
-    let save_form = try_res!(form_q.get(event.listener()))
+    let save_form = try_res_s!(form_q.get(event.entity()))
         .value::<SaveForm>()
         .unwrap();
     save_impl(
@@ -249,7 +250,7 @@ fn save_impl(
     }
 }
 
-impl<'w, 's> UiBuilder<'w, 's> {
+impl<'w> UiBuilder<'w, '_> {
     fn save_panel(
         &mut self,
         theme: &Theme,
@@ -261,7 +262,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         panel.saves_table(theme, store, callback, SaveAction::Save);
 
         let mut save_form = panel.form(
-            Style {
+            Node {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Row,
                 column_gap: theme.gutter,
@@ -272,11 +273,13 @@ impl<'w, 's> UiBuilder<'w, 's> {
                 name: String::new(),
             },
         );
-        save_form.insert(On::<FormSubmit>::run(save_button));
+        save_form.observe(save_button);
 
-        save_form.spawn(TextBundle::from_section("Name", theme.normal_text.clone()));
+        save_form.spawn((Text::new("Name"), theme.normal_text.clone()));
         save_form.input(theme).insert(FormField::new("name"));
-        save_form.button(theme, assets, "Save", default(), form::submit);
+        save_form
+            .button(theme, assets, "Save", default())
+            .on_click(form::submit);
 
         panel
     }
@@ -300,7 +303,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         callback: CallbackSender,
         action: SaveAction,
     ) -> UiBuilder<'w, '_> {
-        let mut container = self.container(Style {
+        let mut container = self.container(Node {
             flex_grow: 1.,
             align_self: AlignSelf::Stretch,
             min_width: Val::Px(425.),
@@ -349,7 +352,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         items: Vec<Metadata>,
         action: SaveAction,
     ) -> UiBuilder<'w, '_> {
-        let mut container = self.container(Style {
+        let mut container = self.container(Node {
             display: Display::Grid,
             width: Val::Percent(100.),
             grid_template_columns: vec![
@@ -370,69 +373,73 @@ impl<'w, 's> UiBuilder<'w, 's> {
             ..default()
         });
 
-        container.spawn(
-            TextBundle::from_section("Name", theme.emphasis_text.clone()).with_style(Style {
+        container.spawn((
+            Text::new("Name"),
+            theme.emphasis_text.clone(),
+            Node {
                 grid_row: GridPlacement::start(1),
                 grid_column: GridPlacement::start(1),
                 ..default()
-            }),
-        );
-        container.spawn(
-            TextBundle::from_section("Modified", theme.emphasis_text.clone()).with_style(Style {
+            },
+        ));
+        container.spawn((
+            Text::new("Modified"),
+            theme.emphasis_text.clone(),
+            Node {
                 grid_row: GridPlacement::start(1),
                 grid_column: GridPlacement::start(2),
                 ..default()
-            }),
-        );
+            },
+        ));
 
         for (row, item) in items.into_iter().enumerate() {
-            container.spawn(
-                TextBundle::from_section(item.name.clone(), theme.normal_text.clone()).with_style(
-                    Style {
-                        grid_row: GridPlacement::start(row as i16 + 2),
-                        grid_column: GridPlacement::start(1),
-                        ..default()
-                    },
-                ),
-            );
-            container.spawn(
-                TextBundle::from_section(
-                    item.modified_local().to_rfc2822(),
-                    theme.normal_text.clone(),
-                )
-                .with_style(Style {
+            container.spawn((
+                Text::new(item.name.clone()),
+                theme.normal_text.clone(),
+                Node {
+                    grid_row: GridPlacement::start(row as i16 + 2),
+                    grid_column: GridPlacement::start(1),
+                    ..default()
+                },
+            ));
+            container.spawn((
+                Text::new(item.modified_local().to_rfc2822()),
+                theme.normal_text.clone(),
+                Node {
                     grid_row: GridPlacement::start(row as i16 + 2),
                     grid_column: GridPlacement::start(2),
                     ..default()
-                }),
-            );
+                },
+            ));
 
-            let mut button = match action {
-                SaveAction::Save => container.button(
-                    theme,
-                    assets,
-                    "Overwrite",
-                    Style {
-                        grid_row: GridPlacement::start(row as i16 + 2),
-                        grid_column: GridPlacement::start(3),
-                        ..default()
-                    },
-                    overwrite_button,
-                ),
-                SaveAction::Load => container.button(
-                    theme,
-                    assets,
-                    "Load",
-                    Style {
-                        grid_row: GridPlacement::start(row as i16 + 2),
-                        grid_column: GridPlacement::start(3),
-                        ..default()
-                    },
-                    load_button,
-                ),
+            match action {
+                SaveAction::Save => container
+                    .button(
+                        theme,
+                        assets,
+                        "Overwrite",
+                        Node {
+                            grid_row: GridPlacement::start(row as i16 + 2),
+                            grid_column: GridPlacement::start(3),
+                            ..default()
+                        },
+                    )
+                    .on_click(overwrite_button)
+                    .insert(SaveItem(item)),
+                SaveAction::Load => container
+                    .button(
+                        theme,
+                        assets,
+                        "Load",
+                        Node {
+                            grid_row: GridPlacement::start(row as i16 + 2),
+                            grid_column: GridPlacement::start(3),
+                            ..default()
+                        },
+                    )
+                    .on_click(load_button)
+                    .insert(SaveItem(item)),
             };
-
-            button.insert(SaveItem(item));
         }
 
         container

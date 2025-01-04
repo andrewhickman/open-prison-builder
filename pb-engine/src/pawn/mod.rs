@@ -12,7 +12,7 @@ pub struct Pawn;
 pub struct PawnBundle {
     pawn: Pawn,
     velocity: Velocity,
-    transform: TransformBundle,
+    transform: Transform,
 }
 
 impl PawnBundle {
@@ -20,7 +20,7 @@ impl PawnBundle {
         Self {
             pawn: default(),
             velocity: Velocity::default(),
-            transform: Transform::from_translation(position.extend(0.)).into(),
+            transform: Transform::from_translation(position.extend(0.)),
         }
     }
 }

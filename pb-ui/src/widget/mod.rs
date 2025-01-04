@@ -1,5 +1,8 @@
-use bevy::{ecs::system::EntityCommands, prelude::*, ui::FocusPolicy};
-use bevy_mod_picking::picking_core::Pickable;
+use bevy::{
+    ecs::system::{EntityCommands, IntoObserverSystem},
+    prelude::*,
+    ui::FocusPolicy,
+};
 
 pub mod button;
 pub mod error;
@@ -30,20 +33,36 @@ impl<'w, 's> UiBuilder<'w, 's> {
         UiBuilder::new(self.commands.reborrow(), child)
     }
 
-    pub fn container(&mut self, style: Style) -> UiBuilder<'w, '_> {
-        self.spawn((
-            NodeBundle {
-                style,
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
-            Pickable::IGNORE,
-        ))
+    pub fn container(&mut self, style: Node) -> UiBuilder<'w, '_> {
+        self.spawn((style, FocusPolicy::Pass, PickingBehavior::IGNORE))
     }
 
     pub fn insert(&mut self, bundle: impl Bundle) -> UiBuilder<'w, '_> {
         self.commands.entity(self.entity).insert(bundle);
         self.reborrow()
+    }
+
+    pub fn observe<E, B, M>(
+        &mut self,
+        system: impl IntoObserverSystem<E, B, M>,
+    ) -> UiBuilder<'w, '_>
+    where
+        E: Event,
+        B: Bundle,
+    {
+        self.commands.entity(self.entity).observe(system);
+        self.reborrow()
+    }
+
+    pub fn on_click<B, M>(
+        &mut self,
+        system: impl IntoObserverSystem<Pointer<Click>, B, M>,
+    ) -> UiBuilder<'w, '_>
+    where
+        B: Bundle,
+    {
+        self.insert(PickingBehavior::default());
+        self.observe(system)
     }
 
     pub fn clear(&mut self) {

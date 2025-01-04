@@ -56,7 +56,7 @@ impl CallbackSender {
     pub fn send_oneshot_system_with_input<I, S, M>(&self, system: S, input: I)
     where
         I: Send + 'static,
-        S: IntoSystem<I, (), M> + Send + 'static,
+        S: IntoSystem<In<I>, (), M> + Send + 'static,
         M: 'static,
     {
         self.send(run_oneshot_system_with_input(system, input))
@@ -85,9 +85,13 @@ where
     run_oneshot_system_with_input(system, ())
 }
 
-pub fn run_oneshot_system_with_input<I, S, M>(system: S, input: I) -> impl Command
+pub fn run_oneshot_system_with_input<I, S, M>(
+    system: S,
+    input: <I as SystemInput>::Inner<'static>,
+) -> impl Command
 where
-    I: Send + 'static,
+    I: SystemInput + 'static,
+    <I as SystemInput>::Inner<'static>: Send,
     S: IntoSystem<I, (), M> + Send + 'static,
     M: 'static,
 {
@@ -98,9 +102,12 @@ where
     }
 }
 
-struct RunOneShotSystem<I, S, M> {
+struct RunOneShotSystem<I, S, M>
+where
+    I: SystemInput,
+{
     system: S,
-    input: I,
+    input: <I as SystemInput>::Inner<'static>,
     marker: PhantomData<fn(M) -> M>,
 }
 
@@ -109,7 +116,8 @@ struct SystemMap<I>(HashMap<TypeId, BoxedSystem<I>>);
 
 impl<I, S, M> Command for RunOneShotSystem<I, S, M>
 where
-    I: Send + 'static,
+    I: SystemInput + 'static,
+    <I as SystemInput>::Inner<'static>: Send,
     S: IntoSystem<I, (), M> + Send + 'static,
     M: 'static,
 {

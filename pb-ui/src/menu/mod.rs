@@ -71,9 +71,9 @@ pub fn update(mut button_q: Query<(&MenuButton, &mut Disabled)>, state: Res<Stat
     }
 }
 
-impl<'w, 's> UiBuilder<'w, 's> {
+impl<'w> UiBuilder<'w, '_> {
     pub fn menu_root(&mut self, theme: &Theme) -> UiBuilder<'w, '_> {
-        self.container(Style {
+        self.container(Node {
             position_type: PositionType::Absolute,
             margin: UiRect::all(Val::Auto),
             display: Display::Flex,
@@ -87,7 +87,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
     pub fn menu(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
         let mut menu = self.empty_panel(
             theme,
-            Style {
+            Node {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
                 align_self: AlignSelf::Start,
@@ -97,30 +97,26 @@ impl<'w, 's> UiBuilder<'w, 's> {
             },
         );
 
-        menu.large_button(theme, assets, "New Prison", default(), new_prison_button)
-            .insert(MenuButton::New);
-        menu.large_button(
-            theme,
-            assets,
-            "Save Prison",
-            default(),
-            saves::save_panel_button,
-        )
-        .insert(MenuButton::Save);
-        menu.large_button(
-            theme,
-            assets,
-            "Load Prison",
-            default(),
-            saves::load_panel_button,
-        )
-        .insert(MenuButton::Load);
-        menu.large_button(theme, assets, "Settings", default(), settings_panel_button)
-            .insert(MenuButton::Settings);
-        menu.large_button(theme, assets, "Exit", default(), exit_button)
-            .insert(MenuButton::Exit);
+        menu.large_button(theme, assets, "New Prison", default())
+            .insert(MenuButton::New)
+            .on_click(new_prison_button);
+        menu.large_button(theme, assets, "Save Prison", default())
+            .insert(MenuButton::Save)
+            .on_click(saves::save_panel_button);
+        menu.large_button(theme, assets, "Save Prison", default())
+            .insert(MenuButton::Save)
+            .on_click(saves::save_panel_button);
+        menu.large_button(theme, assets, "Load Prison", default())
+            .insert(MenuButton::Load)
+            .on_click(saves::load_panel_button);
+        menu.large_button(theme, assets, "Settings", default())
+            .insert(MenuButton::Settings)
+            .on_click(settings_panel_button);
+        menu.large_button(theme, assets, "Exit", default())
+            .insert(MenuButton::Exit)
+            .on_click(exit_button);
 
-        let mut icon_bar = menu.container(Style {
+        let mut icon_bar = menu.container(Node {
             display: Display::Flex,
             flex_direction: FlexDirection::RowReverse,
             column_gap: theme.gutter,
@@ -128,15 +124,15 @@ impl<'w, 's> UiBuilder<'w, 's> {
         });
 
         icon_bar
-            .icon_button(assets.bevy_icon.clone(), theme.large_icon_size(), || {
-                open_url("https://bevyengine.org/")
-            })
-            .insert(MenuButton::OpenBevy);
+            .icon_button(theme, assets.bevy_icon.clone(), theme.large_icon_size())
+            .insert(MenuButton::OpenBevy)
+            .on_click(|_: Trigger<'_, Pointer<Click>>| open_url("https://bevyengine.org/"));
         icon_bar
-            .icon_button(assets.github_icon.clone(), theme.large_icon_size(), || {
+            .icon_button(theme, assets.github_icon.clone(), theme.large_icon_size())
+            .insert(MenuButton::OpenGithub)
+            .on_click(|_: Trigger<'_, Pointer<Click>>| {
                 open_url("https://github.com/andrewhickman/open-prison-builder/")
-            })
-            .insert(MenuButton::OpenGithub);
+            });
 
         self.reborrow()
     }
@@ -147,6 +143,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
 }
 
 fn new_prison_button(
+    _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     mut menu_state: ResMut<NextState<MenuState>>,
     mut engine_state: ResMut<NextState<EngineState>>,
@@ -175,10 +172,6 @@ fn new_prison_button(
         .spawn(VertexBundle::new(Vec2::new(7.0, 7.0)))
         .set_parent(parent)
         .id();
-    let v5 = commands
-        .spawn(VertexBundle::new(Vec2::new(13.0, 15.0)))
-        .set_parent(parent)
-        .id();
 
     commands
         .spawn(Wall { start: v1, end: v2 })
@@ -192,12 +185,10 @@ fn new_prison_button(
     commands
         .spawn(Wall { start: v4, end: v1 })
         .set_parent(parent);
-    commands
-        .spawn(Wall { start: v4, end: v5 })
-        .set_parent(parent);
 }
 
 fn settings_panel_button(
+    _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
@@ -216,11 +207,13 @@ fn settings_panel_button(
         .insert(MenuPanel::Settings);
 }
 
-fn exit_button(mut exit_e: EventWriter<AppExit>) {
+fn exit_button(_: Trigger<Pointer<Click>>, mut exit_e: EventWriter<AppExit>) {
+    info!("Exiting application");
     exit_e.send(AppExit::Success);
 }
 
 fn open_url(url: &str) {
+    info!("Opening url '{url}'");
     if let Err(err) = webbrowser::open(url) {
         error!("Failed to open url {url}: {err}");
     }

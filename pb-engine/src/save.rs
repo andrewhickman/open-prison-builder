@@ -43,15 +43,14 @@ pub struct LoadParam<'w, 's> {
 
 pub fn save(world: &World, param: &SaveParam, root: Entity) -> Save {
     let scene = DynamicSceneBuilder::from_world(world)
-        .allow::<Pawn>()
-        .allow::<Wall>()
-        .allow::<Vertex>()
-        .allow::<Root>()
-        .allow::<Transform>()
-        .allow::<Velocity>()
-        .allow::<GlobalTransform>()
-        .allow::<Parent>()
-        .allow::<Children>()
+        .allow_component::<Pawn>()
+        .allow_component::<Wall>()
+        .allow_component::<Vertex>()
+        .allow_component::<Root>()
+        .allow_component::<Transform>()
+        .allow_component::<Velocity>()
+        .allow_component::<Parent>()
+        .allow_component::<Children>()
         .extract_entities(once(root).chain(param.children.iter_descendants(root)))
         .remove_empty_entities()
         .build();

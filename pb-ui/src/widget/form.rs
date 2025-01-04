@@ -1,18 +1,14 @@
 use anyhow::{Context, Result};
 use bevy::{prelude::*, reflect::ReflectMut};
-use bevy_mod_picking::{
-    events::{Click, Pointer},
-    prelude::{EntityEvent, Listener, ListenerMut, On},
-};
 
-use pb_util::try_res;
+use pb_util::try_res_s;
 use smol_str::SmolStr;
 
 use crate::widget::UiBuilder;
 
 #[derive(Component)]
 pub struct Form {
-    value: Box<dyn Reflect>,
+    value: Box<dyn PartialReflect>,
 }
 
 #[derive(Component)]
@@ -20,21 +16,15 @@ pub struct FormField {
     name: SmolStr,
 }
 
-#[derive(EntityEvent, Event)]
-#[can_bubble]
+#[derive(Component)]
 pub struct FormUpdate {
-    #[target]
     pub target: Entity,
     pub name: SmolStr,
-    pub value: Box<dyn Reflect>,
+    pub value: Box<dyn PartialReflect>,
 }
 
-#[derive(Clone, EntityEvent, Event)]
-#[can_bubble]
-pub struct FormSubmit {
-    #[target]
-    pub target: Entity,
-}
+#[derive(Component)]
+pub struct FormSubmit;
 
 impl Form {
     pub fn value<T>(&self) -> Result<T>
@@ -61,6 +51,18 @@ impl FormField {
     }
 }
 
+impl Event for FormUpdate {
+    type Traversal = &'static Parent;
+
+    const AUTO_PROPAGATE: bool = true;
+}
+
+impl Event for FormSubmit {
+    type Traversal = &'static Parent;
+
+    const AUTO_PROPAGATE: bool = true;
+}
+
 impl Clone for FormUpdate {
     fn clone(&self) -> Self {
         Self {
@@ -71,13 +73,13 @@ impl Clone for FormUpdate {
     }
 }
 
-impl<'w, 's> UiBuilder<'w, 's> {
-    pub fn form<T>(&mut self, style: Style, value: T) -> UiBuilder<'w, '_>
+impl<'w> UiBuilder<'w, '_> {
+    pub fn form<T>(&mut self, style: Node, value: T) -> UiBuilder<'w, '_>
     where
         T: Reflect,
     {
         let mut form = self.container(style);
-        form.insert(On::<FormUpdate>::run(update));
+        form.observe(update);
         form.insert(Form {
             value: Box::new(value),
         });
@@ -85,20 +87,18 @@ impl<'w, 's> UiBuilder<'w, 's> {
     }
 }
 
-pub fn submit(event: Listener<Pointer<Click>>, mut submit_e: EventWriter<FormSubmit>) {
-    submit_e.send(FormSubmit {
-        target: event.target(),
-    });
+pub fn submit(_: Trigger<Pointer<Click>>, mut submit_e: EventWriter<FormSubmit>) {
+    submit_e.send(FormSubmit);
 }
 
-fn update(mut event: ListenerMut<FormUpdate>, mut form_q: Query<(&mut Form, Option<&FormField>)>) {
-    let (mut form, field) = try_res!(form_q.get_mut(event.listener()));
+fn update(mut event: Trigger<FormUpdate>, mut form_q: Query<(&mut Form, Option<&FormField>)>) {
+    let (mut form, field) = try_res_s!(form_q.get_mut(event.entity()));
 
     let ReflectMut::Struct(value) = form.value.reflect_mut() else {
         error!(
             "Unexpected form value type '{}' for {:?}",
             form.value.reflect_short_type_path(),
-            event.listener()
+            event.entity()
         );
         return;
     };
@@ -107,19 +107,18 @@ fn update(mut event: ListenerMut<FormUpdate>, mut form_q: Query<(&mut Form, Opti
         error!(
             "Form value of type '{}' for {:?} does not have field '{}'",
             value.reflect_short_type_path(),
-            event.listener(),
+            event.entity(),
             event.name
         );
         return;
     };
 
-    if let Err(value) = field_value.set(event.value.clone_value()) {
-        error!("Error updating field '{}' of form value of type '{}' for {:?}; value was of type '{}' but field is of type '{}'",
+    if let Err(error) = field_value.try_apply(&*event.value) {
+        error!(
+            "Error updating field '{}' for {:?}: {}",
             &event.name,
-            value.reflect_short_type_path(),
-            event.listener(),
-            event.value.reflect_short_type_path(),
-            field_value.reflect_short_type_path(),
+            event.entity(),
+            error,
         );
         return;
     }
@@ -128,6 +127,6 @@ fn update(mut event: ListenerMut<FormUpdate>, mut form_q: Query<(&mut Form, Opti
         event.value = form.value.clone_value();
         event.name.clone_from(&field.name);
     } else {
-        event.stop_propagation();
+        event.propagate(false);
     }
 }

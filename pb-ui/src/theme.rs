@@ -13,10 +13,10 @@ pub(crate) struct Theme {
     pub error: Color,
     pub gutter: Val,
     pub outline: Outline,
-    pub normal_text: TextStyle,
-    pub emphasis_text: TextStyle,
-    pub button_text: TextStyle,
-    pub header_text: TextStyle,
+    pub normal_text: TextFont,
+    pub emphasis_text: TextFont,
+    pub button_text: TextFont,
+    pub header_text: TextFont,
     pub large_icon_size_px: f32,
     pub icon_size_px: f32,
 }
@@ -36,25 +36,25 @@ pub fn init(mut commands: Commands, assets: Res<Assets>) {
             width: Val::Px(1.),
             ..default()
         },
-        normal_text: TextStyle {
-            color: text,
+        normal_text: TextFont {
             font: assets.font_tomorrow.clone(),
             font_size: 16.,
+            ..Default::default()
         },
-        emphasis_text: TextStyle {
-            color: text,
+        emphasis_text: TextFont {
             font: assets.tomorrow_italic_font.clone(),
             font_size: 16.,
+            ..Default::default()
         },
-        button_text: TextStyle {
-            color: text,
+        button_text: TextFont {
             font: assets.font_graduate.clone(),
             font_size: 14.,
+            ..Default::default()
         },
-        header_text: TextStyle {
-            color: text,
+        header_text: TextFont {
             font: assets.font_graduate.clone(),
             font_size: 20.,
+            ..Default::default()
         },
         icon_size_px: 18.,
         large_icon_size_px: 26.,

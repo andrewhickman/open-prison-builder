@@ -20,7 +20,7 @@ pub struct Wall {
 #[derive(Bundle)]
 pub struct VertexBundle {
     pub vertex: Vertex,
-    pub transform: TransformBundle,
+    pub transform: Transform,
 }
 
 impl MapEntities for Wall {
@@ -34,7 +34,7 @@ impl VertexBundle {
     pub fn new(position: Vec2) -> Self {
         Self {
             vertex: Vertex,
-            transform: Transform::from_translation(position.extend(0.)).into(),
+            transform: Transform::from_translation(position.extend(0.)),
         }
     }
 }

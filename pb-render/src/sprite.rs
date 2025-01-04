@@ -8,7 +8,7 @@ use pb_engine::{
 
 pub fn init_root(mut commands: Commands, root_q: Query<Entity, Added<Root>>) {
     for root in &root_q {
-        commands.entity(root).insert(VisibilityBundle::default());
+        commands.entity(root).insert(Visibility::default());
     }
 }
 
@@ -17,10 +17,10 @@ pub fn init_pawn(mut commands: Commands, pawn_q: Query<Entity, Added<Pawn>>, ass
         commands.entity(pawn).insert((
             Sprite {
                 custom_size: Some(Vec2::splat(pawn::RADIUS * 2.5)),
+                image: assets.pawn_image.clone(),
                 ..default()
             },
-            assets.pawn_image.clone(),
-            VisibilityBundle::default(),
+            Visibility::default(),
         ));
     }
 }

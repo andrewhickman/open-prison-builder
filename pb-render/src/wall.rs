@@ -8,11 +8,10 @@ use bevy::{
     math::FloatOrd,
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
-    sprite::Mesh2dHandle,
     utils::hashbrown::HashSet,
 };
 use pb_engine::wall::{self, Vertex, Wall};
-use pb_util::{try_opt, try_res};
+use pb_util::{try_opt, try_res_s};
 use smallvec::SmallVec;
 
 #[derive(Debug, Default, Component)]
@@ -30,7 +29,7 @@ pub const WHITE: Handle<ColorMaterial> =
     Handle::weak_from_u128(146543197086297070279747770654600266484);
 
 pub fn startup(mut assets: ResMut<Assets<ColorMaterial>>) {
-    assets.insert(&WHITE, ColorMaterial::default());
+    assets.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
 }
 
 pub fn init_vertex(mut commands: Commands, wall_q: Query<(Entity, &Transform), Added<Vertex>>) {
@@ -40,9 +39,9 @@ pub fn init_vertex(mut commands: Commands, wall_q: Query<(Entity, &Transform), A
                 pos: transform.translation.xy(),
                 walls: default(),
             },
-            WHITE.clone(),
-            Mesh2dHandle::default(),
-            VisibilityBundle::default(),
+            MeshMaterial2d(WHITE.clone()),
+            Mesh2d::default(),
+            Visibility::default(),
         ));
     }
 }
@@ -50,11 +49,11 @@ pub fn init_vertex(mut commands: Commands, wall_q: Query<(Entity, &Transform), A
 pub fn init_wall(mut commands: Commands, wall_q: Query<Entity, Added<Wall>>) {
     for wall in &wall_q {
         commands.entity(wall).insert((
-            TransformBundle::default(),
+            Transform::default(),
             WallMesh::default(),
-            WHITE.clone(),
-            Mesh2dHandle::default(),
-            VisibilityBundle::default(),
+            MeshMaterial2d(WHITE.clone()),
+            Mesh2d::default(),
+            Visibility::default(),
         ));
     }
 }
@@ -62,11 +61,8 @@ pub fn init_wall(mut commands: Commands, wall_q: Query<Entity, Added<Wall>>) {
 pub fn update_wall(
     assets: Res<AssetServer>,
     wall_q: Query<(Entity, &Wall), Added<Wall>>,
-    mut vertex_q: Query<
-        (&Transform, &mut VertexMesh, &mut Mesh2dHandle),
-        (With<Vertex>, Without<Wall>),
-    >,
-    mut wall_mesh_q: Query<(&Wall, &mut WallMesh, &mut Mesh2dHandle), Without<Vertex>>,
+    mut vertex_q: Query<(&Transform, &mut VertexMesh, &mut Mesh2d), (With<Vertex>, Without<Wall>)>,
+    mut wall_mesh_q: Query<(&Wall, &mut WallMesh, &mut Mesh2d), Without<Vertex>>,
 ) {
     let mut updated_walls = HashSet::new();
     for (id, wall) in &wall_q {
@@ -87,7 +83,7 @@ pub fn update_wall(
     }
 
     for id in updated_walls {
-        let (wall, mut mesh, mut handle) = try_res!(wall_mesh_q.get_mut(id));
+        let (wall, mut mesh, mut handle) = try_res_s!(wall_mesh_q.get_mut(id));
         let [(_, start_mesh, _), (_, end_mesh, _)] = vertex_q.many([wall.start, wall.end]);
 
         mesh.update(id, start_mesh, end_mesh);
