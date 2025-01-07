@@ -15,8 +15,8 @@
    version="1.1"
    id="svg8"
    inkscape:version="0.92.3 (2405546, 2018-03-11)"
-   sodipodi:docname="button.svg"
-   inkscape:export-filename="C:\Users\andre\Repositories\open-prison-builder\assets\button.png"
+   sodipodi:docname="ribbon_button.svg"
+   inkscape:export-filename="C:\Users\andre\Repositories\open-prison-builder\assets\image\ribbon_button.png"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96">
   <defs
@@ -30,7 +30,7 @@
      inkscape:pageshadow="2"
      inkscape:zoom="4"
      inkscape:cx="38.541346"
-     inkscape:cy="87.785526"
+     inkscape:cy="97.785526"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -64,29 +64,29 @@
      id="layer1"
      transform="translate(0,-246.20002)">
     <rect
-       style="fill:#b45627;fill-opacity:1;stroke:none;stroke-width:0.26458332;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       style="fill:#604855;fill-opacity:1;stroke:none;stroke-width:0.26458332;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
        id="rect4757"
        width="50.799995"
        height="50.800022"
        x="0"
        y="246.19998" />
     <path
-       style="fill:#cc622d;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="fill:#735766;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 0,297.00002 16.933333,280.06669 V 263.13335 L 0,246.20002 Z"
        id="path4749"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:#cc622d;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="fill:#735766;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="m 0,246.20002 16.933333,16.93333 h 16.933333 l 16.933333,-16.93333 z"
        id="path4751"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:#a24e24;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="fill:#56414c;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="m 33.866666,263.13335 16.933333,-16.93333 v 50.8 L 33.866666,280.06669 Z"
        id="path4753"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:#a24e24;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="fill:#56414c;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="m 0,297.00002 16.933333,-16.93333 h 16.933333 l 16.933333,16.93333 z"
        id="path4755"
        inkscape:connector-curvature="0" />

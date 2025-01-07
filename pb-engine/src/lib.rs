@@ -15,7 +15,6 @@ use wall::{Vertex, Wall};
 pub enum EngineState {
     #[default]
     Disabled,
-    Loading,
     Running(Entity),
 }
 

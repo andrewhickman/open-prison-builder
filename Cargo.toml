@@ -47,7 +47,6 @@ bevy = { version = "0.15.0", default-features = false, features = [
     "sysinfo_plugin",
     "bevy_asset",
     "bevy_render",
-    "bevy_pbr",
     "bevy_winit",
     "multi_threaded",
     "png",

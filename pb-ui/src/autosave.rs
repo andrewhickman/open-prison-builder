@@ -35,7 +35,7 @@ pub fn run(
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
-    let &EngineState::Running(root) = state.get() else {
+    let EngineState::Running(root) = *state.get() else {
         error!("Failed to autosave: not running");
         return;
     };

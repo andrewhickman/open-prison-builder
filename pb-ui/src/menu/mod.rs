@@ -13,12 +13,12 @@ use crate::{
     layout::Layout,
     theme::Theme,
     widget::{Disabled, UiBuilder},
+    UiState,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum MenuState {
     Shown,
-    #[default]
     Hidden,
 }
 
@@ -71,6 +71,20 @@ pub fn update(mut button_q: Query<(&MenuButton, &mut Disabled)>, state: Res<Stat
     }
 }
 
+impl ComputedStates for MenuState {
+    type SourceStates = UiState;
+
+    fn compute(source: UiState) -> Option<Self> {
+        match source {
+            UiState::Startup => None,
+            UiState::LoadingAssets | UiState::LoadingSave | UiState::Game => {
+                Some(MenuState::Hidden)
+            }
+            UiState::Menu => Some(MenuState::Shown),
+        }
+    }
+}
+
 impl<'w> UiBuilder<'w, '_> {
     pub fn menu_root(&mut self, theme: &Theme) -> UiBuilder<'w, '_> {
         self.container(Node {
@@ -100,9 +114,6 @@ impl<'w> UiBuilder<'w, '_> {
         menu.large_button(theme, assets, "New Prison", default())
             .insert(MenuButton::New)
             .on_click(new_prison_button);
-        menu.large_button(theme, assets, "Save Prison", default())
-            .insert(MenuButton::Save)
-            .on_click(saves::save_panel_button);
         menu.large_button(theme, assets, "Save Prison", default())
             .insert(MenuButton::Save)
             .on_click(saves::save_panel_button);
@@ -145,12 +156,12 @@ impl<'w> UiBuilder<'w, '_> {
 fn new_prison_button(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
-    mut menu_state: ResMut<NextState<MenuState>>,
+    mut ui_state: ResMut<NextState<UiState>>,
     mut engine_state: ResMut<NextState<EngineState>>,
 ) {
     let parent = commands.spawn(RootBundle::default()).id();
 
-    menu_state.set(MenuState::Hidden);
+    ui_state.set(UiState::Game);
     engine_state.set(EngineState::Running(parent));
 
     commands

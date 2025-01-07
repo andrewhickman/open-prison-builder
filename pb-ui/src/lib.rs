@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
+mod assets;
 mod autosave;
 mod camera;
 mod input;
@@ -7,7 +8,7 @@ mod layout;
 mod loading;
 mod menu;
 mod message;
-mod startup;
+mod ribbon;
 mod theme;
 mod widget;
 
@@ -18,19 +19,29 @@ use bevy::{
 use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
 use camera::CameraInput;
-use pb_assets::FirstStartup;
+use loading::LoadingState;
 use pb_engine::EngineState;
 use pb_util::set_state;
+use ribbon::RibbonState;
 use widget::panel::PanelStack;
 
 use crate::{
     menu::MenuState,
     message::Message,
-    startup::StartupState,
     widget::form::{FormSubmit, FormUpdate},
 };
 
 pub struct UiPlugin;
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
+pub enum UiState {
+    #[default]
+    Startup,
+    LoadingAssets,
+    Menu,
+    LoadingSave,
+    Game,
+}
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
@@ -38,55 +49,61 @@ impl Plugin for UiPlugin {
 
         app.add_event::<FormUpdate>().add_event::<FormSubmit>();
 
-        app.add_systems(
-            FirstStartup,
-            (theme::init, layout::init).chain().after(pb_assets::load),
-        );
-        app.add_systems(
-            Startup,
-            (camera::init, input::settings::init.after(pb_store::init)),
-        );
-
-        app.init_state::<StartupState>().add_systems(
-            PreUpdate,
-            startup::update.run_if(in_state(StartupState::Pending)),
-        );
-
-        app.init_resource::<CameraInput>()
+        app.init_state::<UiState>()
+            .add_systems(PostStartup, set_state(UiState::LoadingAssets))
             .add_systems(
                 PreUpdate,
-                input::read
-                    .after(InputSystem)
-                    .run_if(in_state(StartupState::Ready).and(on_event::<KeyboardInput>)),
-            )
-            .add_systems(Update, camera::update);
+                assets::update.run_if(in_state(UiState::LoadingAssets)),
+            );
 
-        app.add_systems(Update, (widget::button::update, widget::spinner::update));
+        app.add_systems(
+            Startup,
+            (
+                theme::init.chain().after(pb_assets::load),
+                layout::init.after(theme::init),
+                camera::init.after(theme::init),
+                input::settings::init.after(pb_store::init),
+            ),
+        );
 
-        app.add_systems(Update, widget::input::update.after(TextInputSystem));
+        app.init_resource::<PanelStack>();
+        app.add_systems(
+            Update,
+            (
+                widget::button::update,
+                widget::spinner::update,
+                widget::input::update.after(TextInputSystem),
+                widget::panel::update,
+            ),
+        );
 
-        app.init_resource::<PanelStack>()
-            .add_systems(Update, widget::panel::update);
+        app.add_computed_state::<LoadingState>()
+            .add_systems(OnEnter(LoadingState::Shown), loading::show)
+            .add_systems(OnEnter(LoadingState::Hidden), loading::hide);
 
-        app.init_state::<MenuState>()
+        app.add_computed_state::<MenuState>()
             .add_systems(
                 OnEnter(MenuState::Shown),
                 (menu::show, menu::update).chain(),
             )
             .add_systems(OnEnter(MenuState::Hidden), menu::hide);
 
-        app.add_systems(OnEnter(StartupState::Pending), loading::enter)
-            .add_systems(
-                OnExit(StartupState::Pending),
-                (loading::exit, set_state(MenuState::Shown)),
-            );
-
-        app.add_systems(OnEnter(EngineState::Loading), loading::enter)
-            .add_systems(OnExit(EngineState::Loading), loading::exit);
+        app.add_computed_state::<RibbonState>()
+            .add_systems(OnEnter(RibbonState::Shown), ribbon::show)
+            .add_systems(OnEnter(RibbonState::Hidden), ribbon::hide);
 
         app.add_event::<Message>()
             .add_systems(Update, (message::spawn_messages, message::despawn_messages));
 
         app.add_systems(PostUpdate, autosave::run.run_if(autosave::run_condition));
+
+        app.init_resource::<CameraInput>()
+            .add_systems(
+                PreUpdate,
+                input::read
+                    .after(InputSystem)
+                    .run_if(in_state(LoadingState::Hidden).and(on_event::<KeyboardInput>)),
+            )
+            .add_systems(Update, camera::update);
     }
 }

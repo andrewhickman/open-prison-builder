@@ -1,7 +1,5 @@
 use bevy::{
-    app::MainScheduleOrder,
     asset::{LoadState, UntypedAssetId},
-    ecs::schedule::ScheduleLabel,
     prelude::*,
 };
 
@@ -11,6 +9,7 @@ pub struct Assets {
     pub font_tomorrow: Handle<Font>,
     pub tomorrow_italic_font: Handle<Font>,
     pub button_image: Handle<Image>,
+    pub ribbon_button_image: Handle<Image>,
     pub bevy_icon: Handle<Image>,
     pub github_icon: Handle<Image>,
     pub pawn_image: Handle<Image>,
@@ -20,15 +19,9 @@ pub struct Assets {
 
 pub struct AssetsPlugin;
 
-#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct FirstStartup;
-
 impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
-        let mut schedule = app.world_mut().resource_mut::<MainScheduleOrder>();
-        schedule.insert_startup_before(StateTransition, FirstStartup);
-
-        app.add_systems(FirstStartup, load);
+        app.add_systems(PreStartup, load);
     }
 }
 
@@ -38,6 +31,7 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
         font_tomorrow: server.load("fonts/Tomorrow-Medium.ttf"),
         tomorrow_italic_font: server.load("fonts/Tomorrow-MediumItalic.ttf"),
         button_image: server.load("image/button.png"),
+        ribbon_button_image: server.load("image/ribbon_button.png"),
         bevy_icon: server.load("image/bevy.png"),
         github_icon: server.load("image/github.png"),
         pawn_image: server.load("image/pawn.png"),
@@ -66,6 +60,7 @@ impl Assets {
             font_tomorrow,
             tomorrow_italic_font,
             button_image,
+            ribbon_button_image,
             bevy_icon,
             github_icon,
             pawn_image,
@@ -78,6 +73,7 @@ impl Assets {
             font_tomorrow.into(),
             tomorrow_italic_font.into(),
             button_image.into(),
+            ribbon_button_image.into(),
             bevy_icon.into(),
             github_icon.into(),
             pawn_image.into(),

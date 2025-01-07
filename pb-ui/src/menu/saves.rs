@@ -3,7 +3,10 @@ use bevy::{
     ecs::{system::SystemState, world::CommandQueue},
     prelude::*,
 };
-use pb_engine::save::{load, save, LoadParam, LoadSeed, Save, SaveParam};
+use pb_engine::{
+    save::{load, save, LoadParam, LoadSeed, Save, SaveParam},
+    Root,
+};
 use pb_store::{Metadata, Store};
 use smol_str::SmolStr;
 
@@ -15,14 +18,14 @@ use pb_util::{
 
 use crate::{
     layout::Layout,
-    menu::{MenuPanel, MenuState},
+    menu::MenuPanel,
     message::Message,
     theme::Theme,
     widget::{
         form::{self, Form, FormField, FormSubmit},
         UiBuilder,
     },
-    EngineState,
+    EngineState, UiState,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -45,12 +48,15 @@ pub fn save_panel_button(
     theme: Res<Theme>,
     assets: Res<Assets>,
     layout: Res<Layout>,
-    panel_q: Query<Entity, With<MenuPanel>>,
+    panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
     store: Res<Store>,
 ) {
-    for id in &panel_q {
+    for (id, &panel) in &panel_q {
         commands.entity(id).despawn_recursive();
+        if panel == MenuPanel::Save {
+            return;
+        }
     }
 
     UiBuilder::new(commands, layout.menu)
@@ -64,12 +70,15 @@ pub fn load_panel_button(
     theme: Res<Theme>,
     assets: Res<Assets>,
     layout: Res<Layout>,
-    panel_q: Query<Entity, With<MenuPanel>>,
+    panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
     store: Res<Store>,
 ) {
-    for id in &panel_q {
+    for (id, &panel) in &panel_q {
         commands.entity(id).despawn_recursive();
+        if panel == MenuPanel::Load {
+            return;
+        }
     }
 
     UiBuilder::new(commands, layout.menu)
@@ -103,8 +112,8 @@ fn load_button(
     event: Trigger<Pointer<Click>>,
     mut commands: Commands,
     save_q: Query<&SaveItem>,
-    mut menu_state: ResMut<NextState<MenuState>>,
-    engine_state: Res<State<EngineState>>,
+    mut ui_state: ResMut<NextState<UiState>>,
+    engine_root: Query<Entity, With<Root>>,
     mut next_engine_state: ResMut<NextState<EngineState>>,
     registry: Res<AppTypeRegistry>,
     callback: Res<CallbackSender>,
@@ -112,12 +121,12 @@ fn load_button(
 ) {
     let save_name = try_res_s!(save_q.get(event.target)).0.name.clone();
 
-    if let &EngineState::Running(root) = engine_state.get() {
+    if let Ok(root) = engine_root.get_single() {
         commands.entity(root).despawn_recursive();
     }
 
-    menu_state.set(MenuState::Hidden);
-    next_engine_state.set(EngineState::Loading);
+    ui_state.set(UiState::LoadingSave);
+    next_engine_state.set(EngineState::Disabled);
 
     let store = store.clone();
     let callback = callback.clone();
@@ -134,16 +143,17 @@ fn load_button(
         world: &mut World,
         load_p: &mut SystemState<LoadParam>,
         state: &mut SystemState<(
-            ResMut<NextState<MenuState>>,
+            ResMut<NextState<UiState>>,
             ResMut<NextState<EngineState>>,
             EventWriter<Message>,
         )>,
     ) {
         let res = save.and_then(|save| load(world, load_p, &save));
-        let (mut menu_state, mut engine_state, mut message_e) = state.get_mut(world);
+        let (mut ui_state, mut engine_state, mut message_e) = state.get_mut(world);
 
         match res {
             Ok(root) => {
+                ui_state.set(UiState::Game);
                 engine_state.set(EngineState::Running(root));
                 info!("Successfully loaded save");
             }
@@ -151,8 +161,7 @@ fn load_button(
                 let error = error.as_dyn_error();
                 error!(error, "Failed to load save");
 
-                menu_state.set(MenuState::Shown);
-                engine_state.set(EngineState::Disabled);
+                ui_state.set(UiState::Menu);
 
                 message_e.send(Message::error(&error));
             }
@@ -165,7 +174,7 @@ fn overwrite_button(
     world: &World,
     save_q: Query<&SaveItem>,
     save_p: SaveParam,
-    state: Res<State<EngineState>>,
+    root: Query<Entity, With<Root>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
@@ -174,7 +183,7 @@ fn overwrite_button(
         save_name,
         world,
         save_p,
-        state,
+        root,
         store.clone(),
         callback.clone(),
     );
@@ -185,7 +194,7 @@ fn save_button(
     world: &World,
     form_q: Query<&Form>,
     save_p: SaveParam,
-    state: Res<State<EngineState>>,
+    root: Query<Entity, With<Root>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
@@ -196,7 +205,7 @@ fn save_button(
         SmolStr::from(&save_form.name),
         world,
         save_p,
-        state,
+        root,
         store.clone(),
         callback.clone(),
     );
@@ -206,7 +215,7 @@ fn save_impl(
     name: SmolStr,
     world: &World,
     save_p: SaveParam,
-    state: Res<State<EngineState>>,
+    root: Query<Entity, With<Root>>,
     store: Store,
     callback: CallbackSender,
 ) {
@@ -214,8 +223,8 @@ fn save_impl(
         return;
     }
 
-    let &EngineState::Running(root) = state.get() else {
-        error!("Failed to save: not running");
+    let Ok(root) = root.get_single() else {
+        error!("Failed to save: root not found");
         return;
     };
 

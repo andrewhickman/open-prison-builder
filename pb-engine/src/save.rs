@@ -29,6 +29,7 @@ pub struct LoadSeed {
     registry: TypeRegistryArc,
 }
 
+// TODO: necessary?
 #[derive(SystemParam)]
 pub struct SaveParam<'w, 's> {
     children: Query<'w, 's, &'static Children>,

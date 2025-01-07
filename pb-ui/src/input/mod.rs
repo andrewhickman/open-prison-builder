@@ -9,9 +9,7 @@ use bevy::{
 use pb_engine::EngineState;
 use pb_util::run_oneshot_system;
 
-use crate::{
-    camera::CameraInput, input::settings::Action, menu::MenuState, widget::panel::PanelStack,
-};
+use crate::{camera::CameraInput, input::settings::Action, widget::panel::PanelStack, UiState};
 
 pub fn read(
     mut commands: Commands,
@@ -48,10 +46,13 @@ pub fn cancel_command(
     mut commands: Commands,
     mut panels: ResMut<PanelStack>,
     engine_state: Res<State<EngineState>>,
-    menu_state: Res<State<MenuState>>,
-    mut next_menu_state: ResMut<NextState<MenuState>>,
+    ui_state: Res<State<UiState>>,
+    mut next_ui_state: ResMut<NextState<UiState>>,
 ) {
-    if matches!(engine_state.get(), EngineState::Loading) {
+    if matches!(
+        ui_state.get(),
+        UiState::LoadingAssets | UiState::LoadingSave
+    ) {
         return;
     }
 
@@ -63,11 +64,10 @@ pub fn cancel_command(
     }
 
     if matches!(engine_state.get(), EngineState::Running(_)) {
-        let toggled_menu = match menu_state.get() {
-            MenuState::Shown => MenuState::Hidden,
-            MenuState::Hidden => MenuState::Shown,
-        };
-
-        next_menu_state.set(toggled_menu);
+        match ui_state.get() {
+            UiState::Startup | UiState::LoadingAssets | UiState::LoadingSave => (),
+            UiState::Game => next_ui_state.set(UiState::Menu),
+            UiState::Menu => next_ui_state.set(UiState::Game),
+        }
     }
 }

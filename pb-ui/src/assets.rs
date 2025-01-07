@@ -5,17 +5,10 @@ use bevy::{app::AppExit, asset::LoadState, prelude::*};
 use pb_assets::Assets;
 use pb_util::AsDynError;
 
-use crate::input::Settings;
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
-pub enum StartupState {
-    #[default]
-    Pending,
-    Ready,
-}
+use crate::{input::Settings, UiState};
 
 pub fn update(
-    mut state: ResMut<NextState<StartupState>>,
+    mut state: ResMut<NextState<UiState>>,
     assets: Res<Assets>,
     asset_server: Res<AssetServer>,
     settings: Option<Res<Settings>>,
@@ -38,5 +31,5 @@ pub fn update(
     }
 
     info!("Finished startup");
-    state.set(StartupState::Ready);
+    state.set(UiState::Menu);
 }

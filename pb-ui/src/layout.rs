@@ -6,6 +6,7 @@ use crate::{theme::Theme, widget::UiBuilder};
 pub struct Layout {
     pub root: Entity,
     pub menu: Entity,
+    pub ribbon: Entity,
     pub messages: Entity,
 }
 
@@ -25,11 +26,14 @@ pub fn init(mut commands: Commands, theme: Res<Theme>) {
 
     let menu = builder.menu_root(&theme).id();
 
+    let ribbon = builder.ribbon_root().id();
+
     let messages = builder.messages().id();
 
     commands.insert_resource(Layout {
         root,
         menu,
+        ribbon,
         messages,
     })
 }

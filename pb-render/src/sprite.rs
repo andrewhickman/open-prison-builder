@@ -6,6 +6,8 @@ use pb_engine::{
     Root,
 };
 
+// TODO use hooks
+
 pub fn init_root(mut commands: Commands, root_q: Query<Entity, Added<Root>>) {
     for root in &root_q {
         commands.entity(root).insert(Visibility::default());

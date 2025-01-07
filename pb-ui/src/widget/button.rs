@@ -21,7 +21,14 @@ impl<'w> UiBuilder<'w, '_> {
         text: impl Into<String>,
         style: Node,
     ) -> UiBuilder<'w, '_> {
-        self.text_button(theme, assets, text, theme.header_text.clone(), 8., style)
+        self.text_button(
+            theme,
+            assets.button_image.clone(),
+            text,
+            theme.header_text.clone(),
+            8.,
+            style,
+        )
     }
 
     pub fn button(
@@ -31,13 +38,20 @@ impl<'w> UiBuilder<'w, '_> {
         text: impl Into<String>,
         style: Node,
     ) -> UiBuilder<'w, '_> {
-        self.text_button(theme, assets, text, theme.button_text.clone(), 4., style)
+        self.text_button(
+            theme,
+            assets.button_image.clone(),
+            text,
+            theme.button_text.clone(),
+            4.,
+            style,
+        )
     }
 
-    fn text_button(
+    pub fn text_button(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        image: Handle<Image>,
         text: impl Into<String>,
         text_style: TextFont,
         button_border: f32,
@@ -59,9 +73,11 @@ impl<'w> UiBuilder<'w, '_> {
                 align_items: AlignItems::Center,
                 ..style
             },
-            ImageNode::new(assets.button_image.clone())
+            ImageNode::new(image)
                 .with_color(theme.text)
                 .with_mode(NodeImageMode::Sliced(slicer)),
+            PickingBehavior::default(),
+            PickingInteraction::None,
             ButtonStyle::Text,
             Disabled(false),
         ));
@@ -86,6 +102,7 @@ impl<'w> UiBuilder<'w, '_> {
             },
             ImageNode::new(icon.clone()).with_color(theme.text),
             PickingBehavior::default(),
+            PickingInteraction::None,
             ButtonStyle::Icon,
             Disabled(false),
         ))
