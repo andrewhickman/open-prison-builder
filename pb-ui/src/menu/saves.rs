@@ -12,8 +12,8 @@ use smol_str::SmolStr;
 
 use pb_assets::Assets;
 use pb_util::{
-    callback::CallbackSender, run_oneshot_system, run_oneshot_system_with_input, spawn_io,
-    try_res_s, AsDynError,
+    callback::CallbackSender, run_system_cached, run_system_cached_with, spawn_io, try_res_s,
+    AsDynError,
 };
 
 use crate::{
@@ -236,8 +236,8 @@ fn save_impl(
         let res = store.set(&format!("saves/{name}.json"), scene).await;
 
         let mut queue = CommandQueue::default();
-        queue.push(run_oneshot_system_with_input(on_save_complete, (name, res)));
-        queue.push(run_oneshot_system(refresh_save_panel));
+        queue.push(run_system_cached_with(on_save_complete, (name, res)));
+        queue.push(run_system_cached(refresh_save_panel));
         callback.send_batch(queue);
     });
 

@@ -1,13 +1,12 @@
-use std::{any::TypeId, future::Future, marker::PhantomData};
+use std::future::Future;
 
 use bevy::{
     ecs::{
-        system::BoxedSystem,
+        system::RunSystemCachedWith,
         world::{Command, CommandQueue},
     },
     prelude::*,
     tasks::IoTaskPool,
-    utils::HashMap,
 };
 use crossbeam_channel::{Receiver, Sender};
 
@@ -50,7 +49,7 @@ impl CallbackSender {
     where
         S: System<In = (), Out = ()> + Send + 'static,
     {
-        self.send(run_oneshot_system(system))
+        self.send(run_system_cached(system))
     }
 
     pub fn send_oneshot_system_with_input<I, S, M>(&self, system: S, input: I)
@@ -59,7 +58,7 @@ impl CallbackSender {
         S: IntoSystem<In<I>, (), M> + Send + 'static,
         M: 'static,
     {
-        self.send(run_oneshot_system_with_input(system, input))
+        self.send(run_system_cached_with(system, input))
     }
 
     pub fn send_batch(&self, queue: CommandQueue) {
@@ -77,73 +76,22 @@ pub fn apply_callbacks(mut commands: Commands, receiver: Res<CallbackReceiver>) 
     }
 }
 
-pub fn run_oneshot_system<S, M>(system: S) -> impl Command
+pub fn run_system_cached<M, S>(system: S) -> impl Command
 where
     S: IntoSystem<(), (), M> + Send + 'static,
     M: 'static,
 {
-    run_oneshot_system_with_input(system, ())
+    RunSystemCachedWith::new(system, ())
 }
 
-pub fn run_oneshot_system_with_input<I, S, M>(
+pub fn run_system_cached_with<I, M, S>(
     system: S,
     input: <I as SystemInput>::Inner<'static>,
 ) -> impl Command
 where
-    I: SystemInput + 'static,
-    <I as SystemInput>::Inner<'static>: Send,
-    S: IntoSystem<I, (), M> + Send + 'static,
+    I: SystemInput<Inner<'static>: Send> + Send + 'static,
     M: 'static,
-{
-    RunOneShotSystem {
-        system,
-        input,
-        marker: PhantomData,
-    }
-}
-
-struct RunOneShotSystem<I, S, M>
-where
-    I: SystemInput,
-{
-    system: S,
-    input: <I as SystemInput>::Inner<'static>,
-    marker: PhantomData<fn(M) -> M>,
-}
-
-#[derive(Resource)]
-struct SystemMap<I>(HashMap<TypeId, BoxedSystem<I>>);
-
-impl<I, S, M> Command for RunOneShotSystem<I, S, M>
-where
-    I: SystemInput + 'static,
-    <I as SystemInput>::Inner<'static>: Send,
     S: IntoSystem<I, (), M> + Send + 'static,
-    M: 'static,
 {
-    fn apply(self, world: &mut World) {
-        let mut map = world.get_resource_or_insert_with::<SystemMap<I>>(default);
-        let mut system = match map.0.remove(&self.system.system_type_id()) {
-            Some(system) => system,
-            None => {
-                let mut system = IntoSystem::into_system(self.system);
-                system.initialize(world);
-                Box::new(system)
-            }
-        };
-
-        system.run(self.input, world);
-
-        world
-            .get_resource_mut::<SystemMap<I>>()
-            .unwrap()
-            .0
-            .insert(system.type_id(), system);
-    }
-}
-
-impl<I> Default for SystemMap<I> {
-    fn default() -> Self {
-        SystemMap(default())
-    }
+    RunSystemCachedWith::new(system, input)
 }

@@ -8,9 +8,7 @@ use bevy::{
     state::state::{FreelyMutableState, NextState},
 };
 
-pub use self::callback::{
-    run_oneshot_system, run_oneshot_system_with_input, spawn_io, CallbackPlugin,
-};
+pub use self::callback::{run_system_cached, run_system_cached_with, spawn_io, CallbackPlugin};
 
 use std::fmt::Write;
 

@@ -7,7 +7,7 @@ use bevy::{
     prelude::*,
 };
 use pb_engine::EngineState;
-use pb_util::run_oneshot_system;
+use pb_util::run_system_cached;
 
 use crate::{camera::CameraInput, input::settings::Action, widget::panel::PanelStack, UiState};
 
@@ -28,7 +28,7 @@ pub fn read(
 
             match action {
                 Action::Cancel if event.state == ButtonState::Released => {
-                    commands.queue(run_oneshot_system(cancel_command))
+                    commands.queue(run_system_cached(cancel_command))
                 }
                 Action::PanLeft => camera.pan_left(event.state),
                 Action::PanUp => camera.pan_up(event.state),

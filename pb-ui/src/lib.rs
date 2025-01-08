@@ -102,7 +102,7 @@ impl Plugin for UiPlugin {
                 PreUpdate,
                 input::read
                     .after(InputSystem)
-                    .run_if(in_state(LoadingState::Hidden).and(on_event::<KeyboardInput>)),
+                    .run_if(on_event::<KeyboardInput>),
             )
             .add_systems(Update, camera::update);
     }
