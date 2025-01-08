@@ -104,6 +104,8 @@ impl Plugin for UiPlugin {
                     .after(InputSystem)
                     .run_if(on_event::<KeyboardInput>),
             )
-            .add_systems(Update, camera::update);
+            .add_systems(Update, camera::update.run_if(camera::update_condition))
+            .add_observer(input::cancel)
+            .add_observer(camera::action);
     }
 }

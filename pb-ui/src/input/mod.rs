@@ -7,16 +7,33 @@ use bevy::{
     prelude::*,
 };
 use pb_engine::EngineState;
-use pb_util::run_system_cached;
 
-use crate::{camera::CameraInput, input::settings::Action, widget::panel::PanelStack, UiState};
+use crate::{input::settings::Action, widget::panel::PanelStack, UiState};
+
+#[derive(Event, Debug, Clone, Copy, PartialEq)]
+pub struct CancelAction;
+
+#[derive(Event, Debug, Clone, Copy, PartialEq)]
+pub struct CameraAction {
+    pub kind: CameraActionKind,
+    pub state: ButtonState,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CameraActionKind {
+    PanLeft,
+    PanUp,
+    PanRight,
+    PanDown,
+    ZoomIn,
+    ZoomOut,
+}
 
 pub fn read(
     mut commands: Commands,
     settings: Res<Settings>,
     mut keyboard_e: EventReader<KeyboardInput>,
     keyboard_state: Res<ButtonInput<KeyCode>>,
-    mut camera: ResMut<CameraInput>,
 ) {
     for event in keyboard_e.read() {
         if let Some(action) = settings.binds.get(&event.key_code) {
@@ -28,21 +45,40 @@ pub fn read(
 
             match action {
                 Action::Cancel if event.state == ButtonState::Released => {
-                    commands.queue(run_system_cached(cancel_command))
+                    commands.trigger(CancelAction);
                 }
-                Action::PanLeft => camera.pan_left(event.state),
-                Action::PanUp => camera.pan_up(event.state),
-                Action::PanRight => camera.pan_right(event.state),
-                Action::PanDown => camera.pan_down(event.state),
-                Action::ZoomIn => camera.zoom_in(event.state),
-                Action::ZoomOut => camera.zoom_out(event.state),
+                Action::PanLeft => commands.trigger(CameraAction {
+                    kind: CameraActionKind::PanLeft,
+                    state: event.state,
+                }),
+                Action::PanUp => commands.trigger(CameraAction {
+                    kind: CameraActionKind::PanUp,
+                    state: event.state,
+                }),
+                Action::PanRight => commands.trigger(CameraAction {
+                    kind: CameraActionKind::PanRight,
+                    state: event.state,
+                }),
+                Action::PanDown => commands.trigger(CameraAction {
+                    kind: CameraActionKind::PanDown,
+                    state: event.state,
+                }),
+                Action::ZoomIn => commands.trigger(CameraAction {
+                    kind: CameraActionKind::ZoomIn,
+                    state: event.state,
+                }),
+                Action::ZoomOut => commands.trigger(CameraAction {
+                    kind: CameraActionKind::ZoomOut,
+                    state: event.state,
+                }),
                 _ => (),
             }
         }
     }
 }
 
-pub fn cancel_command(
+pub fn cancel(
+    _: Trigger<CancelAction>,
     mut commands: Commands,
     mut panels: ResMut<PanelStack>,
     engine_state: Res<State<EngineState>>,

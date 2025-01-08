@@ -1,6 +1,10 @@
 use bevy::{input::ButtonState, prelude::*, render::camera::ScalingMode};
 
-use crate::theme::Theme;
+use crate::{
+    input::{CameraAction, CameraActionKind},
+    theme::Theme,
+    UiState,
+};
 
 /// Camera speed, in metres per second
 pub const CAMERA_PAN_SPEED: f32 = 0.5;
@@ -29,15 +33,34 @@ pub fn init(mut commands: Commands, theme: Res<Theme>) {
     ));
 }
 
+pub fn action(
+    trigger: Trigger<CameraAction>,
+    ui_state: Res<State<UiState>>,
+    mut input: ResMut<CameraInput>,
+) {
+    if *ui_state.get() != UiState::Game {
+        return;
+    }
+
+    match trigger.kind {
+        CameraActionKind::PanLeft => input.pan_left(trigger.state),
+        CameraActionKind::PanUp => input.pan_up(trigger.state),
+        CameraActionKind::PanRight => input.pan_right(trigger.state),
+        CameraActionKind::PanDown => input.pan_down(trigger.state),
+        CameraActionKind::ZoomIn => input.zoom_in(trigger.state),
+        CameraActionKind::ZoomOut => input.zoom_out(trigger.state),
+    }
+}
+
+pub fn update_condition(input: Res<CameraInput>) -> bool {
+    *input != CameraInput::default()
+}
+
 pub fn update(
     input: Res<CameraInput>,
     time: Res<Time<Real>>,
     mut camera_transform_q: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
 ) {
-    if *input == CameraInput::default() {
-        return;
-    }
-
     for (mut transform, mut camera_projection) in &mut camera_transform_q {
         input.apply(&mut transform, &mut camera_projection, time.delta_secs());
     }
