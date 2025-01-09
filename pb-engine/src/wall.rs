@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 
 pub const RADIUS: f32 = 0.125;
 
-#[derive(Copy, Clone, Component, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
 pub struct Vertex;
 
-#[derive(Copy, Clone, Component, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize, MapEntities)]
 pub struct Wall {
     pub start: Entity,

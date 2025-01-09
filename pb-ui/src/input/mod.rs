@@ -10,10 +10,10 @@ use pb_engine::EngineState;
 
 use crate::{input::settings::Action, widget::panel::PanelStack, UiState};
 
-#[derive(Event, Debug, Clone, Copy, PartialEq)]
+#[derive(Event, Debug, Clone, Copy)]
 pub struct CancelAction;
 
-#[derive(Event, Debug, Clone, Copy, PartialEq)]
+#[derive(Event, Debug, Clone, Copy)]
 pub struct CameraAction {
     pub kind: CameraActionKind,
     pub state: ButtonState,
@@ -36,14 +36,18 @@ pub fn read(
     keyboard_state: Res<ButtonInput<KeyCode>>,
 ) {
     for event in keyboard_e.read() {
-        if let Some(action) = settings.binds.get(&event.key_code) {
-            match event.state {
-                ButtonState::Pressed if !keyboard_state.just_pressed(event.key_code) => continue,
-                ButtonState::Released if !keyboard_state.just_released(event.key_code) => continue,
-                _ => (),
+        match event.state {
+            ButtonState::Pressed if !keyboard_state.just_pressed(event.key_code) => continue,
+            ButtonState::Released if !keyboard_state.just_released(event.key_code) => continue,
+            _ => (),
+        }
+
+        for binding in settings.get_bind(event.key_code) {
+            if !binding.modifiers.iter().all(|&m| keyboard_state.pressed(m)) {
+                continue;
             }
 
-            match action {
+            match binding.action {
                 Action::Cancel if event.state == ButtonState::Released => {
                     commands.trigger(CancelAction);
                 }

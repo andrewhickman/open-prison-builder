@@ -28,14 +28,17 @@ impl<'w> UiBuilder<'w, '_> {
 }
 
 pub fn update(
+    mut commands: Commands,
     input_q: Query<(Entity, &FormField, &TextInputValue), Changed<TextInputValue>>,
-    mut update_e: EventWriter<FormUpdate>,
 ) {
     for (target, field, value) in &input_q {
-        update_e.send(FormUpdate {
+        commands.trigger_targets(
+            FormUpdate {
+                target,
+                name: field.name().into(),
+                value: value.0.clone_value(),
+            },
             target,
-            name: field.name().into(),
-            value: value.0.clone_value(),
-        });
+        );
     }
 }

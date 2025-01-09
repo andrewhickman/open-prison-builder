@@ -12,19 +12,13 @@ pub struct PanelStack {
 #[derive(Default, Copy, Clone, Component)]
 pub struct Panel;
 
-pub fn update(
-    mut stack: ResMut<PanelStack>,
-    added: Query<Entity, Added<Panel>>,
-    mut removed: RemovedComponents<Panel>,
-) {
-    for entity in &added {
-        stack.entities.push(entity);
-    }
+pub fn on_add(trigger: Trigger<OnAdd, Panel>, mut stack: ResMut<PanelStack>) {
+    stack.entities.push(trigger.entity());
+}
 
-    for entity in removed.read() {
-        if let Some(pos) = stack.entities.iter().position(|&e| e == entity) {
-            stack.entities.remove(pos);
-        }
+pub fn on_remove(trigger: Trigger<OnRemove, Panel>, mut stack: ResMut<PanelStack>) {
+    if let Some(pos) = stack.entities.iter().position(|&e| e == trigger.entity()) {
+        stack.entities.remove(pos);
     }
 }
 

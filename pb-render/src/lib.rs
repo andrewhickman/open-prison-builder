@@ -4,19 +4,18 @@ mod sprite;
 mod wall;
 
 use bevy::prelude::*;
+use wall::WallChanged;
 
 pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, wall::startup);
-        app.add_systems(
-            PostUpdate,
-            (
-                sprite::init_root,
-                sprite::init_pawn,
-                ((wall::init_vertex, wall::init_wall), wall::update_wall).chain(),
-            ),
-        );
+        app.add_event::<WallChanged>()
+            .add_systems(PostUpdate, wall::update_wall)
+            .add_observer(wall::init_vertex)
+            .add_observer(wall::init_wall)
+            .add_observer(sprite::init_root)
+            .add_observer(sprite::init_pawn);
     }
 }

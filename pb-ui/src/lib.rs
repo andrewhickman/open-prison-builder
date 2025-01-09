@@ -25,11 +25,7 @@ use pb_util::set_state;
 use ribbon::RibbonState;
 use widget::panel::PanelStack;
 
-use crate::{
-    menu::MenuState,
-    message::Message,
-    widget::form::{FormSubmit, FormUpdate},
-};
+use crate::{menu::MenuState, message::Message};
 
 pub struct UiPlugin;
 
@@ -46,8 +42,6 @@ pub enum UiState {
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TextInputPlugin);
-
-        app.add_event::<FormUpdate>().add_event::<FormSubmit>();
 
         app.init_state::<UiState>()
             .add_systems(PostStartup, set_state(UiState::LoadingAssets))
@@ -66,16 +60,17 @@ impl Plugin for UiPlugin {
             ),
         );
 
-        app.init_resource::<PanelStack>();
-        app.add_systems(
-            Update,
-            (
-                widget::button::update,
-                widget::spinner::update,
-                widget::input::update.after(TextInputSystem),
-                widget::panel::update,
-            ),
-        );
+        app.init_resource::<PanelStack>()
+            .add_systems(
+                Update,
+                (
+                    widget::button::update,
+                    widget::spinner::update,
+                    widget::input::update.after(TextInputSystem),
+                ),
+            )
+            .add_observer(widget::panel::on_add)
+            .add_observer(widget::panel::on_remove);
 
         app.add_computed_state::<LoadingState>()
             .add_systems(OnEnter(LoadingState::Shown), loading::show)

@@ -87,8 +87,8 @@ impl<'w> UiBuilder<'w, '_> {
     }
 }
 
-pub fn submit(_: Trigger<Pointer<Click>>, mut submit_e: EventWriter<FormSubmit>) {
-    submit_e.send(FormSubmit);
+pub fn submit(trigger: Trigger<Pointer<Click>>, mut commands: Commands) {
+    commands.trigger_targets(FormSubmit, trigger.entity());
 }
 
 fn update(mut event: Trigger<FormUpdate>, mut form_q: Query<(&mut Form, Option<&FormField>)>) {

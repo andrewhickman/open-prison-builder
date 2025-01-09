@@ -25,6 +25,12 @@ pub struct WallMesh {
     intersections: [Vec2; 4],
 }
 
+#[derive(Event, Debug, Clone, Copy)]
+pub struct WallChanged {
+    id: Entity,
+    wall: Wall,
+}
+
 pub const WHITE: Handle<ColorMaterial> =
     Handle::weak_from_u128(146543197086297070279747770654600266484);
 
@@ -32,48 +38,61 @@ pub fn startup(mut assets: ResMut<Assets<ColorMaterial>>) {
     assets.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
 }
 
-pub fn init_vertex(mut commands: Commands, wall_q: Query<(Entity, &Transform), Added<Vertex>>) {
-    for (wall, transform) in &wall_q {
-        commands.entity(wall).insert((
-            VertexMesh {
-                pos: transform.translation.xy(),
-                walls: default(),
-            },
-            MeshMaterial2d(WHITE.clone()),
-            Mesh2d::default(),
-            Visibility::default(),
-        ));
-    }
+pub fn init_vertex(
+    trigger: Trigger<OnAdd, Vertex>,
+    mut commands: Commands,
+    transform_q: Query<&Transform>,
+) {
+    commands.entity(trigger.entity()).insert((
+        VertexMesh {
+            pos: try_res_s!(transform_q.get(trigger.entity()))
+                .translation
+                .xy(),
+            walls: default(),
+        },
+        MeshMaterial2d(WHITE.clone()),
+        Mesh2d::default(),
+        Visibility::default(),
+    ));
 }
 
-pub fn init_wall(mut commands: Commands, wall_q: Query<Entity, Added<Wall>>) {
-    for wall in &wall_q {
-        commands.entity(wall).insert((
-            Transform::default(),
-            WallMesh::default(),
-            MeshMaterial2d(WHITE.clone()),
-            Mesh2d::default(),
-            Visibility::default(),
-        ));
-    }
+pub fn init_wall(
+    trigger: Trigger<OnAdd, Wall>,
+    mut commands: Commands,
+    mut wall_added_e: EventWriter<WallChanged>,
+    wall_q: Query<&Wall>,
+) {
+    let id = trigger.entity();
+    commands.entity(id).insert((
+        Transform::default(),
+        WallMesh::default(),
+        MeshMaterial2d(WHITE.clone()),
+        Mesh2d::default(),
+        Visibility::default(),
+    ));
+
+    wall_added_e.send(WallChanged {
+        id,
+        wall: *wall_q.get(id).unwrap(),
+    });
 }
 
 pub fn update_wall(
     assets: Res<AssetServer>,
-    wall_q: Query<(Entity, &Wall), Added<Wall>>,
-    mut vertex_q: Query<(&Transform, &mut VertexMesh, &mut Mesh2d), (With<Vertex>, Without<Wall>)>,
+    mut wall_added_e: EventReader<WallChanged>,
+    mut vertex_q: Query<(&Transform, &mut VertexMesh, &mut Mesh2d), With<Vertex>>,
     mut wall_mesh_q: Query<(&Wall, &mut WallMesh, &mut Mesh2d), Without<Vertex>>,
 ) {
     let mut updated_walls = HashSet::new();
-    for (id, wall) in &wall_q {
+    for event in wall_added_e.read() {
         let [(start_tr, mut start_mesh, mut start_handle), (end_tr, mut end_mesh, mut end_handle)] =
-            vertex_q.many_mut([wall.start, wall.end]);
+            vertex_q.many_mut([event.wall.start, event.wall.end]);
 
         let start_position = start_tr.translation.xy();
         let end_position = end_tr.translation.xy();
 
-        start_mesh.insert_wall(id, end_position);
-        end_mesh.insert_wall(id, start_position);
+        start_mesh.insert_wall(event.id, end_position);
+        end_mesh.insert_wall(event.id, start_position);
 
         start_handle.0 = assets.add(start_mesh.mesh());
         end_handle.0 = assets.add(end_mesh.mesh());

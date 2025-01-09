@@ -6,23 +6,19 @@ use pb_engine::{
     Root,
 };
 
-// TODO use hooks
-
-pub fn init_root(mut commands: Commands, root_q: Query<Entity, Added<Root>>) {
-    for root in &root_q {
-        commands.entity(root).insert(Visibility::default());
-    }
+pub fn init_root(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
+    commands
+        .entity(trigger.entity())
+        .insert(Visibility::default());
 }
 
-pub fn init_pawn(mut commands: Commands, pawn_q: Query<Entity, Added<Pawn>>, assets: Res<Assets>) {
-    for pawn in &pawn_q {
-        commands.entity(pawn).insert((
-            Sprite {
-                custom_size: Some(Vec2::splat(pawn::RADIUS * 2.5)),
-                image: assets.pawn_image.clone(),
-                ..default()
-            },
-            Visibility::default(),
-        ));
-    }
+pub fn init_pawn(trigger: Trigger<OnAdd, Pawn>, mut commands: Commands, assets: Res<Assets>) {
+    commands.entity(trigger.entity()).insert((
+        Sprite {
+            custom_size: Some(Vec2::splat(pawn::RADIUS * 2.5)),
+            image: assets.pawn_image.clone(),
+            ..default()
+        },
+        Visibility::default(),
+    ));
 }
