@@ -1,18 +1,17 @@
 use bevy::{
     ecs::system::{EntityCommands, IntoObserverSystem},
+    picking::focus::PickingInteraction,
     prelude::*,
     ui::FocusPolicy,
 };
 
 pub mod button;
+pub mod disabled;
 pub mod error;
 pub mod form;
 pub mod input;
 pub mod panel;
 pub mod spinner;
-
-#[derive(Component, Debug, Clone, PartialEq, Eq)]
-pub struct Disabled(pub bool);
 
 pub(crate) struct UiBuilder<'w, 's> {
     commands: Commands<'w, 's>,
@@ -54,14 +53,11 @@ impl<'w, 's> UiBuilder<'w, 's> {
         self.reborrow()
     }
 
-    pub fn on_click<B, M>(
+    pub fn on_click<M>(
         &mut self,
-        system: impl IntoObserverSystem<Pointer<Click>, B, M>,
-    ) -> UiBuilder<'w, '_>
-    where
-        B: Bundle,
-    {
-        self.insert(PickingBehavior::default());
+        system: impl IntoObserverSystem<Pointer<Click>, (), M>,
+    ) -> UiBuilder<'w, '_> {
+        self.insert((PickingBehavior::default(), PickingInteraction::None));
         self.observe(system)
     }
 
@@ -81,9 +77,4 @@ impl<'s> From<&'s mut EntityCommands<'s>> for UiBuilder<'s, 's> {
             commands: commands.commands(),
         }
     }
-}
-
-impl Disabled {
-    pub const ENABLED: Self = Disabled(false);
-    pub const DISABLED: Self = Disabled(true);
 }

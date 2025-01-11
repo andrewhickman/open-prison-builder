@@ -14,6 +14,8 @@ use pb_ui::UiPlugin;
 use pb_util::CallbackPlugin;
 
 fn main() -> AppExit {
+    std::env::set_var("WGPU_BACKEND", "dx12");
+
     let mut app = App::new();
 
     app.add_plugins(DefaultPlugins.set(window::plugin()).set(AssetPlugin {

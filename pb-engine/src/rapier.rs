@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier2d::plugin::RapierConfiguration;
 
-pub fn startup(mut config: Query<&mut RapierConfiguration>) {
-    config.single_mut().gravity = Vec2::ZERO;
+pub fn startup(mut config: Single<&mut RapierConfiguration>) {
+    config.gravity = Vec2::ZERO;
 }

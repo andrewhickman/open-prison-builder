@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="1024"
+   height="1024"
+   viewBox="0 0 270.93333 270.93334"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="wall.svg"
+   inkscape:export-xdpi="24"
+   inkscape:export-ydpi="24"
+   inkscape:export-filename="C:\Users\andre\Repositories\open-prison-builder\assets\image\ribbon_button_wall.png">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.7"
+     inkscape:cx="358.45939"
+     inkscape:cy="399.85328"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     units="px"
+     objecttolerance="10000"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:snap-object-midpoints="true"
+     inkscape:snap-grids="true"
+     showborder="true"
+     inkscape:pagecheckerboard="false">
+    <inkscape:grid
+       type="xygrid"
+       id="grid44"
+       spacingx="8.4666667"
+       spacingy="8.4666667"
+       empspacing="4" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-26.06665)">
+    <path
+       style="fill:#5f4754;fill-opacity:1;stroke:#dedcdf;stroke-width:16;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       d="m 227.18806,80.925931 a 33.866664,33.866664 0 0 0 -41.47803,23.947349 33.866664,33.866664 0 0 0 -1.14011,8.7573 L 69.403469,180.12197 a 33.866664,33.866664 0 0 0 -8.127519,-3.40664 33.866664,33.866664 0 0 0 -41.478022,23.94734 33.866664,33.866664 0 0 0 23.947348,41.47803 33.866664,33.866664 0 0 0 41.47802,-23.94735 33.866664,33.866664 0 0 0 1.140107,-8.7573 L 201.52986,142.94466 a 33.866664,33.866664 0 0 0 8.12752,3.40664 33.866664,33.866664 0 0 0 41.47802,-23.94735 33.866664,33.866664 0 0 0 -23.94734,-41.478019 z m -6.57401,24.534509 a 8.466666,8.466666 0 0 1 5.98684,10.36951 8.466666,8.466666 0 0 1 -10.36951,5.98684 8.466666,8.466666 0 0 1 -5.98684,-10.36951 8.466666,8.466666 0 0 1 10.36951,-5.98684 z m -165.9121,95.7894 a 8.466666,8.466666 0 0 1 5.986835,10.36951 8.466666,8.466666 0 0 1 -10.369507,5.98684 8.466666,8.466666 0 0 1 -5.986837,-10.36951 8.466666,8.466666 0 0 1 10.369509,-5.98684 z"
+       id="rect4795"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="C:\Users\andre\Repositories\open-prison-builder\assets\image\ribbon_button_wall.png"
+       inkscape:export-xdpi="24"
+       inkscape:export-ydpi="24" />
+  </g>
+</svg>

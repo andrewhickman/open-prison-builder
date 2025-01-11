@@ -2,7 +2,6 @@
 
 mod assets;
 mod autosave;
-mod camera;
 mod input;
 mod layout;
 mod loading;
@@ -18,12 +17,11 @@ use bevy::{
 };
 use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
-use camera::CameraInput;
+use input::{camera::CameraInput, cancel::CancelStack};
 use loading::LoadingState;
 use pb_engine::EngineState;
 use pb_util::set_state;
 use ribbon::RibbonState;
-use widget::panel::PanelStack;
 
 use crate::{menu::MenuState, message::Message};
 
@@ -55,22 +53,22 @@ impl Plugin for UiPlugin {
             (
                 theme::init.chain().after(pb_assets::load),
                 layout::init.after(theme::init),
-                camera::init.after(theme::init),
+                input::camera::init.after(theme::init),
                 input::settings::init.after(pb_store::init),
             ),
         );
 
-        app.init_resource::<PanelStack>()
+        app.init_resource::<CancelStack>()
             .add_systems(
                 Update,
                 (
-                    widget::button::update,
+                    widget::disabled::update,
                     widget::spinner::update,
                     widget::input::update.after(TextInputSystem),
                 ),
             )
-            .add_observer(widget::panel::on_add)
-            .add_observer(widget::panel::on_remove);
+            .add_observer(input::cancel::on_add)
+            .add_observer(input::cancel::on_remove);
 
         app.add_computed_state::<LoadingState>()
             .add_systems(OnEnter(LoadingState::Shown), loading::show)
@@ -99,8 +97,11 @@ impl Plugin for UiPlugin {
                     .after(InputSystem)
                     .run_if(on_event::<KeyboardInput>),
             )
-            .add_systems(Update, camera::update.run_if(camera::update_condition))
-            .add_observer(input::cancel)
-            .add_observer(camera::action);
+            .add_systems(
+                Update,
+                input::camera::update.run_if(input::camera::update_condition),
+            )
+            .add_observer(input::cancel::cancel)
+            .add_observer(input::camera::action);
     }
 }

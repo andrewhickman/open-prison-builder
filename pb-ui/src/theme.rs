@@ -19,6 +19,7 @@ pub(crate) struct Theme {
     pub header_text: TextFont,
     pub large_icon_size_px: f32,
     pub icon_size_px: f32,
+    pub tile_icon_size_px: f32,
 }
 
 pub fn init(mut commands: Commands, assets: Res<Assets>) {
@@ -58,6 +59,7 @@ pub fn init(mut commands: Commands, assets: Res<Assets>) {
         },
         icon_size_px: 18.,
         large_icon_size_px: 26.,
+        tile_icon_size_px: 36.,
     });
 }
 
@@ -68,5 +70,9 @@ impl Theme {
 
     pub fn icon_size(&self) -> Val {
         Val::Px(self.icon_size_px)
+    }
+
+    pub fn tile_icon_size(&self) -> Val {
+        Val::Px(self.tile_icon_size_px)
     }
 }

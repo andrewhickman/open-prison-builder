@@ -54,7 +54,7 @@ impl<'w> UiBuilder<'w, '_> {
             margin: UiRect::new(Val::ZERO, Val::Auto, Val::Auto, Val::ZERO),
             display: Display::Flex,
             flex_direction: FlexDirection::ColumnReverse,
-            align_items: AlignItems::Stretch,
+            align_items: AlignItems::Start,
             ..default()
         })
     }
@@ -63,7 +63,7 @@ impl<'w> UiBuilder<'w, '_> {
         let mut container = self.container(Node {
             display: Display::Flex,
             flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Stretch,
+            align_self: AlignSelf::Stretch,
             ..default()
         });
 
@@ -98,8 +98,46 @@ impl<'w> UiBuilder<'w, '_> {
         );
     }
 
-    fn ribbon_panel(&mut self, theme: &Theme, assets: &Assets, panel: RibbonPanel) {
-        self.panel(theme, assets, panel.title()).insert(panel);
+    fn ribbon_panel(&mut self, theme: &Theme, assets: &Assets, kind: RibbonPanel) {
+        let mut panel = match kind {
+            RibbonPanel::Architect => self.ribbon_architect_panel(theme, assets),
+            RibbonPanel::Staff => self.ribbon_staff_panel(theme, assets),
+            RibbonPanel::Schedule => self.ribbon_schedule_panel(theme, assets),
+            RibbonPanel::Manage => self.ribbon_manage_panel(theme, assets),
+        };
+
+        panel.cancellable().insert(kind);
+    }
+
+    fn ribbon_architect_panel(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
+        let mut icon_grid = self.container(Node {
+            padding: UiRect::new(theme.gutter, theme.gutter, Val::ZERO, theme.gutter),
+            display: Display::Grid,
+            grid_auto_columns: vec![GridTrack::max_content()],
+            grid_auto_rows: vec![GridTrack::max_content()],
+            row_gap: theme.gutter,
+            column_gap: theme.gutter,
+            align_items: AlignItems::Center,
+            ..default()
+        });
+
+        icon_grid
+            .tile_button(theme, "Wall", assets.ribbon_button_wall_image.clone())
+            .on_click(wall);
+
+        icon_grid
+    }
+
+    fn ribbon_staff_panel(&mut self, theme: &Theme, _assets: &Assets) -> UiBuilder<'w, '_> {
+        self.panel(theme, default())
+    }
+
+    fn ribbon_schedule_panel(&mut self, theme: &Theme, _assets: &Assets) -> UiBuilder<'w, '_> {
+        self.panel(theme, default())
+    }
+
+    fn ribbon_manage_panel(&mut self, theme: &Theme, _assets: &Assets) -> UiBuilder<'w, '_> {
+        self.panel(theme, default())
     }
 }
 
@@ -142,13 +180,6 @@ impl RibbonButton {
     }
 }
 
-impl RibbonPanel {
-    fn title(&self) -> &'static str {
-        match self {
-            RibbonPanel::Architect => "Architect",
-            RibbonPanel::Staff => "Staff",
-            RibbonPanel::Schedule => "Schedule",
-            RibbonPanel::Manage => "Manage",
-        }
-    }
+fn wall(_: Trigger<Pointer<Click>>) {
+    info!("wall");
 }

@@ -1,11 +1,8 @@
 use std::io;
 
 use bevy::{
-    ecs::{
-        entity::Entity,
-        query::With,
-        system::{NonSend, Query},
-    },
+    ecs::{entity::Entity, query::With, system::NonSend},
+    prelude::Single,
     utils::default,
     window::{PrimaryWindow, Window, WindowPlugin},
     winit::WinitWindows,
@@ -28,10 +25,9 @@ pub fn plugin() -> WindowPlugin {
 
 pub fn set_icon(
     windows: NonSend<WinitWindows>,
-    primary_window: Query<Entity, With<PrimaryWindow>>,
+    primary_window: Single<Entity, With<PrimaryWindow>>,
 ) {
-    let primary_entity = primary_window.single();
-    let Some(primary) = windows.get_window(primary_entity) else {
+    let Some(primary) = windows.get_window(*primary_window) else {
         return;
     };
     let icon_buf = io::Cursor::new(include_bytes!("../build/icon.png"));

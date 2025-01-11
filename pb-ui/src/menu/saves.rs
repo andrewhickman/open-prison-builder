@@ -174,7 +174,7 @@ fn overwrite_button(
     world: &World,
     save_q: Query<&SaveItem>,
     save_p: SaveParam,
-    root: Query<Entity, With<Root>>,
+    state: Res<State<EngineState>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
@@ -183,7 +183,7 @@ fn overwrite_button(
         save_name,
         world,
         save_p,
-        root,
+        *state.get(),
         store.clone(),
         callback.clone(),
     );
@@ -194,7 +194,7 @@ fn save_button(
     world: &World,
     form_q: Query<&Form>,
     save_p: SaveParam,
-    root: Query<Entity, With<Root>>,
+    state: Res<State<EngineState>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
@@ -205,7 +205,7 @@ fn save_button(
         SmolStr::from(&save_form.name),
         world,
         save_p,
-        root,
+        *state.get(),
         store.clone(),
         callback.clone(),
     );
@@ -215,7 +215,7 @@ fn save_impl(
     name: SmolStr,
     world: &World,
     save_p: SaveParam,
-    root: Query<Entity, With<Root>>,
+    state: EngineState,
     store: Store,
     callback: CallbackSender,
 ) {
@@ -223,8 +223,8 @@ fn save_impl(
         return;
     }
 
-    let Ok(root) = root.get_single() else {
-        error!("Failed to save: root not found");
+    let EngineState::Running(root) = state else {
+        error!("Failed to save: not running");
         return;
     };
 
@@ -267,7 +267,7 @@ impl<'w> UiBuilder<'w, '_> {
         store: Store,
         callback: CallbackSender,
     ) -> UiBuilder<'w, '_> {
-        let mut panel = self.panel(theme, assets, "Save prison");
+        let mut panel = self.menu_panel(theme, assets, "Save prison");
         panel.saves_table(theme, store, callback, SaveAction::Save);
 
         let mut save_form = panel.form(
@@ -300,7 +300,7 @@ impl<'w> UiBuilder<'w, '_> {
         store: Store,
         callback: CallbackSender,
     ) -> UiBuilder<'w, '_> {
-        let mut panel = self.panel(theme, assets, "Load prison");
+        let mut panel = self.menu_panel(theme, assets, "Load prison");
         panel.saves_table(theme, store, callback, SaveAction::Load);
         panel
     }

@@ -12,7 +12,7 @@ use pb_engine::{
 use crate::{
     layout::Layout,
     theme::Theme,
-    widget::{Disabled, UiBuilder},
+    widget::{disabled::Disabled, UiBuilder},
     UiState,
 };
 
@@ -99,7 +99,7 @@ impl<'w> UiBuilder<'w, '_> {
     }
 
     pub fn menu(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
-        let mut menu = self.empty_panel(
+        let mut menu = self.panel(
             theme,
             Node {
                 display: Display::Flex,
@@ -112,19 +112,19 @@ impl<'w> UiBuilder<'w, '_> {
         );
 
         menu.large_button(theme, assets, "New Prison", default())
-            .insert(MenuButton::New)
+            .insert((MenuButton::New, Disabled::ENABLED))
             .on_click(new_prison_button);
         menu.large_button(theme, assets, "Save Prison", default())
-            .insert(MenuButton::Save)
+            .insert((MenuButton::Save, Disabled::ENABLED))
             .on_click(saves::save_panel_button);
         menu.large_button(theme, assets, "Load Prison", default())
-            .insert(MenuButton::Load)
+            .insert((MenuButton::Load, Disabled::ENABLED))
             .on_click(saves::load_panel_button);
         menu.large_button(theme, assets, "Settings", default())
-            .insert(MenuButton::Settings)
+            .insert((MenuButton::Settings, Disabled::ENABLED))
             .on_click(settings_panel_button);
         menu.large_button(theme, assets, "Exit", default())
-            .insert(MenuButton::Exit)
+            .insert((MenuButton::Exit, Disabled::ENABLED))
             .on_click(exit_button);
 
         let mut icon_bar = menu.container(Node {
@@ -149,7 +149,40 @@ impl<'w> UiBuilder<'w, '_> {
     }
 
     fn settings_panel(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
-        self.panel(theme, assets, "Settings")
+        self.menu_panel(theme, assets, "Settings")
+    }
+
+    pub fn menu_panel(
+        &mut self,
+        theme: &Theme,
+        assets: &Assets,
+        title: impl Into<String>,
+    ) -> UiBuilder<'w, '_> {
+        let mut panel = self.panel(
+            theme,
+            Node {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                row_gap: theme.gutter,
+                ..default()
+            },
+        );
+        panel.cancellable();
+        let panel_id = panel.id();
+
+        let mut title_row = panel.container(Node {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Row,
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::Center,
+            column_gap: theme.gutter,
+            ..default()
+        });
+
+        title_row.spawn((Text::new(title), theme.header_text.clone()));
+        title_row.panel_close_button(theme, assets, panel_id);
+
+        panel
     }
 }
 

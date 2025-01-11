@@ -1,3 +1,5 @@
+pub mod camera;
+pub mod cancel;
 pub mod settings;
 
 pub use self::settings::Settings;
@@ -6,9 +8,8 @@ use bevy::{
     input::{keyboard::KeyboardInput, ButtonState},
     prelude::*,
 };
-use pb_engine::EngineState;
 
-use crate::{input::settings::Action, widget::panel::PanelStack, UiState};
+use crate::input::settings::Action;
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct CancelAction;
@@ -77,37 +78,6 @@ pub fn read(
                 }),
                 _ => (),
             }
-        }
-    }
-}
-
-pub fn cancel(
-    _: Trigger<CancelAction>,
-    mut commands: Commands,
-    mut panels: ResMut<PanelStack>,
-    engine_state: Res<State<EngineState>>,
-    ui_state: Res<State<UiState>>,
-    mut next_ui_state: ResMut<NextState<UiState>>,
-) {
-    if matches!(
-        ui_state.get(),
-        UiState::LoadingAssets | UiState::LoadingSave
-    ) {
-        return;
-    }
-
-    if let Some(entity) = panels.pop() {
-        if let Some(entity) = commands.get_entity(entity) {
-            entity.despawn_recursive();
-            return;
-        }
-    }
-
-    if matches!(engine_state.get(), EngineState::Running(_)) {
-        match ui_state.get() {
-            UiState::Startup | UiState::LoadingAssets | UiState::LoadingSave => (),
-            UiState::Game => next_ui_state.set(UiState::Menu),
-            UiState::Menu => next_ui_state.set(UiState::Game),
         }
     }
 }
