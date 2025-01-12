@@ -1,3 +1,5 @@
+mod wall;
+
 use bevy::prelude::*;
 
 use pb_assets::Assets;
@@ -87,12 +89,13 @@ impl<'w> UiBuilder<'w, '_> {
         )
         .insert(button)
         .on_click(
-            move |_: Trigger<Pointer<Click>>,
+            move |mut trigger: Trigger<Pointer<Click>>,
                   commands: Commands,
                   theme: Res<Theme>,
                   assets: Res<Assets>,
                   layout: Res<Layout>,
                   panels: Query<(Entity, &RibbonPanel)>| {
+                trigger.propagate(false);
                 button.on_click(commands, theme, assets, layout, panels)
             },
         );
@@ -180,6 +183,8 @@ impl RibbonButton {
     }
 }
 
-fn wall(_: Trigger<Pointer<Click>>) {
+fn wall(mut trigger: Trigger<Pointer<Click>>) {
+    trigger.propagate(false);
+
     info!("wall");
 }

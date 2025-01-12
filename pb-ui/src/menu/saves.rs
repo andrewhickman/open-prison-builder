@@ -43,7 +43,7 @@ struct SaveForm {
 }
 
 pub fn save_panel_button(
-    _: Trigger<Pointer<Click>>,
+    mut trigger: Trigger<Pointer<Click>>,
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
@@ -52,6 +52,8 @@ pub fn save_panel_button(
     callback: Res<CallbackSender>,
     store: Res<Store>,
 ) {
+    trigger.propagate(false);
+
     for (id, &panel) in &panel_q {
         commands.entity(id).despawn_recursive();
         if panel == MenuPanel::Save {
@@ -65,7 +67,7 @@ pub fn save_panel_button(
 }
 
 pub fn load_panel_button(
-    _: Trigger<Pointer<Click>>,
+    mut trigger: Trigger<Pointer<Click>>,
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
@@ -74,6 +76,8 @@ pub fn load_panel_button(
     callback: Res<CallbackSender>,
     store: Res<Store>,
 ) {
+    trigger.propagate(false);
+
     for (id, &panel) in &panel_q {
         commands.entity(id).despawn_recursive();
         if panel == MenuPanel::Load {
@@ -109,7 +113,7 @@ fn refresh_save_panel(
 }
 
 fn load_button(
-    event: Trigger<Pointer<Click>>,
+    mut trigger: Trigger<Pointer<Click>>,
     mut commands: Commands,
     save_q: Query<&SaveItem>,
     mut ui_state: ResMut<NextState<UiState>>,
@@ -119,7 +123,9 @@ fn load_button(
     callback: Res<CallbackSender>,
     store: Res<Store>,
 ) {
-    let save_name = try_res_s!(save_q.get(event.target)).0.name.clone();
+    trigger.propagate(false);
+
+    let save_name = try_res_s!(save_q.get(trigger.target)).0.name.clone();
 
     if let Ok(root) = engine_root.get_single() {
         commands.entity(root).despawn_recursive();
@@ -170,7 +176,7 @@ fn load_button(
 }
 
 fn overwrite_button(
-    event: Trigger<Pointer<Click>>,
+    mut trigger: Trigger<Pointer<Click>>,
     world: &World,
     save_q: Query<&SaveItem>,
     save_p: SaveParam,
@@ -178,7 +184,9 @@ fn overwrite_button(
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
-    let save_name = try_res_s!(save_q.get(event.target)).0.name.clone();
+    trigger.propagate(false);
+
+    let save_name = try_res_s!(save_q.get(trigger.target)).0.name.clone();
     save_impl(
         save_name,
         world,
@@ -190,7 +198,7 @@ fn overwrite_button(
 }
 
 fn save_button(
-    event: Trigger<FormSubmit>,
+    mut trigger: Trigger<FormSubmit>,
     world: &World,
     form_q: Query<&Form>,
     save_p: SaveParam,
@@ -198,7 +206,9 @@ fn save_button(
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) {
-    let save_form = try_res_s!(form_q.get(event.entity()))
+    trigger.propagate(false);
+
+    let save_form = try_res_s!(form_q.get(trigger.entity()))
         .value::<SaveForm>()
         .unwrap();
     save_impl(

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
-bevy = { version = "0.15.0", default-features = false, features = ["bevy_render", "bevy_ui", "bevy_ui_picking_backend", "bevy_state"] }
+bevy = { version = "0.15.0", default-features = false, features = ["bevy_render", "bevy_ui", "bevy_ui_picking_backend", "bevy_sprite_picking_backend", "bevy_state"] }
 bevy_simple_text_input = { version = "0.10.0" }
 pb-assets = { version = "0.1.0", path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }

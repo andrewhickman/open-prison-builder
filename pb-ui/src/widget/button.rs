@@ -130,8 +130,13 @@ impl<'w> UiBuilder<'w, '_> {
                 aspect_ratio: Some(1.),
                 ..default()
             },
+            PickingBehavior::IGNORE,
         ));
-        container.spawn((Text::new(title), theme.button_text.clone()));
+        container.spawn((
+            Text::new(title),
+            theme.button_text.clone(),
+            PickingBehavior::IGNORE,
+        ));
 
         container
     }
@@ -151,7 +156,7 @@ impl<'w> UiBuilder<'w, '_> {
 }
 
 fn over(
-    trigger: Trigger<Pointer<Over>>,
+    mut trigger: Trigger<Pointer<Over>>,
     theme: Res<Theme>,
     mut button_q: Query<(
         &ButtonStyle,
@@ -159,12 +164,14 @@ fn over(
         Option<&mut BackgroundColor>,
     )>,
 ) {
+    trigger.propagate(false);
+
     let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
     style.hovered(&theme, image.as_deref_mut(), bg.as_deref_mut());
 }
 
 fn out(
-    trigger: Trigger<Pointer<Out>>,
+    mut trigger: Trigger<Pointer<Out>>,
     theme: Res<Theme>,
     mut button_q: Query<(
         &ButtonStyle,
@@ -172,12 +179,14 @@ fn out(
         Option<&mut BackgroundColor>,
     )>,
 ) {
+    trigger.propagate(false);
+
     let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
     style.normal(&theme, image.as_deref_mut(), bg.as_deref_mut());
 }
 
 fn down(
-    trigger: Trigger<Pointer<Down>>,
+    mut trigger: Trigger<Pointer<Down>>,
     theme: Res<Theme>,
     mut button_q: Query<(
         &ButtonStyle,
@@ -185,12 +194,14 @@ fn down(
         Option<&mut BackgroundColor>,
     )>,
 ) {
+    trigger.propagate(false);
+
     let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
     style.active(&theme, image.as_deref_mut(), bg.as_deref_mut());
 }
 
 fn up(
-    trigger: Trigger<Pointer<Up>>,
+    mut trigger: Trigger<Pointer<Up>>,
     theme: Res<Theme>,
     mut button_q: Query<(
         &ButtonStyle,
@@ -198,12 +209,14 @@ fn up(
         Option<&mut BackgroundColor>,
     )>,
 ) {
+    trigger.propagate(false);
+
     let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
     style.hovered(&theme, image.as_deref_mut(), bg.as_deref_mut());
 }
 
 fn disabled(
-    trigger: Trigger<DisabledChanged>,
+    mut trigger: Trigger<DisabledChanged>,
     theme: Res<Theme>,
     mut button_q: Query<(
         &ButtonStyle,
@@ -212,6 +225,8 @@ fn disabled(
         Option<&mut BackgroundColor>,
     )>,
 ) {
+    trigger.propagate(false);
+
     let (style, mut behaviour, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
     if trigger.0 {
         behaviour.set_if_neq(PickingBehavior::IGNORE);

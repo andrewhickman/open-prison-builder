@@ -87,7 +87,9 @@ impl<'w> UiBuilder<'w, '_> {
     }
 }
 
-pub fn submit(trigger: Trigger<Pointer<Click>>, mut commands: Commands) {
+pub fn submit(mut trigger: Trigger<Pointer<Click>>, mut commands: Commands) {
+    trigger.propagate(false);
+
     commands.trigger_targets(FormSubmit, trigger.entity());
 }
 
