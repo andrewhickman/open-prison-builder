@@ -1,5 +1,6 @@
 pub mod camera;
 pub mod cancel;
+pub mod picking;
 pub mod settings;
 
 pub use self::settings::Settings;
@@ -9,19 +10,26 @@ use bevy::{
     prelude::*,
 };
 
-use crate::input::settings::Action;
+use crate::{input::settings::Action, UiState};
+
+#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[source(UiState = UiState::Game)]
+pub enum InputState {
+    #[default]
+    Default,
+}
 
 #[derive(Event, Debug, Clone, Copy)]
-pub struct CancelAction;
+pub struct CancelInput;
 
 #[derive(Event, Debug, Clone, Copy)]
-pub struct CameraAction {
-    pub kind: CameraActionKind,
+pub struct CameraInput {
+    pub kind: CameraInputKind,
     pub state: ButtonState,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum CameraActionKind {
+pub enum CameraInputKind {
     PanLeft,
     PanUp,
     PanRight,
@@ -50,34 +58,41 @@ pub fn read(
 
             match binding.action {
                 Action::Cancel if event.state == ButtonState::Released => {
-                    commands.trigger(CancelAction);
+                    commands.trigger(CancelInput);
                 }
-                Action::PanLeft => commands.trigger(CameraAction {
-                    kind: CameraActionKind::PanLeft,
+                Action::PanLeft => commands.trigger(CameraInput {
+                    kind: CameraInputKind::PanLeft,
                     state: event.state,
                 }),
-                Action::PanUp => commands.trigger(CameraAction {
-                    kind: CameraActionKind::PanUp,
+                Action::PanUp => commands.trigger(CameraInput {
+                    kind: CameraInputKind::PanUp,
                     state: event.state,
                 }),
-                Action::PanRight => commands.trigger(CameraAction {
-                    kind: CameraActionKind::PanRight,
+                Action::PanRight => commands.trigger(CameraInput {
+                    kind: CameraInputKind::PanRight,
                     state: event.state,
                 }),
-                Action::PanDown => commands.trigger(CameraAction {
-                    kind: CameraActionKind::PanDown,
+                Action::PanDown => commands.trigger(CameraInput {
+                    kind: CameraInputKind::PanDown,
                     state: event.state,
                 }),
-                Action::ZoomIn => commands.trigger(CameraAction {
-                    kind: CameraActionKind::ZoomIn,
+                Action::ZoomIn => commands.trigger(CameraInput {
+                    kind: CameraInputKind::ZoomIn,
                     state: event.state,
                 }),
-                Action::ZoomOut => commands.trigger(CameraAction {
-                    kind: CameraActionKind::ZoomOut,
+                Action::ZoomOut => commands.trigger(CameraInput {
+                    kind: CameraInputKind::ZoomOut,
                     state: event.state,
                 }),
                 _ => (),
             }
         }
+    }
+}
+
+impl InputState {
+    #[expect(unused)]
+    pub fn select_pawn(&mut self) -> bool {
+        false
     }
 }

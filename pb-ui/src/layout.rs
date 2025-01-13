@@ -19,16 +19,26 @@ pub fn init(mut commands: Commands, theme: Res<Theme>) {
                 ..default()
             },
             PickingBehavior::IGNORE,
+            Name::new("pb_ui::layout::root"),
         ))
         .id();
 
     let mut builder = UiBuilder::new(commands.reborrow(), root);
 
-    let menu = builder.menu_root(&theme).id();
+    let menu = builder
+        .menu_root(&theme)
+        .insert(Name::new("pb_ui::layout::menu_root"))
+        .id();
 
-    let ribbon = builder.ribbon_root().id();
+    let ribbon = builder
+        .ribbon_root()
+        .insert(Name::new("pb_ui::layout::ribbon_root"))
+        .id();
 
-    let messages = builder.messages().id();
+    let messages = builder
+        .messages()
+        .insert(Name::new("pb_ui::layout::messages"))
+        .id();
 
     commands.insert_resource(Layout {
         root,

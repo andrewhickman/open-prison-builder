@@ -13,11 +13,12 @@ mod widget;
 
 use bevy::{
     input::{keyboard::KeyboardInput, InputSystem},
+    picking::PickSet,
     prelude::*,
 };
 use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
-use input::{camera::CameraInput, cancel::CancelStack};
+use input::{camera::CameraState, cancel::CancelStack};
 use loading::LoadingState;
 use pb_engine::EngineState;
 use pb_util::set_state;
@@ -90,12 +91,17 @@ impl Plugin for UiPlugin {
 
         app.add_systems(PostUpdate, autosave::run.run_if(autosave::run_condition));
 
-        app.init_resource::<CameraInput>()
+        app.init_resource::<CameraState>()
             .add_systems(
                 PreUpdate,
-                input::read
-                    .after(InputSystem)
-                    .run_if(on_event::<KeyboardInput>),
+                (
+                    input::read
+                        .after(InputSystem)
+                        .run_if(on_event::<KeyboardInput>),
+                    input::picking::vertex::backend
+                        .in_set(PickSet::Backend)
+                        .run_if(in_state(UiState::Game)),
+                ),
             )
             .add_systems(
                 Update,
@@ -103,5 +109,10 @@ impl Plugin for UiPlugin {
             )
             .add_observer(input::cancel::cancel)
             .add_observer(input::camera::action);
+
+        app.add_systems(
+            PreUpdate,
+            input::picking::vertex::dbg_hits.in_set(PickSet::Focus),
+        );
     }
 }

@@ -1,7 +1,7 @@
 use bevy::{input::ButtonState, prelude::*, render::camera::ScalingMode};
 
 use crate::{
-    input::{CameraAction, CameraActionKind},
+    input::{CameraInput, CameraInputKind},
     theme::Theme,
     UiState,
 };
@@ -12,7 +12,7 @@ pub const CAMERA_ZOOM_SPEED: f32 = 1.;
 pub const CAMERA_PIXELS_PER_METER: f32 = 64.;
 
 #[derive(Resource, Default, Debug, Clone, PartialEq)]
-pub struct CameraInput {
+pub struct CameraState {
     pan: Vec2,
     zoom: f32,
 }
@@ -34,30 +34,30 @@ pub fn init(mut commands: Commands, theme: Res<Theme>) {
 }
 
 pub fn action(
-    trigger: Trigger<CameraAction>,
+    trigger: Trigger<CameraInput>,
     ui_state: Res<State<UiState>>,
-    mut input: ResMut<CameraInput>,
+    mut input: ResMut<CameraState>,
 ) {
     if *ui_state.get() != UiState::Game {
         return;
     }
 
     match trigger.kind {
-        CameraActionKind::PanLeft => input.pan_left(trigger.state),
-        CameraActionKind::PanUp => input.pan_up(trigger.state),
-        CameraActionKind::PanRight => input.pan_right(trigger.state),
-        CameraActionKind::PanDown => input.pan_down(trigger.state),
-        CameraActionKind::ZoomIn => input.zoom_in(trigger.state),
-        CameraActionKind::ZoomOut => input.zoom_out(trigger.state),
+        CameraInputKind::PanLeft => input.pan_left(trigger.state),
+        CameraInputKind::PanUp => input.pan_up(trigger.state),
+        CameraInputKind::PanRight => input.pan_right(trigger.state),
+        CameraInputKind::PanDown => input.pan_down(trigger.state),
+        CameraInputKind::ZoomIn => input.zoom_in(trigger.state),
+        CameraInputKind::ZoomOut => input.zoom_out(trigger.state),
     }
 }
 
-pub fn update_condition(input: Res<CameraInput>) -> bool {
-    *input != CameraInput::default()
+pub fn update_condition(input: Res<CameraState>) -> bool {
+    *input != CameraState::default()
 }
 
 pub fn update(
-    input: Res<CameraInput>,
+    input: Res<CameraState>,
     time: Res<Time<Real>>,
     mut camera_transform_q: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
 ) {
@@ -66,7 +66,7 @@ pub fn update(
     }
 }
 
-impl CameraInput {
+impl CameraState {
     pub fn pan_left(&mut self, state: ButtonState) {
         self.pan.x -= delta(state);
     }

@@ -7,9 +7,9 @@ pub(crate) struct Theme {
     pub background: Color,
     pub text: Color,
     pub panel: Color,
-    #[allow(unused)]
+    #[expect(unused)]
     pub accent: Color,
-    #[allow(unused)]
+    #[expect(unused)]
     pub error: Color,
     pub gutter: Val,
     pub outline: Outline,

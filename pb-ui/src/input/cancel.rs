@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use pb_engine::EngineState;
 
-use crate::{input::CancelAction, widget::UiBuilder, UiState};
+use crate::{input::CancelInput, widget::UiBuilder, UiState};
 
 #[derive(Default, Resource)]
 pub struct CancelStack {
@@ -34,7 +34,7 @@ impl<'w> UiBuilder<'w, '_> {
 }
 
 pub fn cancel(
-    _: Trigger<CancelAction>,
+    _: Trigger<CancelInput>,
     mut commands: Commands,
     mut stack: ResMut<CancelStack>,
     engine_state: Res<State<EngineState>>,

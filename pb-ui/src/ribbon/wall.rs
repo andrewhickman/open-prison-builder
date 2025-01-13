@@ -1,5 +1,11 @@
 use bevy::prelude::*;
 
+pub fn wall(mut trigger: Trigger<Pointer<Click>>) {
+    trigger.propagate(false);
+
+    info!("wall");
+}
+
 #[derive(Debug, Default, Component)]
 pub struct WallAction {
     _state: WallActionState,
@@ -9,6 +15,6 @@ pub struct WallAction {
 enum WallActionState {
     #[default]
     Start,
-    #[allow(unused)]
+    #[expect(unused)]
     End { start: Entity },
 }

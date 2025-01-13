@@ -126,7 +126,7 @@ impl<'w> UiBuilder<'w, '_> {
 
         icon_grid
             .tile_button(theme, "Wall", assets.ribbon_button_wall_image.clone())
-            .on_click(wall);
+            .on_click(wall::wall);
 
         icon_grid
     }
@@ -181,10 +181,4 @@ impl RibbonButton {
 
         UiBuilder::new(commands, layout.ribbon).ribbon_panel(&theme, &assets, requested_panel)
     }
-}
-
-fn wall(mut trigger: Trigger<Pointer<Click>>) {
-    trigger.propagate(false);
-
-    info!("wall");
 }
