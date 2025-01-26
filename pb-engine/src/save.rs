@@ -1,6 +1,7 @@
 use std::iter::once;
 
 use anyhow::{bail, Context, Result};
+use avian2d::prelude::LinearVelocity;
 use bevy::{
     ecs::{
         entity::EntityHashMap,
@@ -10,7 +11,6 @@ use bevy::{
     reflect::TypeRegistryArc,
     scene::serde::{SceneDeserializer, SceneSerializer},
 };
-use bevy_rapier2d::dynamics::Velocity;
 use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
 
 use crate::{
@@ -49,7 +49,7 @@ pub fn save(world: &World, param: &SaveParam, root: Entity) -> Save {
         .allow_component::<Vertex>()
         .allow_component::<Root>()
         .allow_component::<Transform>()
-        .allow_component::<Velocity>()
+        .allow_component::<LinearVelocity>()
         .allow_component::<Parent>()
         .allow_component::<Children>()
         .extract_entities(once(root).chain(param.children.iter_descendants(root)))

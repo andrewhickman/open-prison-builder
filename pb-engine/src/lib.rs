@@ -1,15 +1,12 @@
-pub mod collider;
 pub mod pawn;
 pub mod save;
 pub mod wall;
 
-mod rapier;
-
+use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 use pawn::Pawn;
 use serde::{Deserialize, Serialize};
-use wall::{Vertex, Wall};
+use wall::{Vertex, Wall, WallMap};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum EngineState {
@@ -32,6 +29,8 @@ pub struct EnginePlugin;
 
 impl Plugin for EnginePlugin {
     fn build(&self, app: &mut App) {
+        app.init_resource::<WallMap>();
+
         app.register_type::<Root>()
             .register_type::<Pawn>()
             .register_type::<Wall>()
@@ -39,12 +38,12 @@ impl Plugin for EnginePlugin {
 
         app.init_state::<EngineState>();
 
-        app.add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-            .add_systems(Startup, rapier::startup);
+        app.add_plugins(PhysicsPlugins::default());
 
-        app.add_systems(PostUpdate, (collider::init_pawn, collider::init_wall));
+        app.add_observer(wall::wall_added)
+            .add_observer(wall::wall_removed);
 
         #[cfg(feature = "dev")]
-        app.add_plugins(RapierDebugRenderPlugin::default());
+        app.add_plugins(PhysicsDebugPlugin::default());
     }
 }

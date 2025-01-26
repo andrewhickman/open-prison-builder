@@ -18,7 +18,7 @@ use bevy::{
 };
 use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
-use input::{camera::CameraState, cancel::CancelStack};
+use input::{camera::CameraState, cancel::CancelStack, picking::PickingState};
 use loading::LoadingState;
 use pb_engine::EngineState;
 use pb_util::set_state;
@@ -92,6 +92,7 @@ impl Plugin for UiPlugin {
         app.add_systems(PostUpdate, autosave::run.run_if(autosave::run_condition));
 
         app.init_resource::<CameraState>()
+            .init_resource::<PickingState>()
             .add_systems(
                 PreUpdate,
                 (
@@ -108,11 +109,7 @@ impl Plugin for UiPlugin {
                 input::camera::update.run_if(input::camera::update_condition),
             )
             .add_observer(input::cancel::cancel)
-            .add_observer(input::camera::action);
-
-        app.add_systems(
-            PreUpdate,
-            input::picking::vertex::dbg_hits.in_set(PickSet::Focus),
-        );
+            .add_observer(input::camera::action)
+            .add_observer(input::picking::vertex::root_added);
     }
 }

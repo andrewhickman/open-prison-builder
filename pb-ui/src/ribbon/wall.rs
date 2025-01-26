@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 
-pub fn wall(mut trigger: Trigger<Pointer<Click>>) {
+use crate::input::picking::{wall::CreateWallState, PickingState};
+
+pub fn wall(mut trigger: Trigger<Pointer<Click>>, mut input: ResMut<PickingState>) {
     trigger.propagate(false);
 
-    info!("wall");
+    *input = PickingState::CreateWall(CreateWallState::SelectStart);
 }
 
 #[derive(Debug, Default, Component)]

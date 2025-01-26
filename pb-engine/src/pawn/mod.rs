@@ -1,12 +1,14 @@
+use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_rapier2d::dynamics::Velocity;
 use serde::{Deserialize, Serialize};
 
 pub const RADIUS: f32 = 0.16;
 
 #[derive(Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
-#[require(Velocity)]
+#[require(
+    RigidBody(|| RigidBody::Dynamic),
+    Collider(|| Collider::circle(RADIUS)))]
 pub struct Pawn;
 
 #[derive(Default, Clone, Bundle)]

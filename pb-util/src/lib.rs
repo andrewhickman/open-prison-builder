@@ -20,7 +20,6 @@ where
         move |mut next_state: ResMut<NextState<S>>| next_state.set(state.clone()),
     ))
 }
-
 pub trait AsDynError<'a, Marker: ?Sized> {
     fn as_dyn_error(&self) -> &'_ (dyn std::error::Error + 'a);
 
