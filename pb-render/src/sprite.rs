@@ -6,13 +6,13 @@ use pb_engine::{
     Root,
 };
 
-pub fn init_root(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
+pub fn root_added(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
     commands
         .entity(trigger.entity())
         .insert(Visibility::default());
 }
 
-pub fn init_pawn(trigger: Trigger<OnAdd, Pawn>, mut commands: Commands, assets: Res<Assets>) {
+pub fn pawn_added(trigger: Trigger<OnAdd, Pawn>, mut commands: Commands, assets: Res<Assets>) {
     commands.entity(trigger.entity()).insert((
         Sprite {
             custom_size: Some(Vec2::splat(pawn::RADIUS * 2.5)),

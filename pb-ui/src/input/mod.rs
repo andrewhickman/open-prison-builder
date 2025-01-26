@@ -10,14 +10,7 @@ use bevy::{
     prelude::*,
 };
 
-use crate::{input::settings::Action, UiState};
-
-#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
-#[source(UiState = UiState::Game)]
-pub enum InputState {
-    #[default]
-    Default,
-}
+use crate::input::settings::Action;
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct CancelInput;
@@ -87,12 +80,5 @@ pub fn read(
                 _ => (),
             }
         }
-    }
-}
-
-impl InputState {
-    #[expect(unused)]
-    pub fn select_pawn(&mut self) -> bool {
-        false
     }
 }

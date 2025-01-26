@@ -8,11 +8,12 @@ use bevy::{
     math::FloatOrd,
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
-    utils::hashbrown::HashSet,
 };
-use pb_engine::wall::{self, Vertex, Wall};
+use pb_engine::wall::{self, Vertex, Wall, WallMap};
 use pb_util::{try_opt, try_res_s};
 use smallvec::SmallVec;
+
+use crate::Preview;
 
 #[derive(Debug, Default, Component)]
 pub struct VertexMesh {
@@ -25,43 +26,50 @@ pub struct WallMesh {
     intersections: [Vec2; 4],
 }
 
-#[derive(Event, Debug, Clone, Copy)]
-pub struct WallChanged {
-    id: Entity,
-    wall: Wall,
-}
-
 pub const WHITE: Handle<ColorMaterial> =
     Handle::weak_from_u128(146543197086297070279747770654600266484);
+pub const TRANSLUCENT_WHITE: Handle<ColorMaterial> =
+    Handle::weak_from_u128(46792490495713846900330178669489164232);
 
 pub fn startup(mut assets: ResMut<Assets<ColorMaterial>>) {
     assets.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
+    assets.insert(
+        &TRANSLUCENT_WHITE,
+        ColorMaterial::from_color(Color::WHITE.with_alpha(0.3)),
+    );
 }
 
-pub fn init_vertex(
-    trigger: Trigger<OnAdd, Vertex>,
+pub fn vertex_inserted(
+    trigger: Trigger<OnInsert, Vertex>,
     mut commands: Commands,
     transform_q: Query<&Transform>,
+    preview_q: Query<&Preview>,
+    assets: Res<AssetServer>,
 ) {
+    let color = if preview_q.contains(trigger.entity()) {
+        TRANSLUCENT_WHITE.clone()
+    } else {
+        WHITE.clone()
+    };
+
+    let vertex_mesh = VertexMesh {
+        pos: try_res_s!(transform_q.get(trigger.entity()))
+            .translation
+            .xy(),
+        walls: default(),
+    };
+
+    let mesh = vertex_mesh.mesh();
+
     commands.entity(trigger.entity()).insert((
-        VertexMesh {
-            pos: try_res_s!(transform_q.get(trigger.entity()))
-                .translation
-                .xy(),
-            walls: default(),
-        },
-        MeshMaterial2d(WHITE.clone()),
-        Mesh2d::default(),
+        vertex_mesh,
+        MeshMaterial2d(color),
+        Mesh2d(assets.add(mesh)),
         Visibility::default(),
     ));
 }
 
-pub fn init_wall(
-    trigger: Trigger<OnAdd, Wall>,
-    mut commands: Commands,
-    mut wall_added_e: EventWriter<WallChanged>,
-    wall_q: Query<&Wall>,
-) {
+pub fn wall_inserted(trigger: Trigger<OnInsert, Wall>, mut commands: Commands) {
     let id = trigger.entity();
     commands.entity(id).insert((
         Transform::default(),
@@ -70,48 +78,57 @@ pub fn init_wall(
         Mesh2d::default(),
         Visibility::default(),
     ));
+}
 
-    wall_added_e.send(WallChanged {
-        id,
-        wall: *wall_q.get(id).unwrap(),
-    });
+pub fn preview_moved(
+    vertex_q: Query<Entity, (Changed<Transform>, With<Vertex>, With<Preview>)>,
+    mut wall_map: ResMut<WallMap>,
+) {
+    for _ in vertex_q.iter() {
+        wall_map.set_changed();
+    }
 }
 
 pub fn update_wall(
-    assets: Res<AssetServer>,
-    mut wall_added_e: EventReader<WallChanged>,
-    mut vertex_q: Query<(&Transform, &mut VertexMesh, &mut Mesh2d), With<Vertex>>,
-    mut wall_mesh_q: Query<(&Wall, &mut WallMesh, &mut Mesh2d), Without<Vertex>>,
+    _assets: Res<AssetServer>,
+    _wall_map: Res<WallMap>,
+    mut _vertex_q: Query<(&Transform, &mut VertexMesh, &mut Mesh2d), With<Vertex>>,
+    mut _wall_mesh_q: Query<(&Wall, &mut WallMesh, &mut Mesh2d), Without<Vertex>>,
 ) {
-    let mut updated_walls = HashSet::new();
-    for event in wall_added_e.read() {
-        let [(start_tr, mut start_mesh, mut start_handle), (end_tr, mut end_mesh, mut end_handle)] =
-            vertex_q.many_mut([event.wall.start, event.wall.end]);
+    todo!()
 
-        let start_position = start_tr.translation.xy();
-        let end_position = end_tr.translation.xy();
+    // let mut updated_walls = HashSet::new();
+    // for event in wall_added_e.read() {
+    //     let [(start_tr, mut start_mesh, mut start_handle), (end_tr, mut end_mesh, mut end_handle)] =
+    //         vertex_q.many_mut([event.wall.start, event.wall.end]);
 
-        start_mesh.insert_wall(event.id, end_position);
-        end_mesh.insert_wall(event.id, start_position);
+    //     let start_position = start_tr.translation.xy();
+    //     let end_position = end_tr.translation.xy();
 
-        start_handle.0 = assets.add(start_mesh.mesh());
-        end_handle.0 = assets.add(end_mesh.mesh());
+    //     start_mesh.insert_wall(event.id, end_position);
+    //     end_mesh.insert_wall(event.id, start_position);
 
-        updated_walls.extend(start_mesh.walls.iter().map(|&(id, _)| id));
-        updated_walls.extend(end_mesh.walls.iter().map(|&(id, _)| id));
-    }
+    //     start_handle.0 = assets.add(start_mesh.mesh());
+    //     end_handle.0 = assets.add(end_mesh.mesh());
 
-    for id in updated_walls {
-        let (wall, mut mesh, mut handle) = try_res_s!(wall_mesh_q.get_mut(id));
-        let [(_, start_mesh, _), (_, end_mesh, _)] = vertex_q.many([wall.start, wall.end]);
+    //     updated_walls.extend(start_mesh.walls.iter().map(|&(id, _)| id));
+    //     updated_walls.extend(end_mesh.walls.iter().map(|&(id, _)| id));
+    // }
 
-        mesh.update(id, start_mesh, end_mesh);
-        handle.0 = assets.add(mesh.mesh());
-    }
+    // for id in updated_walls {
+    //     info!("updated wall {}", id.to_bits());
+    //     let (wall, mut mesh, mut handle) = try_res_s!(wall_mesh_q.get_mut(id));
+    //     let [(_, start_mesh, _), (_, end_mesh, _)] = vertex_q.many([wall.start, wall.end]);
+
+    //     mesh.update(id, start_mesh, end_mesh);
+    //     handle.0 = assets.add(mesh.mesh());
+    // }
 }
 
 impl VertexMesh {
+    #[expect(unused)]
     fn insert_wall(&mut self, id: Entity, pos: Vec2) -> usize {
+        self.walls.retain(|&mut (w, _)| w != id);
         let index = self
             .walls
             .binary_search_by_key(&FloatOrd((pos - self.pos).to_angle()), |&(_, other)| {
@@ -136,10 +153,14 @@ impl VertexMesh {
     fn mesh(&self) -> Mesh {
         let mut intersections = SmallVec::<[Vec2; 4]>::new();
 
-        for (i, &(_, pos1)) in self.walls.iter().enumerate() {
-            let pos2 = wrapping_idx(&self.walls, i, 1).1;
+        if self.walls.is_empty() {
+            intersections.extend(vertex_intersections(Vec2::X, Vec2::X));
+        } else {
+            for (i, &(_, pos1)) in self.walls.iter().enumerate() {
+                let pos2 = wrapping_idx(&self.walls, i, 1).1;
 
-            intersections.extend(vertex_intersections(pos1 - self.pos, pos2 - self.pos));
+                intersections.extend(vertex_intersections(pos1 - self.pos, pos2 - self.pos));
+            }
         }
 
         let mut vertices = Vec::new();
@@ -157,6 +178,7 @@ impl VertexMesh {
 }
 
 impl WallMesh {
+    #[expect(unused)]
     fn update(&mut self, id: Entity, start: &VertexMesh, end: &VertexMesh) {
         let (start1, start2) = try_opt!(start.wall_intersection(id));
         let (end1, end2) = try_opt!(end.wall_intersection(id));
@@ -164,6 +186,7 @@ impl WallMesh {
         self.intersections = [start1, start2, end1, end2];
     }
 
+    #[expect(unused)]
     fn mesh(&self) -> Mesh {
         Mesh::new(
             PrimitiveTopology::TriangleStrip,

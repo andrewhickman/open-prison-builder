@@ -1,27 +1,10 @@
-use bevy::{picking::backend::*, prelude::*};
-use pb_engine::EngineState;
-use ray::RayMap;
+use bevy::{
+    picking::backend::{ray::RayMap, HitData, PointerHits},
+    prelude::*,
+};
+use pb_engine::{EngineState, Root};
 
-use crate::input::InputState;
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum VertexPickingState {
-    None,
-    #[expect(unused)]
-    Select,
-    #[expect(unused)]
-    Create,
-}
-
-impl ComputedStates for VertexPickingState {
-    type SourceStates = InputState;
-
-    fn compute(source: Self::SourceStates) -> Option<Self> {
-        match source {
-            InputState::Default => Some(VertexPickingState::None),
-        }
-    }
-}
+use super::PickingState;
 
 pub fn backend(
     ray_map: Res<RayMap>,
@@ -30,7 +13,6 @@ pub fn backend(
     mut hits: EventWriter<PointerHits>,
 ) {
     let EngineState::Running(root) = *state.get() else {
-        error!("fail 1");
         return;
     };
 
@@ -38,23 +20,64 @@ pub fn backend(
         if let Ok(camera) = camera_q.get(ray_id.camera) {
             let picks = vec![(
                 root,
-                HitData::new(ray_id.camera, 0.0, Some(ray.origin.with_z(0.0)), None),
+                HitData::new(ray_id.camera, 0., Some(ray.origin.with_z(0.)), None),
             )];
             hits.send(PointerHits::new(
                 ray_id.pointer,
                 picks,
                 camera.order as f32 - 0.5,
             ));
-        } else {
-            error!("fail 2");
         }
     }
 }
 
-pub fn dbg_hits(mut hits: EventReader<PointerHits>) {
-    for hit in hits.read() {
-        if !hit.picks.is_empty() && hit.order < 0.5 {
-            info!("{hit:?}");
-        }
-    }
+pub fn root_added(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
+    commands
+        .entity(trigger.entity())
+        .insert(PickingBehavior::default())
+        .observe(over)
+        .observe(moved)
+        .observe(out)
+        .observe(click);
+}
+
+pub fn over(
+    mut trigger: Trigger<Pointer<Over>>,
+    mut state: ResMut<PickingState>,
+    mut commands: Commands,
+) {
+    trigger.propagate(false);
+
+    state.vertex_over(&mut commands, trigger.event());
+}
+
+pub fn moved(
+    mut trigger: Trigger<Pointer<Move>>,
+    mut state: ResMut<PickingState>,
+    mut commands: Commands,
+) {
+    trigger.propagate(false);
+
+    state.vertex_move(&mut commands, trigger.event());
+}
+
+pub fn out(
+    mut trigger: Trigger<Pointer<Out>>,
+    mut state: ResMut<PickingState>,
+    mut commands: Commands,
+) {
+    trigger.propagate(false);
+
+    state.vertex_out(&mut commands, trigger.event());
+}
+
+pub fn click(
+    mut trigger: Trigger<Pointer<Click>>,
+    mut state: ResMut<PickingState>,
+    engine_state: Res<State<EngineState>>,
+    mut commands: Commands,
+) {
+    trigger.propagate(false);
+
+    state.vertex_click(&mut commands, &engine_state, trigger.event());
 }

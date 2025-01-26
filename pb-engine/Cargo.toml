@@ -6,10 +6,11 @@ publish = false
 edition = "2021"
 
 [features]
-dev = ["bevy_rapier2d/debug-render-2d"]
+dev = ["avian2d/debug-plugin"]
 
 [dependencies]
 anyhow = "1.0.86"
-bevy = { version = "0.15.0", default-features = false, features = ["bevy_render", "bevy_state", "bevy_scene"] }
-bevy_rapier2d = { version = "0.28.0", default-features = false, features = ["dim2"] }
+avian2d = { version = "0.2.0", default-features = false, features = ["2d", "f32", "parry-f32", "parallel", "bevy_scene", "bevy_picking"] }
+bevy = { version = "0.15.0", default-features = false, features = ["bevy_state", "bevy_scene", "bevy_render"] }
+pb-util = { version = "0.1.0", path = "../pb-util" }
 serde = { version = "1.0.203", features = ["derive"] }

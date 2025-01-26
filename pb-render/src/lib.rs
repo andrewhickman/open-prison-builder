@@ -1,21 +1,26 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
-mod sprite;
-mod wall;
+pub mod sprite;
+pub mod wall;
 
 use bevy::prelude::*;
-use wall::WallChanged;
+use pb_engine::wall::WallMap;
+
+#[derive(Component)]
+pub struct Preview;
 
 pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, wall::startup);
-        app.add_event::<WallChanged>()
-            .add_systems(PostUpdate, wall::update_wall)
-            .add_observer(wall::init_vertex)
-            .add_observer(wall::init_wall)
-            .add_observer(sprite::init_root)
-            .add_observer(sprite::init_pawn);
+        app.add_systems(
+            PostUpdate,
+            wall::update_wall.run_if(resource_changed::<WallMap>),
+        )
+        .add_observer(wall::vertex_inserted)
+        .add_observer(wall::wall_inserted)
+        .add_observer(sprite::root_added)
+        .add_observer(sprite::pawn_added);
     }
 }

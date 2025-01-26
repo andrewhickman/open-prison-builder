@@ -21,6 +21,18 @@ where
     ))
 }
 
+pub fn swap_remove_item<T>(v: &mut Vec<T>, item: &T) -> bool
+where
+    T: PartialEq,
+{
+    if let Some(index) = v.iter().position(|i| i == item) {
+        v.swap_remove(index);
+        true
+    } else {
+        false
+    }
+}
+
 pub trait AsDynError<'a, Marker: ?Sized> {
     fn as_dyn_error(&self) -> &'_ (dyn std::error::Error + 'a);
 
