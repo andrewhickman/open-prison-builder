@@ -4,13 +4,19 @@ pub use anyhow;
 pub use tracing;
 
 use bevy::{
-    ecs::system::{BoxedSystem, IntoSystem, ResMut},
+    ecs::{
+        component::Component,
+        entity::Entity,
+        system::{BoxedSystem, IntoSystem, ResMut},
+        world::{Command, Mut, World},
+    },
     state::state::{FreelyMutableState, NextState},
 };
+use tracing::warn;
 
 pub use self::callback::{run_system_cached, run_system_cached_with, spawn_io, CallbackPlugin};
 
-use std::fmt::Write;
+use std::{any::type_name, fmt::Write};
 
 pub fn set_state<S>(state: S) -> BoxedSystem
 where
@@ -20,6 +26,42 @@ where
         move |mut next_state: ResMut<NextState<S>>| next_state.set(state.clone()),
     ))
 }
+
+pub fn modify_component<C, F>(id: Entity, f: F) -> impl Command
+where
+    C: Component,
+    F: FnOnce(Mut<C>) + Send + 'static,
+{
+    move |world: &mut World| {
+        if let Ok(mut entity) = world.get_entity_mut(id) {
+            if let Some(component) = entity.get_mut() {
+                f(component)
+            } else {
+                warn!("entity {id} did not have component {}", type_name::<C>())
+            }
+        } else {
+            warn!(
+                "entity {id} not found, failed to modify component {}",
+                type_name::<C>()
+            )
+        }
+    }
+}
+
+pub fn try_modify_component<C, F>(id: Entity, f: F) -> impl Command
+where
+    C: Component,
+    F: FnOnce(Mut<C>) + Send + 'static,
+{
+    move |world: &mut World| {
+        if let Ok(mut entity) = world.get_entity_mut(id) {
+            if let Some(component) = entity.get_mut() {
+                f(component)
+            }
+        }
+    }
+}
+
 pub trait AsDynError<'a, Marker: ?Sized> {
     fn as_dyn_error(&self) -> &'_ (dyn std::error::Error + 'a);
 

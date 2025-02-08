@@ -17,9 +17,6 @@ pub struct Vertex;
 
 #[derive(Debug, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize, MapEntities)]
-#[require(
-    RigidBody(|| RigidBody::Static)
-)]
 pub struct Wall {
     start: Entity,
     end: Entity,
@@ -38,6 +35,12 @@ pub struct WallMapEntry {
 #[derive(Bundle)]
 pub struct VertexBundle {
     pub vertex: Vertex,
+    pub transform: Transform,
+}
+
+#[derive(Bundle)]
+pub struct WallBundle {
+    pub wall: Wall,
     pub transform: Transform,
 }
 
@@ -102,23 +105,23 @@ impl VertexBundle {
     }
 }
 
+impl WallBundle {
+    pub fn new(start: Entity, start_pos: Vec2, end: Entity, end_pos: Vec2) -> Self {
+        WallBundle {
+            wall: Wall::new(start, end),
+            transform: Transform::from_translation(start_pos.midpoint(end_pos).extend(0.)),
+        }
+    }
+}
+
 pub fn wall_added(
     trigger: Trigger<OnInsert, Wall>,
-    mut commands: Commands,
     mut map: ResMut<WallMap>,
     wall_q: Query<&Wall>,
-    mut vertex_q: Query<&Transform, With<Vertex>>,
 ) {
     let wall = try_res_s!(wall_q.get(trigger.entity()));
-    // TODO how to make this work on deserialization?
-    let [start, end] = vertex_q.many_mut([wall.start, wall.end]);
 
     map.add(trigger.entity(), *wall);
-
-    commands.entity(trigger.entity()).insert((
-        // TODO transform needed for capsule?
-        Collider::capsule_endpoints(RADIUS, start.translation.xy(), end.translation.xy()),
-    ));
 }
 
 pub fn wall_removed(
@@ -128,4 +131,26 @@ pub fn wall_removed(
 ) {
     let wall = try_res_s!(wall_q.get(trigger.entity()));
     map.remove(trigger.entity(), *wall);
+}
+
+pub fn add_colliders(
+    mut commands: Commands,
+    wall_q: Query<(Entity, &Wall), (Without<Collider>, With<Parent>)>,
+    vertex_q: Query<&Transform, With<Vertex>>,
+) {
+    for (id, wall) in &wall_q {
+        let [start, end] = vertex_q.many([wall.start, wall.end]);
+
+        let midpoint = start.translation.midpoint(end.translation);
+
+        commands.entity(id).insert((
+            RigidBody::Static,
+            Transform::from_translation(midpoint),
+            Collider::capsule_endpoints(
+                RADIUS,
+                (start.translation - midpoint).xy(),
+                (end.translation - midpoint).xy(),
+            ),
+        ));
+    }
 }

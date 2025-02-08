@@ -12,7 +12,7 @@ use bevy::{
     utils::hashbrown::HashSet,
 };
 use pb_engine::wall::{self, Vertex, Wall, WallMap};
-use pb_util::try_res_s;
+use pb_util::{try_modify_component, try_res_s};
 use smallvec::SmallVec;
 
 use crate::Preview;
@@ -112,10 +112,20 @@ pub fn preview_removed(
     mut commands: Commands,
     mut wall_map: ResMut<WallMap>,
 ) {
-    commands
-        .entity(trigger.entity())
-        .entry::<MeshMaterial2d<ColorMaterial>>()
-        .and_modify(|mut color| color.0 = WHITE);
+    commands.queue(try_modify_component(
+        trigger.entity(),
+        |mut color: Mut<MeshMaterial2d<ColorMaterial>>| color.0 = WHITE,
+    ));
+
+    // if let Some(mut entity) = commands.get_entity(trigger.entity()) {
+    //     entity
+    //         .entry::<MeshMaterial2d<ColorMaterial>>()
+    //         .and_modify(|mut color| color.0 = WHITE);
+    // }
+    // commands
+    //     .entity(trigger.entity())
+    //     .entry::<MeshMaterial2d<ColorMaterial>>()
+    //     .and_modify(|mut color| color.0 = WHITE);
     wall_map.set_changed();
 }
 
@@ -219,11 +229,12 @@ impl VertexInformation {
 
 impl WallInformation {
     fn new(id: Entity, start: &VertexInformation, end: &VertexInformation) -> Self {
+        let pos = start.pos.midpoint(end.pos);
         let (start1, start2) = start.wall_intersection(id).unwrap();
         let (end1, end2) = end.wall_intersection(id).unwrap();
 
         WallInformation {
-            intersections: [start1, start2, end1, end2],
+            intersections: [start1 - pos, start2 - pos, end1 - pos, end2 - pos],
         }
     }
 

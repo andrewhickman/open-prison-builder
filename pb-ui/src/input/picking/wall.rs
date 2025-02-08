@@ -1,23 +1,28 @@
 use bevy::prelude::*;
 use pb_engine::{
-    wall::{VertexBundle, Wall},
+    wall::{VertexBundle, WallBundle},
     EngineState,
 };
 use pb_render::Preview;
+use pb_util::try_modify_component;
 
 #[derive(Debug)]
 pub enum CreateWallState {
     SelectStart,
     PreviewStart {
         start: Entity,
+        start_pos: Vec2,
     },
     SelectEnd {
         start: Entity,
+        start_pos: Vec2,
     },
     PreviewEnd {
         start: Entity,
+        start_pos: Vec2,
         wall: Entity,
         end: Entity,
+        end_pos: Vec2,
     },
     Complete,
 }
@@ -40,19 +45,47 @@ impl CreateWallState {
             CreateWallState::SelectStart => {
                 let start = commands.spawn((VertexBundle::new(pos), Preview)).id();
 
-                *self = CreateWallState::PreviewStart { start };
+                *self = CreateWallState::PreviewStart {
+                    start,
+                    start_pos: pos,
+                };
             }
-            CreateWallState::PreviewStart { start } => {
-                commands.entity(start).queue(set_vertex_position(pos));
-            }
-            CreateWallState::SelectEnd { start } => {
-                let end = commands.spawn((VertexBundle::new(pos), Preview)).id();
-                let wall = commands.spawn((Wall::new(start, end), Preview)).id();
+            CreateWallState::PreviewStart {
+                start,
+                ref mut start_pos,
+            } => {
+                commands.queue(try_modify_component(
+                    start,
+                    move |mut transform: Mut<Transform>| transform.translation = pos.extend(0.),
+                ));
 
-                *self = CreateWallState::PreviewEnd { start, end, wall };
+                *start_pos = pos;
             }
-            CreateWallState::PreviewEnd { end, .. } => {
-                commands.entity(end).queue(set_vertex_position(pos));
+            CreateWallState::SelectEnd { start, start_pos } => {
+                let end = commands.spawn((VertexBundle::new(pos), Preview)).id();
+                let wall = commands
+                    .spawn((WallBundle::new(start, start_pos, end, pos), Preview))
+                    .id();
+
+                *self = CreateWallState::PreviewEnd {
+                    start,
+                    start_pos,
+                    end,
+                    wall,
+                    end_pos: pos,
+                };
+            }
+            CreateWallState::PreviewEnd {
+                start_pos,
+                end,
+                ref mut end_pos,
+                wall,
+                ..
+            } => {
+                commands.queue(set_pos(wall, start_pos.midpoint(pos)));
+                commands.queue(set_pos(end, pos));
+
+                *end_pos = pos;
             }
             CreateWallState::Complete => {}
         }
@@ -61,17 +94,23 @@ impl CreateWallState {
     pub fn vertex_out(&mut self, commands: &mut Commands, _: &Pointer<Out>) {
         match *self {
             CreateWallState::SelectStart => {}
-            CreateWallState::PreviewStart { start } => {
+            CreateWallState::PreviewStart { start, .. } => {
                 commands.entity(start).despawn();
 
                 *self = CreateWallState::SelectStart;
             }
             CreateWallState::SelectEnd { .. } => {}
-            CreateWallState::PreviewEnd { start, wall, end } => {
+            CreateWallState::PreviewEnd {
+                start,
+                start_pos,
+                wall,
+                end,
+                ..
+            } => {
                 commands.entity(wall).despawn();
                 commands.entity(end).despawn();
 
-                *self = CreateWallState::SelectEnd { start };
+                *self = CreateWallState::SelectEnd { start, start_pos };
             }
             CreateWallState::Complete => {}
         }
@@ -94,11 +133,13 @@ impl CreateWallState {
 
         match *self {
             CreateWallState::SelectStart => {}
-            CreateWallState::PreviewStart { start } => {
-                *self = CreateWallState::SelectEnd { start };
+            CreateWallState::PreviewStart { start, start_pos } => {
+                *self = CreateWallState::SelectEnd { start, start_pos };
             }
             CreateWallState::SelectEnd { .. } => {}
-            CreateWallState::PreviewEnd { start, wall, end } => {
+            CreateWallState::PreviewEnd {
+                start, wall, end, ..
+            } => {
                 commands.entity(start).set_parent(root).remove::<Preview>();
                 commands.entity(wall).set_parent(root).remove::<Preview>();
                 commands.entity(end).set_parent(root).remove::<Preview>();
@@ -112,10 +153,11 @@ impl CreateWallState {
     pub fn cancel(self, commands: &mut Commands) {
         match self {
             CreateWallState::SelectStart => {}
-            CreateWallState::PreviewStart { start } | CreateWallState::SelectEnd { start } => {
-                commands.entity(start).despawn()
-            }
-            CreateWallState::PreviewEnd { start, wall, end } => {
+            CreateWallState::PreviewStart { start, .. }
+            | CreateWallState::SelectEnd { start, .. } => commands.entity(start).despawn(),
+            CreateWallState::PreviewEnd {
+                start, wall, end, ..
+            } => {
                 commands.entity(start).despawn();
                 commands.entity(wall).despawn();
                 commands.entity(end).despawn();
@@ -125,12 +167,8 @@ impl CreateWallState {
     }
 }
 
-fn set_vertex_position(pos: Vec2) -> impl EntityCommand<World> {
-    move |mut world: EntityWorldMut| {
-        if let Some(mut transform) = world.get_mut::<Transform>() {
-            transform.translation = pos.extend(0.);
-        } else {
-            warn!("vertex not found");
-        }
-    }
+fn set_pos(id: Entity, pos: Vec2) -> impl Command {
+    try_modify_component(id, move |mut transform: Mut<Transform>| {
+        transform.translation = pos.extend(0.);
+    })
 }
