@@ -196,8 +196,10 @@ fn down(
 ) {
     trigger.propagate(false);
 
-    let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
-    style.active(&theme, image.as_deref_mut(), bg.as_deref_mut());
+    if trigger.button == PointerButton::Primary {
+        let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
+        style.active(&theme, image.as_deref_mut(), bg.as_deref_mut());
+    }
 }
 
 fn up(
@@ -211,8 +213,10 @@ fn up(
 ) {
     trigger.propagate(false);
 
-    let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
-    style.hovered(&theme, image.as_deref_mut(), bg.as_deref_mut());
+    if trigger.button == PointerButton::Primary {
+        let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
+        style.hovered(&theme, image.as_deref_mut(), bg.as_deref_mut());
+    }
 }
 
 fn disabled(

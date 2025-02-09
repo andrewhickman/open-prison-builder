@@ -1,4 +1,5 @@
 pub mod callback;
+pub mod system;
 
 pub use anyhow;
 pub use tracing;
@@ -14,7 +15,10 @@ use bevy::{
 };
 use tracing::warn;
 
-pub use self::callback::{run_system_cached, run_system_cached_with, spawn_io, CallbackPlugin};
+pub use self::{
+    callback::{run_system_cached, run_system_cached_with, spawn_io, CallbackPlugin},
+    system::run_if,
+};
 
 use std::{any::type_name, fmt::Write};
 

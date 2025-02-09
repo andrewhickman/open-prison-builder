@@ -26,9 +26,7 @@ impl<'w> UiBuilder<'w, '_> {
     ) -> UiBuilder<'w, '_> {
         self.icon_button(theme, assets.close_icon.clone(), theme.icon_size())
             .on_click(
-                move |mut trigger: Trigger<'_, Pointer<Click>>, mut commands: Commands| {
-                    trigger.propagate(false);
-
+                move |_: Trigger<'_, Pointer<Click>>, mut commands: Commands| {
                     commands.entity(panel_id).despawn_recursive()
                 },
             );

@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use pb_engine::{
+    build::Blueprint,
     wall::{VertexBundle, WallBundle},
     EngineState,
 };
-use pb_render::Preview;
 use pb_util::try_modify_component;
 
 #[derive(Debug)]
@@ -43,7 +43,7 @@ impl CreateWallState {
     fn set_position(&mut self, commands: &mut Commands, pos: Vec2) {
         match *self {
             CreateWallState::SelectStart => {
-                let start = commands.spawn((VertexBundle::new(pos), Preview)).id();
+                let start = commands.spawn((VertexBundle::new(pos), Blueprint)).id();
 
                 *self = CreateWallState::PreviewStart {
                     start,
@@ -62,9 +62,9 @@ impl CreateWallState {
                 *start_pos = pos;
             }
             CreateWallState::SelectEnd { start, start_pos } => {
-                let end = commands.spawn((VertexBundle::new(pos), Preview)).id();
+                let end = commands.spawn((VertexBundle::new(pos), Blueprint)).id();
                 let wall = commands
-                    .spawn((WallBundle::new(start, start_pos, end, pos), Preview))
+                    .spawn((WallBundle::new(start, start_pos, end, pos), Blueprint))
                     .id();
 
                 *self = CreateWallState::PreviewEnd {
@@ -140,9 +140,12 @@ impl CreateWallState {
             CreateWallState::PreviewEnd {
                 start, wall, end, ..
             } => {
-                commands.entity(start).set_parent(root).remove::<Preview>();
-                commands.entity(wall).set_parent(root).remove::<Preview>();
-                commands.entity(end).set_parent(root).remove::<Preview>();
+                commands
+                    .entity(start)
+                    .set_parent(root)
+                    .remove::<Blueprint>();
+                commands.entity(wall).set_parent(root).remove::<Blueprint>();
+                commands.entity(end).set_parent(root).remove::<Blueprint>();
 
                 *self = CreateWallState::Complete;
             }

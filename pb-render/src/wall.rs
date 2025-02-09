@@ -11,11 +11,12 @@ use bevy::{
     },
     utils::hashbrown::HashSet,
 };
-use pb_engine::wall::{self, Vertex, Wall, WallMap};
+use pb_engine::{
+    build::Blueprint,
+    wall::{self, Vertex, Wall, WallMap},
+};
 use pb_util::{try_modify_component, try_res_s};
 use smallvec::SmallVec;
-
-use crate::Preview;
 
 #[derive(Debug, Default, Component, PartialEq)]
 pub struct VertexInformation {
@@ -45,7 +46,7 @@ pub fn vertex_inserted(
     trigger: Trigger<OnInsert, Vertex>,
     mut commands: Commands,
     transform_q: Query<&Transform>,
-    preview_q: Query<&Preview>,
+    preview_q: Query<&Blueprint>,
     mut assets: ResMut<Assets<Mesh>>,
 ) {
     let color = if preview_q.contains(trigger.entity()) {
@@ -77,7 +78,7 @@ pub fn vertex_inserted(
 pub fn wall_inserted(
     trigger: Trigger<OnInsert, Wall>,
     mut commands: Commands,
-    preview_q: Query<&Preview>,
+    preview_q: Query<&Blueprint>,
     assets: Res<Assets<Mesh>>,
 ) {
     let color = if preview_q.contains(trigger.entity()) {
@@ -99,7 +100,7 @@ pub fn wall_inserted(
 }
 
 pub fn preview_moved(
-    vertex_q: Query<Entity, (Changed<Transform>, With<Vertex>, With<Preview>)>,
+    vertex_q: Query<Entity, (Changed<Transform>, With<Vertex>, With<Blueprint>)>,
     mut wall_map: ResMut<WallMap>,
 ) {
     if vertex_q.iter().next().is_some() {
@@ -108,7 +109,7 @@ pub fn preview_moved(
 }
 
 pub fn preview_removed(
-    trigger: Trigger<OnRemove, Preview>,
+    trigger: Trigger<OnRemove, Blueprint>,
     mut commands: Commands,
     mut wall_map: ResMut<WallMap>,
 ) {

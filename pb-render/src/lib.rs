@@ -6,9 +6,6 @@ pub mod wall;
 use bevy::prelude::*;
 use pb_engine::wall::WallMap;
 
-#[derive(Component)]
-pub struct Preview;
-
 pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {

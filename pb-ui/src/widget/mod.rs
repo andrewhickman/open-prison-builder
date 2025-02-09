@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
     ui::FocusPolicy,
 };
+use pb_util::run_if;
 
 pub mod button;
 pub mod disabled;
@@ -41,24 +42,31 @@ impl<'w, 's> UiBuilder<'w, 's> {
         self.reborrow()
     }
 
-    pub fn observe<E, B, M>(
-        &mut self,
-        system: impl IntoObserverSystem<E, B, M>,
-    ) -> UiBuilder<'w, '_>
+    pub fn observe<E, M>(&mut self, system: impl IntoObserverSystem<E, (), M>) -> UiBuilder<'w, '_>
     where
         E: Event,
-        B: Bundle,
     {
         self.commands.entity(self.entity).observe(system);
         self.reborrow()
     }
 
-    pub fn on_click<M>(
-        &mut self,
-        system: impl IntoObserverSystem<Pointer<Click>, (), M>,
-    ) -> UiBuilder<'w, '_> {
+    pub fn on_click<M, S>(&mut self, system: S) -> UiBuilder<'w, '_>
+    where
+        S: IntoSystem<Trigger<'static, Pointer<Click>>, (), M> + Send + 'static,
+        M: 'static,
+    {
         self.insert((PickingBehavior::default(), PickingInteraction::None));
-        self.observe(system)
+        self.observe(run_if(
+            system,
+            move |trigger: &mut Trigger<Pointer<Click>>| {
+                if trigger.event().event.button == PointerButton::Primary {
+                    trigger.propagate(false);
+                    true
+                } else {
+                    false
+                }
+            },
+        ))
     }
 
     pub fn clear(&mut self) {

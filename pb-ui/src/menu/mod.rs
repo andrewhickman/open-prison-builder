@@ -133,15 +133,13 @@ impl<'w> UiBuilder<'w, '_> {
         icon_bar
             .icon_button(theme, assets.bevy_icon.clone(), theme.large_icon_size())
             .insert(MenuButton::OpenBevy)
-            .on_click(|mut trigger: Trigger<'_, Pointer<Click>>| {
-                trigger.propagate(false);
+            .on_click(|_: Trigger<'_, Pointer<Click>>| {
                 open_url("https://bevyengine.org/");
             });
         icon_bar
             .icon_button(theme, assets.github_icon.clone(), theme.large_icon_size())
             .insert(MenuButton::OpenGithub)
-            .on_click(|mut trigger: Trigger<'_, Pointer<Click>>| {
-                trigger.propagate(false);
+            .on_click(|_: Trigger<'_, Pointer<Click>>| {
                 open_url("https://github.com/andrewhickman/open-prison-builder/");
             });
 
@@ -187,13 +185,11 @@ impl<'w> UiBuilder<'w, '_> {
 }
 
 fn new_prison_button(
-    mut trigger: Trigger<Pointer<Click>>,
+    _trigger: Trigger<Pointer<Click>>,
     mut commands: Commands,
     mut ui_state: ResMut<NextState<UiState>>,
     mut engine_state: ResMut<NextState<EngineState>>,
 ) {
-    trigger.propagate(false);
-
     let parent = commands.spawn(RootBundle::default()).id();
 
     ui_state.set(UiState::Game);
@@ -234,15 +230,13 @@ fn new_prison_button(
 }
 
 fn settings_panel_button(
-    mut trigger: Trigger<Pointer<Click>>,
+    _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     theme: Res<Theme>,
     assets: Res<Assets>,
     layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
 ) {
-    trigger.propagate(false);
-
     for (id, &panel) in &panel_q {
         commands.entity(id).despawn_recursive();
         if panel == MenuPanel::Settings {
@@ -255,9 +249,7 @@ fn settings_panel_button(
         .insert(MenuPanel::Settings);
 }
 
-fn exit_button(mut trigger: Trigger<Pointer<Click>>, mut exit_e: EventWriter<AppExit>) {
-    trigger.propagate(false);
-
+fn exit_button(_: Trigger<Pointer<Click>>, mut exit_e: EventWriter<AppExit>) {
     info!("Exiting application");
     exit_e.send(AppExit::Success);
 }

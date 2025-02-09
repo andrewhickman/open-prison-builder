@@ -9,6 +9,8 @@ use bevy::{
 use pb_util::try_res_s;
 use serde::{Deserialize, Serialize};
 
+use crate::build::Blueprint;
+
 pub const RADIUS: f32 = 0.125;
 
 #[derive(Debug, Default, Clone, Component, Reflect, Serialize, Deserialize)]
@@ -135,7 +137,7 @@ pub fn wall_removed(
 
 pub fn add_colliders(
     mut commands: Commands,
-    wall_q: Query<(Entity, &Wall), (Without<Collider>, With<Parent>)>,
+    wall_q: Query<(Entity, &Wall), (Without<Collider>, Without<Blueprint>)>,
     vertex_q: Query<&Transform, With<Vertex>>,
 ) {
     for (id, wall) in &wall_q {

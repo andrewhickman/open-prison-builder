@@ -89,13 +89,12 @@ impl<'w> UiBuilder<'w, '_> {
         )
         .insert(button)
         .on_click(
-            move |mut trigger: Trigger<Pointer<Click>>,
+            move |_: Trigger<Pointer<Click>>,
                   commands: Commands,
                   theme: Res<Theme>,
                   assets: Res<Assets>,
                   layout: Res<Layout>,
                   panels: Query<(Entity, &RibbonPanel)>| {
-                trigger.propagate(false);
                 button.on_click(commands, theme, assets, layout, panels)
             },
         );

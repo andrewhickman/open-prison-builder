@@ -1,11 +1,13 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
+pub mod build;
 pub mod pawn;
 pub mod save;
 pub mod wall;
 
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use build::Blueprint;
 use pawn::Pawn;
 use serde::{Deserialize, Serialize};
 use wall::{Vertex, Wall, WallMap};
@@ -34,6 +36,7 @@ impl Plugin for EnginePlugin {
         app.init_resource::<WallMap>();
 
         app.register_type::<Root>()
+            .register_type::<Blueprint>()
             .register_type::<Pawn>()
             .register_type::<Wall>()
             .register_type::<Vertex>();
