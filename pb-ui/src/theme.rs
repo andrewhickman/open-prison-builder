@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use pb_assets::Assets;
+use pb_assets::AssetHandles;
 
 #[derive(Resource)]
 pub(crate) struct Theme {
@@ -22,7 +22,7 @@ pub(crate) struct Theme {
     pub tile_icon_size_px: f32,
 }
 
-pub fn init(mut commands: Commands, assets: Res<Assets>) {
+pub fn init(mut commands: Commands, assets: Res<AssetHandles>) {
     let text = Srgba::hex("dedcdf").unwrap().into();
 
     commands.insert_resource(Theme {

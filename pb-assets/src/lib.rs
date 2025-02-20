@@ -1,10 +1,14 @@
 use bevy::{
     asset::{LoadState, UntypedAssetId},
+    image::{
+        ImageAddressMode, ImageFilterMode, ImageLoaderSettings, ImageSampler,
+        ImageSamplerDescriptor,
+    },
     prelude::*,
 };
 
 #[derive(Resource)]
-pub struct Assets {
+pub struct AssetHandles {
     pub font_graduate: Handle<Font>,
     pub font_tomorrow: Handle<Font>,
     pub tomorrow_italic_font: Handle<Font>,
@@ -16,6 +20,7 @@ pub struct Assets {
     pub pawn_image: Handle<Image>,
     pub close_icon: Handle<Image>,
     pub error_icon: Handle<Image>,
+    pub grid_image: Handle<Image>,
 }
 
 pub struct AssetsPlugin;
@@ -27,7 +32,7 @@ impl Plugin for AssetsPlugin {
 }
 
 pub fn load(mut commands: Commands, server: Res<AssetServer>) {
-    commands.insert_resource(Assets {
+    commands.insert_resource(AssetHandles {
         font_graduate: server.load("fonts/Graduate-Regular.ttf"),
         font_tomorrow: server.load("fonts/Tomorrow-Medium.ttf"),
         tomorrow_italic_font: server.load("fonts/Tomorrow-MediumItalic.ttf"),
@@ -39,10 +44,23 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
         pawn_image: server.load("image/pawn.png"),
         close_icon: server.load("image/close.png"),
         error_icon: server.load("image/error.png"),
+        grid_image: server.load_with_settings("image/grid.png", |settings: &mut _| {
+            *settings = ImageLoaderSettings {
+                sampler: ImageSampler::Descriptor(ImageSamplerDescriptor {
+                    address_mode_u: ImageAddressMode::Repeat,
+                    address_mode_v: ImageAddressMode::Repeat,
+                    min_filter: ImageFilterMode::Linear,
+                    mag_filter: ImageFilterMode::Linear,
+                    mipmap_filter: ImageFilterMode::Linear,
+                    ..default()
+                }),
+                ..default()
+            }
+        }),
     });
 }
 
-impl Assets {
+impl AssetHandles {
     pub fn load_state(&self, server: &AssetServer) -> LoadState {
         self.asset_ids()
             .map(|id| server.get_load_state(id).unwrap_or(LoadState::NotLoaded))
@@ -57,7 +75,7 @@ impl Assets {
     }
 
     fn asset_ids(&self) -> impl Iterator<Item = UntypedAssetId> {
-        let Assets {
+        let AssetHandles {
             font_graduate,
             font_tomorrow,
             tomorrow_italic_font,
@@ -69,6 +87,7 @@ impl Assets {
             pawn_image,
             close_icon,
             error_icon,
+            grid_image,
         } = self;
 
         [
@@ -83,6 +102,7 @@ impl Assets {
             pawn_image.into(),
             close_icon.into(),
             error_icon.into(),
+            grid_image.into(),
         ]
         .into_iter()
     }

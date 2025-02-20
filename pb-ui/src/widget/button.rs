@@ -1,6 +1,6 @@
 use bevy::{prelude::*, ui::widget::NodeImageMode};
 
-use pb_assets::Assets;
+use pb_assets::AssetHandles;
 use pb_util::try_res_s;
 
 use crate::{theme::Theme, widget::UiBuilder};
@@ -19,7 +19,7 @@ impl<'w> UiBuilder<'w, '_> {
     pub fn large_button(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        assets: &AssetHandles,
         text: impl Into<String>,
         style: Node,
     ) -> UiBuilder<'w, '_> {
@@ -36,7 +36,7 @@ impl<'w> UiBuilder<'w, '_> {
     pub fn button(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        assets: &AssetHandles,
         text: impl Into<String>,
         style: Node,
     ) -> UiBuilder<'w, '_> {

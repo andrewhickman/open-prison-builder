@@ -18,7 +18,11 @@ use bevy::{
 };
 use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
-use input::{camera::CameraState, cancel::CancelStack, picking::PickingState};
+use input::{
+    camera::CameraState,
+    cancel::CancelStack,
+    picking::{grid::GridPickingState, PickingState},
+};
 use loading::LoadingState;
 use pb_engine::EngineState;
 use pb_util::set_state;
@@ -106,10 +110,24 @@ impl Plugin for UiPlugin {
             )
             .add_systems(
                 Update,
-                input::camera::update.run_if(input::camera::update_condition),
+                (
+                    input::camera::update.run_if(input::camera::update_condition),
+                    input::picking::grid::update_state
+                        .run_if(input::picking::grid::update_state_condition),
+                ),
             )
             .add_observer(input::cancel::cancel)
             .add_observer(input::camera::action)
             .add_observer(input::picking::vertex::root_added);
+
+        app.init_state::<GridPickingState>()
+            .add_systems(
+                OnEnter(GridPickingState::Enabled),
+                input::picking::grid::show,
+            )
+            .add_systems(
+                OnExit(GridPickingState::Enabled),
+                input::picking::grid::hide,
+            );
     }
 }

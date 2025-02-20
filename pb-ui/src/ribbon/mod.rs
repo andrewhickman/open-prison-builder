@@ -2,7 +2,7 @@ mod wall;
 
 use bevy::prelude::*;
 
-use pb_assets::Assets;
+use pb_assets::AssetHandles;
 
 use crate::{layout::Layout, theme::Theme, widget::UiBuilder, UiState};
 
@@ -28,7 +28,7 @@ pub enum RibbonPanel {
     Manage,
 }
 
-pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>, assets: Res<Assets>) {
+pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>, assets: Res<AssetHandles>) {
     UiBuilder::new(commands, layout.ribbon).ribbon(&theme, &assets);
 }
 
@@ -61,7 +61,7 @@ impl<'w> UiBuilder<'w, '_> {
         })
     }
 
-    pub fn ribbon(&mut self, theme: &Theme, assets: &Assets) {
+    pub fn ribbon(&mut self, theme: &Theme, assets: &AssetHandles) {
         let mut container = self.container(Node {
             display: Display::Flex,
             flex_direction: FlexDirection::Row,
@@ -75,7 +75,7 @@ impl<'w> UiBuilder<'w, '_> {
         container.ribbon_button(theme, assets, RibbonButton::Manage);
     }
 
-    fn ribbon_button(&mut self, theme: &Theme, assets: &Assets, button: RibbonButton) {
+    fn ribbon_button(&mut self, theme: &Theme, assets: &AssetHandles, button: RibbonButton) {
         self.text_button(
             theme,
             assets.ribbon_button_image.clone(),
@@ -92,7 +92,7 @@ impl<'w> UiBuilder<'w, '_> {
             move |_: Trigger<Pointer<Click>>,
                   commands: Commands,
                   theme: Res<Theme>,
-                  assets: Res<Assets>,
+                  assets: Res<AssetHandles>,
                   layout: Res<Layout>,
                   panels: Query<(Entity, &RibbonPanel)>| {
                 button.on_click(commands, theme, assets, layout, panels)
@@ -100,7 +100,7 @@ impl<'w> UiBuilder<'w, '_> {
         );
     }
 
-    fn ribbon_panel(&mut self, theme: &Theme, assets: &Assets, kind: RibbonPanel) {
+    fn ribbon_panel(&mut self, theme: &Theme, assets: &AssetHandles, kind: RibbonPanel) {
         let mut panel = match kind {
             RibbonPanel::Architect => self.ribbon_architect_panel(theme, assets),
             RibbonPanel::Staff => self.ribbon_staff_panel(theme, assets),
@@ -111,7 +111,11 @@ impl<'w> UiBuilder<'w, '_> {
         panel.cancellable().insert(kind);
     }
 
-    fn ribbon_architect_panel(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
+    fn ribbon_architect_panel(
+        &mut self,
+        theme: &Theme,
+        assets: &AssetHandles,
+    ) -> UiBuilder<'w, '_> {
         let mut icon_grid = self.container(Node {
             padding: UiRect::new(theme.gutter, theme.gutter, Val::ZERO, theme.gutter),
             display: Display::Grid,
@@ -130,15 +134,19 @@ impl<'w> UiBuilder<'w, '_> {
         icon_grid
     }
 
-    fn ribbon_staff_panel(&mut self, theme: &Theme, _assets: &Assets) -> UiBuilder<'w, '_> {
+    fn ribbon_staff_panel(&mut self, theme: &Theme, _assets: &AssetHandles) -> UiBuilder<'w, '_> {
         self.panel(theme, default())
     }
 
-    fn ribbon_schedule_panel(&mut self, theme: &Theme, _assets: &Assets) -> UiBuilder<'w, '_> {
+    fn ribbon_schedule_panel(
+        &mut self,
+        theme: &Theme,
+        _assets: &AssetHandles,
+    ) -> UiBuilder<'w, '_> {
         self.panel(theme, default())
     }
 
-    fn ribbon_manage_panel(&mut self, theme: &Theme, _assets: &Assets) -> UiBuilder<'w, '_> {
+    fn ribbon_manage_panel(&mut self, theme: &Theme, _assets: &AssetHandles) -> UiBuilder<'w, '_> {
         self.panel(theme, default())
     }
 }
@@ -166,7 +174,7 @@ impl RibbonButton {
         &self,
         mut commands: Commands,
         theme: Res<Theme>,
-        assets: Res<Assets>,
+        assets: Res<AssetHandles>,
         layout: Res<Layout>,
         panel_q: Query<(Entity, &RibbonPanel)>,
     ) {

@@ -1,6 +1,7 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
 pub mod build;
+pub mod map;
 pub mod pawn;
 pub mod save;
 pub mod wall;
@@ -8,6 +9,7 @@ pub mod wall;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use build::Blueprint;
+use map::Map;
 use pawn::Pawn;
 use serde::{Deserialize, Serialize};
 use wall::{Vertex, Wall, WallMap};
@@ -26,6 +28,7 @@ pub struct Root;
 #[derive(Default, Clone, Bundle)]
 pub struct RootBundle {
     pub root: Root,
+    pub map: Map,
     pub transform: Transform,
 }
 

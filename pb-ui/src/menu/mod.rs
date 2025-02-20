@@ -2,7 +2,7 @@ mod saves;
 
 use bevy::{app::AppExit, prelude::*};
 
-use pb_assets::Assets;
+use pb_assets::AssetHandles;
 use pb_engine::{EngineState, RootBundle};
 
 use crate::{
@@ -36,7 +36,7 @@ pub enum MenuPanel {
     Settings,
 }
 
-pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>, assets: Res<Assets>) {
+pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>, assets: Res<AssetHandles>) {
     UiBuilder::new(commands, layout.menu).menu(&theme, &assets);
 }
 
@@ -94,7 +94,7 @@ impl<'w> UiBuilder<'w, '_> {
         })
     }
 
-    pub fn menu(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
+    pub fn menu(&mut self, theme: &Theme, assets: &AssetHandles) -> UiBuilder<'w, '_> {
         let mut menu = self.panel(
             theme,
             Node {
@@ -146,14 +146,14 @@ impl<'w> UiBuilder<'w, '_> {
         self.reborrow()
     }
 
-    fn settings_panel(&mut self, theme: &Theme, assets: &Assets) -> UiBuilder<'w, '_> {
+    fn settings_panel(&mut self, theme: &Theme, assets: &AssetHandles) -> UiBuilder<'w, '_> {
         self.menu_panel(theme, assets, "Settings")
     }
 
     pub fn menu_panel(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        assets: &AssetHandles,
         title: impl Into<String>,
     ) -> UiBuilder<'w, '_> {
         let mut panel = self.panel(
@@ -233,7 +233,7 @@ fn settings_panel_button(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     theme: Res<Theme>,
-    assets: Res<Assets>,
+    assets: Res<AssetHandles>,
     layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
 ) {

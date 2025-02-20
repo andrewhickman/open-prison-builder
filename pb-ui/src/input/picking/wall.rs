@@ -28,6 +28,10 @@ pub enum CreateWallState {
 }
 
 impl CreateWallState {
+    pub fn grid_enabled(&self) -> bool {
+        true
+    }
+
     pub fn vertex_over(&mut self, commands: &mut Commands, event: &Pointer<Over>) {
         if let Some(position) = event.hit.position {
             self.set_position(commands, position.xy());

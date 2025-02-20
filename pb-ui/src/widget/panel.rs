@@ -1,6 +1,6 @@
 use bevy::{prelude::*, ui::FocusPolicy};
 
-use pb_assets::Assets;
+use pb_assets::AssetHandles;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
@@ -21,7 +21,7 @@ impl<'w> UiBuilder<'w, '_> {
     pub fn panel_close_button(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        assets: &AssetHandles,
         panel_id: Entity,
     ) -> UiBuilder<'w, '_> {
         self.icon_button(theme, assets.close_icon.clone(), theme.icon_size())

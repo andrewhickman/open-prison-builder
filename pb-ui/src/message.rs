@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use pb_assets::Assets;
+use pb_assets::AssetHandles;
 use pb_util::AsDynError;
 
 use crate::{layout::Layout, theme::Theme, widget::UiBuilder};
@@ -52,7 +52,7 @@ impl<'w> UiBuilder<'w, '_> {
     pub fn message(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        assets: &AssetHandles,
         time: &Time<Real>,
         message: &Message,
     ) -> UiBuilder<'w, '_> {
@@ -77,7 +77,7 @@ impl<'w> UiBuilder<'w, '_> {
 pub fn spawn_messages(
     commands: Commands,
     theme: Res<Theme>,
-    assets: Res<Assets>,
+    assets: Res<AssetHandles>,
     time: Res<Time<Real>>,
     mut message_e: EventReader<Message>,
     layout: Res<Layout>,

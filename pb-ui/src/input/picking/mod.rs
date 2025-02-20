@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use pb_engine::EngineState;
 use wall::CreateWallState;
 
+pub mod grid;
 pub mod vertex;
 pub mod wall;
 
@@ -15,6 +16,13 @@ pub enum PickingState {
 }
 
 impl PickingState {
+    pub fn grid_enabled(&self) -> bool {
+        match self {
+            PickingState::Select => false,
+            PickingState::CreateWall(create_wall_state) => create_wall_state.grid_enabled(),
+        }
+    }
+
     pub fn vertex_over(&mut self, commands: &mut Commands, event: &Pointer<Over>) {
         match self {
             PickingState::Select => {}

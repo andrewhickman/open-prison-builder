@@ -2,7 +2,9 @@ pub mod callback;
 pub mod system;
 
 pub use anyhow;
+pub use bevy;
 pub use tracing;
+pub use uuid;
 
 use bevy::{
     ecs::{
@@ -133,4 +135,13 @@ macro_rules! try_opt {
             None => return,
         }
     };
+}
+
+#[macro_export]
+macro_rules! weak_handle {
+    ($uuid:expr) => {{
+        $crate::bevy::asset::Handle::Weak($crate::bevy::asset::AssetId::Uuid {
+            uuid: $crate::uuid::uuid!($uuid),
+        })
+    }};
 }

@@ -30,6 +30,7 @@ pub fn set_icon(
     let Some(primary) = windows.get_window(*primary_window) else {
         return;
     };
+
     let icon_buf = io::Cursor::new(include_bytes!("../build/icon.png"));
     let image = image::load(icon_buf, image::ImageFormat::Png)
         .unwrap()

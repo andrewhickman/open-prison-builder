@@ -15,24 +15,23 @@ use pb_engine::{
     build::Blueprint,
     wall::{self, Vertex, Wall, WallMap},
 };
-use pb_util::{try_modify_component, try_res_s};
+use pb_util::{try_modify_component, try_res_s, weak_handle};
 use smallvec::SmallVec;
 
 #[derive(Debug, Default, Component, PartialEq)]
-pub struct VertexInformation {
+pub struct VertexGeometry {
     pos: Vec2,
     walls: SmallVec<[(Entity, f32); 4]>,
 }
 
 #[derive(Debug, Default, Component, PartialEq)]
-pub struct WallInformation {
+pub struct WallGeometry {
     intersections: [Vec2; 4],
 }
 
-pub const WHITE: Handle<ColorMaterial> =
-    Handle::weak_from_u128(146543197086297070279747770654600266484);
+pub const WHITE: Handle<ColorMaterial> = weak_handle!("9644d394-94cd-4fd8-972a-c76026f4d08a");
 pub const TRANSLUCENT_WHITE: Handle<ColorMaterial> =
-    Handle::weak_from_u128(46792490495713846900330178669489164232);
+    weak_handle!("8562bf14-56d0-4fa8-ac4a-325b5e2eddef");
 
 pub fn startup(mut assets: ResMut<Assets<ColorMaterial>>) {
     assets.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
@@ -55,7 +54,7 @@ pub fn vertex_inserted(
         WHITE.clone()
     };
 
-    let vertex_info = VertexInformation {
+    let vertex_info = VertexGeometry {
         pos: try_res_s!(transform_q.get(trigger.entity()))
             .translation
             .xy(),
@@ -91,7 +90,7 @@ pub fn wall_inserted(
 
     commands.entity(trigger.entity()).insert((
         Transform::default(),
-        WallInformation::default(),
+        WallGeometry::default(),
         MeshMaterial2d(color.clone()),
         Mesh2d(mesh),
         Aabb::default(),
@@ -135,21 +134,15 @@ pub fn update_wall(
     wall_map: Res<WallMap>,
     transform_q: Query<&Transform, With<Vertex>>,
     mut vertex_q: Query<
-        (
-            Entity,
-            &Transform,
-            &mut VertexInformation,
-            &Mesh2d,
-            &mut Aabb,
-        ),
+        (Entity, &Transform, &mut VertexGeometry, &Mesh2d, &mut Aabb),
         With<Vertex>,
     >,
-    mut wall_mesh_q: Query<(&Wall, &mut WallInformation, &Mesh2d, &mut Aabb), Without<Vertex>>,
+    mut wall_mesh_q: Query<(&Wall, &mut WallGeometry, &Mesh2d, &mut Aabb), Without<Vertex>>,
 ) {
     let mut updated_walls = HashSet::new();
 
     for (id, transform, mut info, mesh, mut aabb) in vertex_q.iter_mut() {
-        let new_info = VertexInformation::new(
+        let new_info = VertexGeometry::new(
             transform,
             wall_map
                 .get(id)
@@ -170,7 +163,7 @@ pub fn update_wall(
         let [(_, _, start_info, _, _), (_, _, end_info, _, _)] =
             vertex_q.many([wall.start(), wall.end()]);
 
-        let new_info = WallInformation::new(id, start_info, end_info);
+        let new_info = WallGeometry::new(id, start_info, end_info);
         if info.set_if_neq(new_info) {
             let new_mesh = info.mesh();
             *aabb = new_mesh.compute_aabb().unwrap_or_default();
@@ -179,7 +172,7 @@ pub fn update_wall(
     }
 }
 
-impl VertexInformation {
+impl VertexGeometry {
     fn new<'a>(
         transform: &Transform,
         walls: impl Iterator<Item = (Entity, &'a Transform)>,
@@ -189,7 +182,7 @@ impl VertexInformation {
             .map(|(id, end)| (id, (end.translation.xy() - start).to_angle()))
             .collect();
         walls.sort_by_key(|&(_, angle)| FloatOrd(angle));
-        VertexInformation { pos: start, walls }
+        VertexGeometry { pos: start, walls }
     }
 
     fn wall_intersection(&self, id: Entity) -> Option<(Vec2, Vec2)> {
@@ -228,13 +221,13 @@ impl VertexInformation {
     }
 }
 
-impl WallInformation {
-    fn new(id: Entity, start: &VertexInformation, end: &VertexInformation) -> Self {
+impl WallGeometry {
+    fn new(id: Entity, start: &VertexGeometry, end: &VertexGeometry) -> Self {
         let pos = start.pos.midpoint(end.pos);
         let (start1, start2) = start.wall_intersection(id).unwrap();
         let (end1, end2) = end.wall_intersection(id).unwrap();
 
-        WallInformation {
+        WallGeometry {
             intersections: [start1 - pos, start2 - pos, end1 - pos, end2 - pos],
         }
     }

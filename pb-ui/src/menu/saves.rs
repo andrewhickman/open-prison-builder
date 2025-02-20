@@ -10,7 +10,7 @@ use pb_engine::{
 use pb_store::{Metadata, Store};
 use smol_str::SmolStr;
 
-use pb_assets::Assets;
+use pb_assets::AssetHandles;
 use pb_util::{
     callback::CallbackSender, run_system_cached, run_system_cached_with, spawn_io, try_res_s,
     AsDynError,
@@ -46,7 +46,7 @@ pub fn save_panel_button(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     theme: Res<Theme>,
-    assets: Res<Assets>,
+    assets: Res<AssetHandles>,
     layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
@@ -68,7 +68,7 @@ pub fn load_panel_button(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     theme: Res<Theme>,
-    assets: Res<Assets>,
+    assets: Res<AssetHandles>,
     layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
@@ -89,7 +89,7 @@ pub fn load_panel_button(
 fn refresh_save_panel(
     mut commands: Commands,
     theme: Res<Theme>,
-    assets: Res<Assets>,
+    assets: Res<AssetHandles>,
     layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
@@ -265,7 +265,7 @@ impl<'w> UiBuilder<'w, '_> {
     fn save_panel(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        assets: &AssetHandles,
         store: Store,
         callback: CallbackSender,
     ) -> UiBuilder<'w, '_> {
@@ -298,7 +298,7 @@ impl<'w> UiBuilder<'w, '_> {
     fn load_panel(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        assets: &AssetHandles,
         store: Store,
         callback: CallbackSender,
     ) -> UiBuilder<'w, '_> {
@@ -333,7 +333,7 @@ impl<'w> UiBuilder<'w, '_> {
             In((res, container_id, action)): In<(Result<Vec<Metadata>>, Entity, SaveAction)>,
             mut commands: Commands,
             theme: Res<Theme>,
-            assets: Res<Assets>,
+            assets: Res<AssetHandles>,
         ) {
             let Some(mut container) = commands.get_entity(container_id) else {
                 return;
@@ -359,7 +359,7 @@ impl<'w> UiBuilder<'w, '_> {
     fn saves_table_items(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        assets: &AssetHandles,
         items: Vec<Metadata>,
         action: SaveAction,
     ) -> UiBuilder<'w, '_> {

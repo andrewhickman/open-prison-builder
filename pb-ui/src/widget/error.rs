@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use pb_assets::Assets;
+use pb_assets::AssetHandles;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
@@ -8,7 +8,7 @@ impl<'w> UiBuilder<'w, '_> {
     pub fn error_message(
         &mut self,
         theme: &Theme,
-        assets: &Assets,
+        assets: &AssetHandles,
         message: String,
     ) -> UiBuilder<'w, '_> {
         let mut container = self.container(Node {

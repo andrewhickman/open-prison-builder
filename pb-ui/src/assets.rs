@@ -2,14 +2,14 @@ use std::num::NonZeroU8;
 
 use bevy::{app::AppExit, asset::LoadState, prelude::*};
 
-use pb_assets::Assets;
+use pb_assets::AssetHandles;
 use pb_util::AsDynError;
 
 use crate::{input::Settings, UiState};
 
 pub fn update(
     mut state: ResMut<NextState<UiState>>,
-    assets: Res<Assets>,
+    assets: Res<AssetHandles>,
     asset_server: Res<AssetServer>,
     settings: Option<Res<Settings>>,
     mut exit_e: EventWriter<AppExit>,

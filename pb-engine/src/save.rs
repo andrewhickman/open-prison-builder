@@ -14,6 +14,7 @@ use bevy::{
 use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
 
 use crate::{
+    map::Map,
     pawn::Pawn,
     wall::{Vertex, Wall},
     Root,
@@ -48,6 +49,7 @@ pub fn save(world: &World, param: &SaveParam, root: Entity) -> Save {
         .allow_component::<Wall>()
         .allow_component::<Vertex>()
         .allow_component::<Root>()
+        .allow_component::<Map>()
         .allow_component::<Transform>()
         .allow_component::<LinearVelocity>()
         .allow_component::<Parent>()

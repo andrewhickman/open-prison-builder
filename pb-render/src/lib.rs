@@ -1,16 +1,18 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
+pub mod grid;
 pub mod sprite;
 pub mod wall;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Material2dPlugin};
+use grid::GridMaterial;
 use pb_engine::wall::WallMap;
 
 pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, wall::startup);
+        app.add_systems(Startup, (wall::startup, grid::startup));
         app.add_systems(
             Update,
             (
@@ -24,5 +26,7 @@ impl Plugin for RenderPlugin {
         .add_observer(wall::preview_removed)
         .add_observer(sprite::root_added)
         .add_observer(sprite::pawn_added);
+
+        app.add_plugins(Material2dPlugin::<GridMaterial>::default());
     }
 }
