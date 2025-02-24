@@ -1,9 +1,5 @@
 use bevy::{
     asset::{LoadState, UntypedAssetId},
-    image::{
-        ImageAddressMode, ImageFilterMode, ImageLoaderSettings, ImageSampler,
-        ImageSamplerDescriptor,
-    },
     prelude::*,
 };
 
@@ -20,7 +16,6 @@ pub struct AssetHandles {
     pub pawn_image: Handle<Image>,
     pub close_icon: Handle<Image>,
     pub error_icon: Handle<Image>,
-    pub grid_image: Handle<Image>,
 }
 
 pub struct AssetsPlugin;
@@ -44,19 +39,6 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
         pawn_image: server.load("image/pawn.png"),
         close_icon: server.load("image/close.png"),
         error_icon: server.load("image/error.png"),
-        grid_image: server.load_with_settings("image/grid.png", |settings: &mut _| {
-            *settings = ImageLoaderSettings {
-                sampler: ImageSampler::Descriptor(ImageSamplerDescriptor {
-                    address_mode_u: ImageAddressMode::Repeat,
-                    address_mode_v: ImageAddressMode::Repeat,
-                    min_filter: ImageFilterMode::Linear,
-                    mag_filter: ImageFilterMode::Linear,
-                    mipmap_filter: ImageFilterMode::Linear,
-                    ..default()
-                }),
-                ..default()
-            }
-        }),
     });
 }
 
@@ -87,7 +69,6 @@ impl AssetHandles {
             pawn_image,
             close_icon,
             error_icon,
-            grid_image,
         } = self;
 
         [
@@ -102,7 +83,6 @@ impl AssetHandles {
             pawn_image.into(),
             close_icon.into(),
             error_icon.into(),
-            grid_image.into(),
         ]
         .into_iter()
     }
