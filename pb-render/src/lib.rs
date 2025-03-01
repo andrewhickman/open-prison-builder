@@ -1,6 +1,7 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
 pub mod grid;
+pub mod projection;
 pub mod sprite;
 pub mod wall;
 

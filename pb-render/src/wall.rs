@@ -37,7 +37,7 @@ pub fn startup(mut assets: ResMut<Assets<ColorMaterial>>) {
     assets.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
     assets.insert(
         &TRANSLUCENT_WHITE,
-        ColorMaterial::from_color(Color::WHITE.with_alpha(0.3)),
+        ColorMaterial::from_color(Color::WHITE.with_alpha(0.38)),
     );
 }
 

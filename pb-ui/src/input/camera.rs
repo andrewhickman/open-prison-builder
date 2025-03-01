@@ -1,4 +1,5 @@
-use bevy::{input::ButtonState, prelude::*, render::camera::ScalingMode};
+use bevy::{input::ButtonState, prelude::*};
+use pb_render::projection::{projection, PIXELS_PER_METER};
 
 use crate::{
     input::{CameraInput, CameraInputKind},
@@ -9,7 +10,6 @@ use crate::{
 /// Camera speed, in metres per second
 pub const CAMERA_PAN_SPEED: f32 = 0.5;
 pub const CAMERA_ZOOM_SPEED: f32 = 1.;
-pub const CAMERA_PIXELS_PER_METER: f32 = 64.;
 
 #[derive(Resource, Default, Debug, Clone, PartialEq)]
 pub struct CameraState {
@@ -24,16 +24,12 @@ pub fn init(mut commands: Commands, theme: Res<Theme>) {
             clear_color: theme.background.into(),
             ..Default::default()
         },
-        OrthographicProjection {
-            scaling_mode: ScalingMode::WindowSize,
-            scale: CAMERA_PIXELS_PER_METER.recip(),
-            ..OrthographicProjection::default_2d()
-        },
+        projection(),
         Msaa::Sample4,
     ));
 }
 
-pub fn action(
+pub fn input(
     trigger: Trigger<CameraInput>,
     ui_state: Res<State<UiState>>,
     mut input: ResMut<CameraState>,
@@ -98,14 +94,10 @@ impl CameraState {
         delta: f32,
     ) {
         transform.translation += self.pan.extend(0.)
-            * (CAMERA_PAN_SPEED
-                * CAMERA_PIXELS_PER_METER
-                * projection.scale
-                * CAMERA_PIXELS_PER_METER
-                * delta);
+            * (CAMERA_PAN_SPEED * PIXELS_PER_METER * projection.scale * PIXELS_PER_METER * delta);
         projection.scale = (projection.scale
-            + self.zoom * CAMERA_ZOOM_SPEED * delta / CAMERA_PIXELS_PER_METER)
-            .clamp(0.1 / CAMERA_PIXELS_PER_METER, 5. / CAMERA_PIXELS_PER_METER);
+            + self.zoom * CAMERA_ZOOM_SPEED * delta / PIXELS_PER_METER)
+            .clamp(0.1 / PIXELS_PER_METER, 5. / PIXELS_PER_METER);
     }
 }
 
