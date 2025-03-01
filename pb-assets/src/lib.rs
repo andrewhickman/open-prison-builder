@@ -18,9 +18,9 @@ pub struct AssetHandles {
     pub error_icon: Handle<Image>,
 }
 
-pub struct AssetsPlugin;
+pub struct PbAssetsPlugin;
 
-impl Plugin for AssetsPlugin {
+impl Plugin for PbAssetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreStartup, load);
     }

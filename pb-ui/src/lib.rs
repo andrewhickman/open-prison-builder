@@ -30,7 +30,7 @@ use ribbon::RibbonState;
 
 use crate::{menu::MenuState, message::Message};
 
-pub struct UiPlugin;
+pub struct PbUiPlugin;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum UiState {
@@ -42,7 +42,7 @@ pub enum UiState {
     Game,
 }
 
-impl Plugin for UiPlugin {
+impl Plugin for PbUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TextInputPlugin);
 
