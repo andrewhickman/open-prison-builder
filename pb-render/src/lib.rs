@@ -1,6 +1,7 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
 pub mod grid;
+pub mod projection;
 pub mod sprite;
 pub mod wall;
 
@@ -8,9 +9,9 @@ use bevy::{prelude::*, sprite::Material2dPlugin};
 use grid::GridMaterial;
 use pb_engine::wall::WallMap;
 
-pub struct RenderPlugin;
+pub struct PbRenderPlugin;
 
-impl Plugin for RenderPlugin {
+impl Plugin for PbRenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (wall::startup, grid::startup));
         app.add_systems(

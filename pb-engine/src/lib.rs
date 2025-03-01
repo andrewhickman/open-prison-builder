@@ -32,9 +32,9 @@ pub struct RootBundle {
     pub transform: Transform,
 }
 
-pub struct EnginePlugin;
+pub struct PbEnginePlugin;
 
-impl Plugin for EnginePlugin {
+impl Plugin for PbEnginePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<WallMap>();
 

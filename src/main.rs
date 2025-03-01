@@ -6,11 +6,11 @@ mod window;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
-use pb_assets::AssetsPlugin;
-use pb_engine::EnginePlugin;
-use pb_render::RenderPlugin;
-use pb_store::StorePlugin;
-use pb_ui::UiPlugin;
+use pb_assets::PbAssetsPlugin;
+use pb_engine::PbEnginePlugin;
+use pb_render::PbRenderPlugin;
+use pb_store::PbStorePlugin;
+use pb_ui::PbUiPlugin;
 use pb_util::CallbackPlugin;
 
 fn main() -> AppExit {
@@ -27,11 +27,11 @@ fn main() -> AppExit {
 
     app.add_plugins((
         CallbackPlugin,
-        AssetsPlugin,
-        EnginePlugin,
-        RenderPlugin,
-        StorePlugin,
-        UiPlugin,
+        PbAssetsPlugin,
+        PbEnginePlugin,
+        PbRenderPlugin,
+        PbStorePlugin,
+        PbUiPlugin,
     ));
 
     app.run()

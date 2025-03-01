@@ -35,7 +35,7 @@ impl<'w> UiBuilder<'w, '_> {
     }
 }
 
-pub fn cancel(
+pub fn input(
     _: Trigger<CancelInput>,
     mut commands: Commands,
     mut stack: ResMut<CancelStack>,

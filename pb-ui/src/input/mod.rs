@@ -9,8 +9,21 @@ use bevy::{
     input::{keyboard::KeyboardInput, ButtonState},
     prelude::*,
 };
+use serde::{Deserialize, Serialize};
 
-use crate::input::settings::Action;
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum Action {
+    Cancel,
+    PanLeft,
+    PanUp,
+    PanRight,
+    PanDown,
+    ZoomIn,
+    ZoomOut,
+    DecreaseGridSize,
+    IncreaseGridSize,
+}
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct CancelInput;
@@ -29,6 +42,12 @@ pub enum CameraInputKind {
     PanDown,
     ZoomIn,
     ZoomOut,
+}
+
+#[derive(Event, Debug, Clone, Copy)]
+pub enum GridInput {
+    DecreaseSize,
+    IncreaseSize,
 }
 
 pub fn read(
@@ -50,8 +69,10 @@ pub fn read(
             }
 
             match binding.action {
-                Action::Cancel if event.state == ButtonState::Released => {
-                    commands.trigger(CancelInput);
+                Action::Cancel => {
+                    if event.state == ButtonState::Released {
+                        commands.trigger(CancelInput);
+                    }
                 }
                 Action::PanLeft => commands.trigger(CameraInput {
                     kind: CameraInputKind::PanLeft,
@@ -77,7 +98,16 @@ pub fn read(
                     kind: CameraInputKind::ZoomOut,
                     state: event.state,
                 }),
-                _ => (),
+                Action::DecreaseGridSize => {
+                    if event.state == ButtonState::Released {
+                        commands.trigger(GridInput::DecreaseSize);
+                    }
+                }
+                Action::IncreaseGridSize => {
+                    if event.state == ButtonState::Released {
+                        commands.trigger(GridInput::IncreaseSize);
+                    }
+                }
             }
         }
     }

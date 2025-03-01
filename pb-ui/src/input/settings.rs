@@ -3,6 +3,8 @@ use pb_store::Store;
 use pb_util::{callback::CallbackSender, spawn_io, AsDynError};
 use serde::{Deserialize, Serialize};
 
+use crate::input::Action;
+
 pub const KEY: &str = "settings";
 
 pub fn init(store: Res<Store>, callback: Res<CallbackSender>) {
@@ -34,18 +36,6 @@ pub struct Settings {
 pub struct Binding {
     pub action: Action,
     pub modifiers: Vec<KeyCode>,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
-#[serde(rename_all = "snake_case")]
-pub enum Action {
-    Cancel,
-    PanLeft,
-    PanUp,
-    PanRight,
-    PanDown,
-    ZoomIn,
-    ZoomOut,
 }
 
 #[derive(Serialize, Deserialize, TypePath)]
@@ -93,6 +83,8 @@ impl Default for Settings {
         settings.bind(KeyCode::KeyD, Action::PanRight, vec![]);
         settings.bind(KeyCode::KeyQ, Action::ZoomIn, vec![]);
         settings.bind(KeyCode::KeyE, Action::ZoomOut, vec![]);
+        settings.bind(KeyCode::Equal, Action::DecreaseGridSize, vec![]);
+        settings.bind(KeyCode::Minus, Action::IncreaseGridSize, vec![]);
         settings
     }
 }

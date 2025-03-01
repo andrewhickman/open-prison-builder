@@ -13,7 +13,7 @@ use serde::{
 };
 use smol_str::SmolStr;
 
-pub struct StorePlugin;
+pub struct PbStorePlugin;
 
 #[derive(Clone, Resource)]
 pub struct Store(Arc<sys::Store>);
@@ -30,7 +30,7 @@ pub fn init(mut commands: Commands) {
     )));
 }
 
-impl Plugin for StorePlugin {
+impl Plugin for PbStorePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init);
     }

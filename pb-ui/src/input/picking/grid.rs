@@ -2,10 +2,15 @@ use bevy::{prelude::*, render::view::NoFrustumCulling};
 
 use pb_render::grid::{GridMaterial, GRID_MESH_HANDLE};
 
-use crate::{input::picking::PickingState, theme::Theme};
+use crate::{
+    input::{picking::PickingState, GridInput},
+    theme::Theme,
+};
 
-#[derive(Clone, Copy, Debug, Component)]
-pub struct Grid;
+#[derive(Default, Clone, Copy, Debug, Component)]
+pub struct Grid {
+    level: i32,
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum GridPickingState {
@@ -15,14 +20,10 @@ pub enum GridPickingState {
 }
 
 pub fn show(mut commands: Commands, theme: Res<Theme>, mut grids: ResMut<Assets<GridMaterial>>) {
-    info!("show grid");
-
-    let grid = grids.add(GridMaterial {
-        color: theme.panel.with_alpha(0.38).into(),
-    });
+    let grid = grids.add(GridMaterial::new(theme.panel.with_alpha(0.38).into()));
 
     commands.spawn((
-        Grid,
+        Grid::default(),
         Visibility::default(),
         Mesh2d(GRID_MESH_HANDLE),
         MeshMaterial2d(grid),
@@ -32,10 +33,29 @@ pub fn show(mut commands: Commands, theme: Res<Theme>, mut grids: ResMut<Assets<
 }
 
 pub fn hide(mut commands: Commands, grid_q: Query<Entity, With<Grid>>) {
-    info!("hide grid");
-
     for grid in &grid_q {
         commands.entity(grid).despawn();
+    }
+}
+
+pub fn input(
+    trigger: Trigger<GridInput>,
+    mut assets: ResMut<Assets<GridMaterial>>,
+    mut grid_q: Query<(&mut Grid, &MeshMaterial2d<GridMaterial>)>,
+) {
+    for (mut grid, material) in &mut grid_q {
+        let Some(material) = assets.get_mut(material.id()) else {
+            continue;
+        };
+
+        match trigger.event() {
+            GridInput::DecreaseSize => grid.level -= 1,
+            GridInput::IncreaseSize => grid.level += 1,
+        };
+
+        grid.level = grid.level.clamp(-4, 4);
+
+        material.set_level(grid.level);
     }
 }
 

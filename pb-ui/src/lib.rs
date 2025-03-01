@@ -30,7 +30,7 @@ use ribbon::RibbonState;
 
 use crate::{menu::MenuState, message::Message};
 
-pub struct UiPlugin;
+pub struct PbUiPlugin;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum UiState {
@@ -42,7 +42,7 @@ pub enum UiState {
     Game,
 }
 
-impl Plugin for UiPlugin {
+impl Plugin for PbUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TextInputPlugin);
 
@@ -56,7 +56,7 @@ impl Plugin for UiPlugin {
         app.add_systems(
             Startup,
             (
-                theme::init.chain().after(pb_assets::load),
+                theme::init.after(pb_assets::load),
                 layout::init.after(theme::init),
                 input::camera::init.after(theme::init),
                 input::settings::init.after(pb_store::init),
@@ -116,8 +116,9 @@ impl Plugin for UiPlugin {
                         .run_if(input::picking::grid::update_state_condition),
                 ),
             )
-            .add_observer(input::cancel::cancel)
-            .add_observer(input::camera::action)
+            .add_observer(input::cancel::input)
+            .add_observer(input::camera::input)
+            .add_observer(input::picking::grid::input)
             .add_observer(input::picking::vertex::root_added);
 
         app.init_state::<GridPickingState>()
