@@ -7,7 +7,8 @@ use std::{fs, path::PathBuf};
 use bevy::{
     asset::{LoadState, RenderAssetUsages},
     core_pipeline::CorePipelinePlugin,
-    log::LogPlugin,
+    ecs::system::SystemState,
+    log::DEFAULT_FILTER,
     prelude::*,
     render::{
         camera::RenderTarget,
@@ -23,8 +24,12 @@ use bevy::{
 };
 
 use pb_assets::{AssetHandles, PbAssetsPlugin};
-use pb_engine::PbEnginePlugin;
+use pb_engine::{
+    save::{load, LoadSeed},
+    EngineState, PbEnginePlugin,
+};
 use pb_render::{projection::projection, PbRenderPlugin};
+use serde::de::DeserializeSeed;
 
 #[derive(Resource)]
 struct TestConfig {
@@ -45,7 +50,20 @@ enum TestState {
 }
 
 #[test]
-fn assets() {
+fn render_empty() {
+    run_test("empty");
+}
+
+#[test]
+fn render_wall() {
+    run_test("wall");
+}
+
+fn run_test(name: &str) {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(DEFAULT_FILTER)
+        .try_init();
+
     let mut app = App::new();
     app.add_plugins((
         MinimalPlugins,
@@ -67,7 +85,6 @@ fn assets() {
         CorePipelinePlugin,
         SpritePlugin { add_picking: false },
         StatesPlugin,
-        LogPlugin::default(),
     ))
     .add_plugins((PbAssetsPlugin, PbEnginePlugin, PbRenderPlugin));
 
@@ -75,7 +92,7 @@ fn assets() {
 
     app.init_resource::<TestState>()
         .insert_resource(TestConfig {
-            dir: "tests/data/empty".into(),
+            dir: format!("tests/data/{name}").into(),
         });
 
     let exit_code = app.run();
@@ -85,13 +102,14 @@ fn assets() {
 
 fn update(
     mut commands: Commands,
+    registry: Res<AppTypeRegistry>,
     config: Res<TestConfig>,
     mut state: ResMut<TestState>,
     timer: Res<Time>,
     assets: Res<AssetHandles>,
     asset_server: Res<AssetServer>,
     mut images: ResMut<Assets<Image>>,
-    // gpu_images: Res<RenderAssets<GpuImage>>,
+    engine_state: Res<State<EngineState>>,
     mut exit_e: EventWriter<AppExit>,
 ) {
     if timer.elapsed_secs() > 5. {
@@ -128,6 +146,17 @@ fn update(
                 Msaa::Off,
             ));
 
+            let save_json = fs::read_to_string(config.dir.join("scene.json")).unwrap();
+            let save = from_json(LoadSeed::new(registry.0.clone()), &save_json).unwrap();
+            commands.queue(move |world: &mut World| {
+                let mut param: SystemState<pb_engine::save::LoadParam<'_, '_>> =
+                    SystemState::new(world);
+                let root = load(world, &mut param, &save).unwrap();
+                world
+                    .resource_mut::<NextState<EngineState>>()
+                    .set(EngineState::Running(root));
+            });
+
             *state = TestState::Prepare { image };
         }
         TestState::Prepare { image } => {
@@ -140,9 +169,9 @@ fn update(
                 }
             }
 
-            // if gpu_images.get(image.id()).is_none() {
-            //     return;
-            // }
+            if matches!(engine_state.get(), EngineState::Disabled) {
+                return;
+            }
 
             commands.spawn(Screenshot::image(image.clone())).observe(
                 |trigger: Trigger<ScreenshotCaptured>, mut state: ResMut<TestState>| {
@@ -186,4 +215,15 @@ fn update(
             }
         }
     }
+}
+
+fn from_json<S, T>(seed: S, json: &str) -> Result<T, serde_json::Error>
+where
+    S: for<'de> DeserializeSeed<'de, Value = T>,
+    T: 'static,
+{
+    let mut de = serde_json::Deserializer::from_str(json);
+    let value = seed.deserialize(&mut de)?;
+    de.end()?;
+    Ok(value)
 }

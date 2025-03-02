@@ -116,16 +116,6 @@ pub fn preview_removed(
         trigger.entity(),
         |mut color: Mut<MeshMaterial2d<ColorMaterial>>| color.0 = WHITE,
     ));
-
-    // if let Some(mut entity) = commands.get_entity(trigger.entity()) {
-    //     entity
-    //         .entry::<MeshMaterial2d<ColorMaterial>>()
-    //         .and_modify(|mut color| color.0 = WHITE);
-    // }
-    // commands
-    //     .entity(trigger.entity())
-    //     .entry::<MeshMaterial2d<ColorMaterial>>()
-    //     .and_modify(|mut color| color.0 = WHITE);
     wall_map.set_changed();
 }
 
@@ -209,7 +199,7 @@ impl VertexGeometry {
 
         let mut vertices = Vec::new();
         for (i, v1) in intersections.iter().enumerate() {
-            let v2 = intersections.get(i + 1).unwrap_or(&intersections[0]);
+            let v2 = wrapping_idx(&intersections, i, 1);
             vertices.extend([v1.extend(0.), Vec3::ZERO, v2.extend(0.)]);
         }
 
@@ -256,13 +246,12 @@ fn vertex_intersections(mut a1: f32, mut a2: f32) -> SmallVec<[Vec2; 5]> {
     let mut result = SmallVec::new();
 
     while da >= PI {
-        result.insert(
+        result.insert_from_slice(
             result.len() / 2,
-            SQRT_2 * Vec2::from_angle(a1 + FRAC_PI_4) * wall::RADIUS,
-        );
-        result.insert(
-            result.len() / 2,
-            SQRT_2 * Vec2::from_angle(a2 - FRAC_PI_4) * wall::RADIUS,
+            &[
+                SQRT_2 * Vec2::from_angle(a1 + FRAC_PI_4) * wall::RADIUS,
+                SQRT_2 * Vec2::from_angle(a2 - FRAC_PI_4) * wall::RADIUS,
+            ],
         );
 
         a1 += FRAC_PI_2;
