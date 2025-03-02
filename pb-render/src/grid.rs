@@ -57,13 +57,13 @@ impl GridMaterial {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn set_level(&mut self, level: i32) {
-        self.level = 2f32.powi(level);
+    pub fn set_level(&mut self, level: f32) {
+        self.level = level;
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn set_level(&mut self, level: i32) {
-        self.level = Vec4::new(2f32.powi(level), 0., 0., 0.);
+    pub fn set_level(&mut self, level: f32) {
+        self.level = Vec4::new(level, 0., 0., 0.);
     }
 }
 

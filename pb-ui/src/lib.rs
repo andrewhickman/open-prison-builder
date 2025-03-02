@@ -106,6 +106,9 @@ impl Plugin for PbUiPlugin {
                     input::picking::vertex::backend
                         .in_set(PickSet::Backend)
                         .run_if(in_state(UiState::Game)),
+                    input::picking::grid::backend
+                        .in_set(PickSet::Backend)
+                        .run_if(in_state(GridPickingState::Enabled)),
                 ),
             )
             .add_systems(
