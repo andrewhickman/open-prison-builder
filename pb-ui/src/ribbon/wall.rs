@@ -139,7 +139,7 @@ impl WallAction {
         match *self {
             WallAction::SelectStart => {}
             WallAction::PreviewStart { start, .. } => {
-                commands.entity(start).despawn();
+                commands.entity(start).remove_parent().despawn();
 
                 *self = WallAction::SelectStart;
             }
@@ -151,8 +151,8 @@ impl WallAction {
                 end,
                 ..
             } => {
-                commands.entity(wall).despawn();
-                commands.entity(end).despawn();
+                commands.entity(wall).remove_parent().despawn();
+                commands.entity(end).remove_parent().despawn();
 
                 *self = WallAction::SelectEnd {
                     start,
@@ -197,10 +197,16 @@ impl WallAction {
             } => {
                 commands
                     .entity(start)
-                    .set_parent(root)
+                    .set_parent_in_place(root)
                     .remove::<Blueprint>();
-                commands.entity(wall).set_parent(root).remove::<Blueprint>();
-                commands.entity(end).set_parent(root).remove::<Blueprint>();
+                commands
+                    .entity(wall)
+                    .set_parent_in_place(root)
+                    .remove::<Blueprint>();
+                commands
+                    .entity(end)
+                    .set_parent_in_place(root)
+                    .remove::<Blueprint>();
 
                 *self = WallAction::SelectEnd {
                     start: end,
