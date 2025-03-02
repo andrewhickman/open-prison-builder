@@ -4,8 +4,7 @@ use bevy::prelude::*;
 use pb_engine::EngineState;
 use wall::CreateWallState;
 
-pub mod grid;
-pub mod vertex;
+pub mod point;
 pub mod wall;
 
 #[derive(Default, Debug, Resource)]

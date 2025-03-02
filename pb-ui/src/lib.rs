@@ -21,7 +21,7 @@ use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 use input::{
     camera::CameraState,
     cancel::CancelStack,
-    picking::{grid::GridPickingState, PickingState},
+    picking::{point::grid::GridPickingState, PickingState},
 };
 use loading::LoadingState;
 use pb_engine::EngineState;
@@ -103,35 +103,32 @@ impl Plugin for PbUiPlugin {
                     input::read
                         .after(InputSystem)
                         .run_if(on_event::<KeyboardInput>),
-                    input::picking::vertex::backend
+                    input::picking::point::backend
                         .in_set(PickSet::Backend)
                         .run_if(in_state(UiState::Game)),
-                    input::picking::grid::backend
-                        .in_set(PickSet::Backend)
-                        .run_if(in_state(GridPickingState::Enabled)),
                 ),
             )
             .add_systems(
                 Update,
                 (
                     input::camera::update.run_if(input::camera::update_condition),
-                    input::picking::grid::update_state
-                        .run_if(input::picking::grid::update_state_condition),
+                    input::picking::point::grid::update_state
+                        .run_if(input::picking::point::grid::update_state_condition),
                 ),
             )
             .add_observer(input::cancel::input)
             .add_observer(input::camera::input)
-            .add_observer(input::picking::grid::input)
-            .add_observer(input::picking::vertex::root_added);
+            .add_observer(input::picking::point::grid::input)
+            .add_observer(input::picking::point::root_added);
 
         app.init_state::<GridPickingState>()
             .add_systems(
                 OnEnter(GridPickingState::Enabled),
-                input::picking::grid::show,
+                input::picking::point::grid::show,
             )
             .add_systems(
                 OnExit(GridPickingState::Enabled),
-                input::picking::grid::hide,
+                input::picking::point::grid::hide,
             );
     }
 }
