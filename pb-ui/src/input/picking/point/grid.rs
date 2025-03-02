@@ -8,6 +8,12 @@ use crate::{
 };
 
 #[derive(Default, Clone, Copy, Debug, Component)]
+#[require(
+    Visibility,
+    Mesh2d(|| Mesh2d(GRID_MESH_HANDLE)),
+    PickingBehavior(|| PickingBehavior::IGNORE),
+    NoFrustumCulling,
+)]
 pub struct Grid {
     level: i32,
 }
@@ -19,17 +25,21 @@ pub enum GridPickingState {
     Enabled,
 }
 
-pub fn show(mut commands: Commands, theme: Res<Theme>, mut grids: ResMut<Assets<GridMaterial>>) {
+pub fn on_add(
+    trigger: Trigger<OnAdd, Grid>,
+    mut commands: Commands,
+    theme: Res<Theme>,
+    mut grids: ResMut<Assets<GridMaterial>>,
+) {
     let grid = grids.add(GridMaterial::new(theme.panel.with_alpha(0.38).into()));
 
-    commands.spawn((
-        Grid::default(),
-        Visibility::default(),
-        Mesh2d(GRID_MESH_HANDLE),
-        MeshMaterial2d(grid),
-        PickingBehavior::IGNORE,
-        NoFrustumCulling,
-    ));
+    commands
+        .entity(trigger.entity())
+        .insert(MeshMaterial2d(grid));
+}
+
+pub fn show(mut commands: Commands) {
+    commands.spawn(Grid::default());
 }
 
 pub fn hide(mut commands: Commands, grid_q: Query<Entity, With<Grid>>) {

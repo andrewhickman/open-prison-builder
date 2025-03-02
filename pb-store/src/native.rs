@@ -42,7 +42,7 @@ impl Store {
         let value = from_json(seed, &json)
             .with_context(|| format!("failed to parse JSON at '{}'", path.display()))?;
         info!(
-            "Loaded value of type '{}' save from '{}'",
+            "Loaded value of type '{}' from '{}'",
             T::short_type_path(),
             path.display()
         );

@@ -13,7 +13,7 @@ pub fn backend(
     ray_map: Res<RayMap>,
     camera_q: Query<(&Camera, &OrthographicProjection)>,
     state: Res<State<EngineState>>,
-    grid: Option<Single<&Grid>>,
+    grid_q: Query<&Grid>,
     mut hits: EventWriter<PointerHits>,
 ) {
     let EngineState::Running(root) = *state.get() else {
@@ -22,17 +22,15 @@ pub fn backend(
 
     for (&ray_id, &ray) in ray_map.iter() {
         if let Ok((camera, projection)) = camera_q.get(ray_id.camera) {
-            let pos = if let Some(grid) = &grid {
-                let mark_x = grid.mark(ray.origin.x, projection.scale);
-                let mark_y = grid.mark(ray.origin.y, projection.scale);
-
-                Vec2::new(
-                    mark_x.unwrap_or(ray.origin.x),
-                    mark_y.unwrap_or(ray.origin.y),
-                )
-            } else {
-                ray.origin.xy()
-            };
+            let mut pos = ray.origin.xy();
+            for grid in &grid_q {
+                if let Some(mark_x) = grid.mark(ray.origin.x, projection.scale) {
+                    pos.x = mark_x;
+                }
+                if let Some(mark_y) = grid.mark(ray.origin.y, projection.scale) {
+                    pos.y = mark_y;
+                }
+            }
 
             let picks = vec![(
                 root,
