@@ -3,8 +3,6 @@ use pb_engine::EngineState;
 
 use crate::{input::CancelInput, widget::UiBuilder, UiState};
 
-use super::picking::PickingState;
-
 #[derive(Default, Resource)]
 pub struct CancelStack {
     entities: Vec<Entity>,
@@ -41,17 +39,12 @@ pub fn input(
     mut stack: ResMut<CancelStack>,
     engine_state: Res<State<EngineState>>,
     ui_state: Res<State<UiState>>,
-    mut picking_state: ResMut<PickingState>,
     mut next_ui_state: ResMut<NextState<UiState>>,
 ) {
     if matches!(
         ui_state.get(),
         UiState::LoadingAssets | UiState::LoadingSave
     ) {
-        return;
-    }
-
-    if picking_state.cancel(&mut commands) {
         return;
     }
 

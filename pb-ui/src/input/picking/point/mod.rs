@@ -7,7 +7,18 @@ use bevy::{
 use grid::Grid;
 use pb_engine::{EngineState, Root};
 
-use super::PickingState;
+#[derive(Event, Debug, Clone, Copy)]
+pub struct SelectPoint {
+    pub point: Vec2,
+}
+
+#[derive(Event, Debug, Clone, Copy)]
+pub struct CancelPoint;
+
+#[derive(Event, Debug, Clone, Copy)]
+pub struct ClickPoint {
+    pub point: Vec2,
+}
 
 pub fn backend(
     ray_map: Res<RayMap>,
@@ -55,43 +66,50 @@ pub fn root_added(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
         .observe(click);
 }
 
-pub fn over(
-    mut trigger: Trigger<Pointer<Over>>,
-    mut state: ResMut<PickingState>,
-    mut commands: Commands,
-) {
+fn over(mut trigger: Trigger<Pointer<Over>>, mut commands: Commands) {
     trigger.propagate(false);
 
-    state.vertex_over(&mut commands, trigger.event());
+    commands.trigger(SelectPoint {
+        point: trigger
+            .event()
+            .event
+            .hit
+            .position
+            .expect("expected hit to have position")
+            .xy(),
+    });
 }
 
-pub fn moved(
-    mut trigger: Trigger<Pointer<Move>>,
-    mut state: ResMut<PickingState>,
-    mut commands: Commands,
-) {
+fn moved(mut trigger: Trigger<Pointer<Move>>, mut commands: Commands) {
     trigger.propagate(false);
 
-    state.vertex_move(&mut commands, trigger.event());
+    commands.trigger(SelectPoint {
+        point: trigger
+            .event()
+            .event
+            .hit
+            .position
+            .expect("expected hit to have position")
+            .xy(),
+    });
 }
 
-pub fn out(
-    mut trigger: Trigger<Pointer<Out>>,
-    mut state: ResMut<PickingState>,
-    mut commands: Commands,
-) {
+fn out(mut trigger: Trigger<Pointer<Out>>, mut commands: Commands) {
     trigger.propagate(false);
 
-    state.vertex_out(&mut commands, trigger.event());
+    commands.trigger(CancelPoint);
 }
 
-pub fn click(
-    mut trigger: Trigger<Pointer<Click>>,
-    mut state: ResMut<PickingState>,
-    engine_state: Res<State<EngineState>>,
-    mut commands: Commands,
-) {
+fn click(mut trigger: Trigger<Pointer<Click>>, mut commands: Commands) {
     trigger.propagate(false);
 
-    state.vertex_click(&mut commands, &engine_state, trigger.event());
+    commands.trigger(ClickPoint {
+        point: trigger
+            .event()
+            .event
+            .hit
+            .position
+            .expect("expected hit to have position")
+            .xy(),
+    });
 }

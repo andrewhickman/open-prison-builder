@@ -2,10 +2,7 @@ use bevy::{prelude::*, render::view::NoFrustumCulling};
 
 use pb_render::grid::{GridMaterial, GRID_MESH_HANDLE};
 
-use crate::{
-    input::{picking::PickingState, GridInput},
-    theme::Theme,
-};
+use crate::{input::GridInput, theme::Theme};
 
 #[derive(Default, Clone, Copy, Debug, Component)]
 #[require(
@@ -16,13 +13,6 @@ use crate::{
 )]
 pub struct Grid {
     level: i32,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
-pub enum GridPickingState {
-    #[default]
-    Disabled,
-    Enabled,
 }
 
 pub fn on_add(
@@ -36,16 +26,6 @@ pub fn on_add(
     commands
         .entity(trigger.entity())
         .insert(MeshMaterial2d(grid));
-}
-
-pub fn show(mut commands: Commands) {
-    commands.spawn(Grid::default());
-}
-
-pub fn hide(mut commands: Commands, grid_q: Query<Entity, With<Grid>>) {
-    for grid in &grid_q {
-        commands.entity(grid).despawn_recursive();
-    }
 }
 
 pub fn input(
@@ -64,21 +44,6 @@ pub fn input(
         };
 
         material.set_level(grid.level());
-    }
-}
-
-pub fn update_state_condition(picking_state: Res<PickingState>) -> bool {
-    resource_changed(picking_state)
-}
-
-pub fn update_state(
-    picking_state: Res<PickingState>,
-    mut next_state: ResMut<NextState<GridPickingState>>,
-) {
-    if picking_state.grid_enabled() {
-        next_state.set(GridPickingState::Enabled);
-    } else {
-        next_state.set(GridPickingState::Disabled);
     }
 }
 
