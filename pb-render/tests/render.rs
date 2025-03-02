@@ -13,7 +13,10 @@ use bevy::{
     render::{
         camera::RenderTarget,
         render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
-        view::screenshot::{Screenshot, ScreenshotCaptured},
+        view::{
+            screenshot::{Screenshot, ScreenshotCaptured},
+            NoFrustumCulling,
+        },
         RenderPlugin,
     },
     scene::ScenePlugin,
@@ -28,7 +31,11 @@ use pb_engine::{
     save::{load, LoadSeed},
     EngineState, PbEnginePlugin,
 };
-use pb_render::{projection::projection, PbRenderPlugin};
+use pb_render::{
+    grid::{GridMaterial, GRID_MESH_HANDLE},
+    projection::projection,
+    PbRenderPlugin,
+};
 use serde::de::DeserializeSeed;
 
 #[derive(Resource)]
@@ -59,7 +66,33 @@ fn render_wall() {
     run_test("wall");
 }
 
+#[test]
+fn render_grid() {
+    run_test_with_setup("grid", show_grid);
+
+    fn show_grid(mut commands: Commands, mut grids: ResMut<Assets<GridMaterial>>) {
+        let grid = grids.add(GridMaterial::new(
+            Srgba::hex("5f4754").unwrap().with_alpha(0.38).into(),
+        ));
+
+        commands.spawn((
+            Visibility::default(),
+            Mesh2d(GRID_MESH_HANDLE),
+            MeshMaterial2d(grid),
+            PickingBehavior::IGNORE,
+            NoFrustumCulling,
+        ));
+    }
+}
+
 fn run_test(name: &str) {
+    run_test_with_setup(name, || {});
+}
+
+fn run_test_with_setup<M, S>(name: &str, setup: S)
+where
+    S: IntoSystemConfigs<M>,
+{
     let _ = tracing_subscriber::fmt()
         .with_env_filter(DEFAULT_FILTER)
         .try_init();
@@ -88,7 +121,7 @@ fn run_test(name: &str) {
     ))
     .add_plugins((PbAssetsPlugin, PbEnginePlugin, PbRenderPlugin));
 
-    app.add_systems(Update, update);
+    app.add_systems(Startup, setup).add_systems(Update, update);
 
     app.init_resource::<TestState>()
         .insert_resource(TestConfig {

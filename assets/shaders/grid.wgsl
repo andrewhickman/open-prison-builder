@@ -32,6 +32,10 @@ fn vertex(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
+#ifdef SIXTEEN_BYTE_ALIGNMENT
+    let grid_level = grid_level.x;
+#endif
+
     let level1 = mark_weight(in.world_position, grid_level * 1., 2., in.scale);
     let level2 = mark_weight(in.world_position, grid_level * 8., 4., in.scale);
     let level3 = mark_weight(in.world_position, grid_level * 64., 6., in.scale);
