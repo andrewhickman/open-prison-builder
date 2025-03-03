@@ -4,11 +4,17 @@ use pb_engine::{
     wall::{VertexBundle, WallBundle},
     EngineState,
 };
-use pb_util::{try_modify_component, try_res_s};
+use pb_util::{try_modify_component, ChildBuildExt};
 
 use crate::input::{
     action::InputAction,
-    picking::point::{grid::Grid, CancelPoint, ClickPoint, SelectPoint},
+    picking::{
+        collider::{
+            wall::{CancelWall, ClickWall, SelectWall, WallPickKind},
+            ColliderPickingState,
+        },
+        point::{grid::Grid, CancelPoint, ClickPoint, SelectPoint},
+    },
 };
 
 pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
@@ -17,43 +23,18 @@ pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
         .with_children(|builder| {
             builder.spawn(Grid::default());
 
-            let id = builder.parent_entity();
-            builder.spawn(Observer::new(
-                move |trigger: Trigger<SelectPoint>,
-                      mut commands: Commands,
-                      mut action_q: Query<&mut WallAction>| {
-                    try_res_s!(action_q.get_mut(id)).select_point(
-                        id,
-                        &mut commands,
-                        trigger.event().point,
-                    );
-                },
-            ));
-            builder.spawn(Observer::new(
-                move |_: Trigger<CancelPoint>,
-                      mut commands: Commands,
-                      mut action_q: Query<&mut WallAction>| {
-                    try_res_s!(action_q.get_mut(id)).cancel_point(&mut commands);
-                },
-            ));
-            builder.spawn(Observer::new(
-                move |trigger: Trigger<ClickPoint>,
-                      mut commands: Commands,
-                      mut action_q: Query<&mut WallAction>,
-                      engine_state: Res<State<EngineState>>| {
-                    try_res_s!(action_q.get_mut(id)).click_point(
-                        id,
-                        &mut commands,
-                        trigger.event().point,
-                        &engine_state,
-                    );
-                },
-            ));
+            builder
+                .add_observer(select_point)
+                .add_observer(cancel_point)
+                .add_observer(click_point)
+                .add_observer(select_wall)
+                .add_observer(cancel_wall)
+                .add_observer(click_wall);
         });
 }
 
 #[derive(Default, Debug, Component)]
-#[require(InputAction, Transform, Visibility)]
+#[require(InputAction, ColliderPickingState(|| ColliderPickingState::Wall), Transform, Visibility)]
 pub enum WallAction {
     #[default]
     SelectStart,
@@ -74,6 +55,76 @@ pub enum WallAction {
     },
 }
 
+fn select_point(
+    trigger: Trigger<SelectPoint>,
+    mut commands: Commands,
+    mut action: Single<(Entity, &mut WallAction)>,
+) {
+    let (id, ref mut action) = *action;
+    action.select_point(id, &mut commands, trigger.event().point);
+}
+
+fn cancel_point(
+    _: Trigger<CancelPoint>,
+    mut commands: Commands,
+    mut action: Single<(Entity, &mut WallAction)>,
+) {
+    let (_, ref mut action) = *action;
+    action.cancel(&mut commands);
+}
+
+fn click_point(
+    trigger: Trigger<ClickPoint>,
+    mut commands: Commands,
+    mut action: Single<(Entity, &mut WallAction)>,
+    engine_state: Res<State<EngineState>>,
+) {
+    let (id, ref mut action) = *action;
+    action.click_point(id, &mut commands, trigger.event().point, &engine_state);
+}
+
+fn select_wall(
+    trigger: Trigger<SelectWall>,
+    mut commands: Commands,
+    mut action: Single<(Entity, &mut WallAction)>,
+) {
+    let (id, ref mut action) = *action;
+    match trigger.event().kind {
+        WallPickKind::Vertex { vertex, position } => {
+            action.select_vertex(id, &mut commands, vertex, position)
+        }
+        WallPickKind::Wall { wall: _, position } => {
+            action.select_point(id, &mut commands, position)
+        }
+    }
+}
+
+fn cancel_wall(
+    _: Trigger<CancelWall>,
+    mut commands: Commands,
+    mut action: Single<(Entity, &mut WallAction)>,
+) {
+    let (_, ref mut action) = *action;
+    action.cancel(&mut commands);
+}
+
+fn click_wall(
+    trigger: Trigger<ClickWall>,
+    mut commands: Commands,
+    mut action: Single<(Entity, &mut WallAction)>,
+    engine_state: Res<State<EngineState>>,
+) {
+    let (id, ref mut action) = *action;
+    match trigger.event().kind {
+        WallPickKind::Vertex { vertex, position } => {
+            action.click_vertex(id, &mut commands, vertex, position, &engine_state)
+        }
+        WallPickKind::Wall { wall: _, position } => {
+            action.click_point(id, &mut commands, position, &engine_state)
+        }
+    }
+}
+
 impl WallAction {
     pub fn select_point(&mut self, this: Entity, commands: &mut Commands, point: Vec2) {
         match *self {
@@ -92,10 +143,7 @@ impl WallAction {
                 start,
                 start_point: ref mut start_pos,
             } => {
-                commands.queue(try_modify_component(
-                    start,
-                    move |mut transform: Mut<Transform>| transform.translation = point.extend(0.),
-                ));
+                commands.queue(set_pos(start, point));
 
                 *start_pos = point;
             }
@@ -135,7 +183,11 @@ impl WallAction {
         }
     }
 
-    pub fn cancel_point(&mut self, commands: &mut Commands) {
+    pub fn select_vertex(&mut self, _: Entity, _: &mut Commands, _: Entity, pos: Vec2) {
+        info!("select_vertex {pos:?}")
+    }
+
+    pub fn cancel(&mut self, commands: &mut Commands) {
         match *self {
             WallAction::SelectStart => {}
             WallAction::PreviewStart { start, .. } => {
@@ -214,6 +266,17 @@ impl WallAction {
                 };
             }
         }
+    }
+
+    pub fn click_vertex(
+        &mut self,
+        _: Entity,
+        _: &mut Commands,
+        _: Entity,
+        pos: Vec2,
+        _: &EngineState,
+    ) {
+        info!("click_vertex: {pos:?}")
     }
 }
 
