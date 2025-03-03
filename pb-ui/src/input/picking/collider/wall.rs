@@ -138,8 +138,7 @@ impl WallPickKind {
             let wall_dir = end_pos - start_pos;
             let hit_dir = hit_pos - start_pos;
 
-            let dot = wall_dir.dot(hit_dir);
-            let closest = start_pos + dot * wall_dir;
+            let closest = start_pos + hit_dir.project_onto(wall_dir);
 
             WallPickKind::Wall {
                 wall,

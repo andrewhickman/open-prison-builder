@@ -39,20 +39,23 @@ pub enum WallAction {
     #[default]
     SelectStart,
     PreviewStart {
-        start: Entity,
-        start_point: Vec2,
+        start: SelectedVertex,
     },
     SelectEnd {
-        start: Entity,
-        start_point: Vec2,
+        start: SelectedVertex,
     },
     PreviewEnd {
-        start: Entity,
-        start_point: Vec2,
+        start: SelectedVertex,
+        end: SelectedVertex,
         wall: Entity,
-        end: Entity,
-        end_point: Vec2,
     },
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct SelectedVertex {
+    id: Entity,
+    pos: Vec2,
+    created: bool,
 }
 
 fn select_point(
@@ -129,87 +132,92 @@ impl WallAction {
     pub fn select_point(&mut self, this: Entity, commands: &mut Commands, point: Vec2) {
         match *self {
             WallAction::SelectStart => {
-                let start = commands
-                    .spawn((VertexBundle::new(point), Blueprint))
-                    .set_parent(this)
-                    .id();
-
                 *self = WallAction::PreviewStart {
-                    start,
-                    start_point: point,
+                    start: SelectedVertex::create(commands, this, point),
                 };
             }
-            WallAction::PreviewStart {
-                start,
-                start_point: ref mut start_pos,
-            } => {
-                commands.queue(set_pos(start, point));
-
-                *start_pos = point;
+            WallAction::PreviewStart { ref mut start } => {
+                start.set_pos(commands, this, point);
             }
-            WallAction::SelectEnd {
-                start,
-                start_point: start_pos,
-            } => {
-                let end = commands
-                    .spawn((VertexBundle::new(point), Blueprint))
-                    .set_parent(this)
-                    .id();
+            WallAction::SelectEnd { start } => {
+                let end = SelectedVertex::create(commands, this, point);
                 let wall = commands
-                    .spawn((WallBundle::new(start, start_pos, end, point), Blueprint))
+                    .spawn((
+                        WallBundle::new(start.id, start.pos, end.id, end.pos),
+                        Blueprint,
+                    ))
                     .set_parent(this)
                     .id();
 
-                *self = WallAction::PreviewEnd {
-                    start,
-                    start_point: start_pos,
-                    end,
-                    wall,
-                    end_point: point,
-                };
+                *self = WallAction::PreviewEnd { start, end, wall };
             }
             WallAction::PreviewEnd {
-                start_point: start_pos,
-                end,
-                end_point: ref mut end_pos,
+                start,
+                ref mut end,
                 wall,
                 ..
             } => {
-                commands.queue(set_pos(wall, start_pos.midpoint(point)));
-                commands.queue(set_pos(end, point));
-
-                *end_pos = point;
+                end.set_pos(commands, this, point);
+                commands.queue(set_pos(wall, start.pos.midpoint(end.pos)));
             }
         }
     }
 
-    pub fn select_vertex(&mut self, _: Entity, _: &mut Commands, _: Entity, pos: Vec2) {
-        info!("select_vertex {pos:?}")
+    pub fn select_vertex(
+        &mut self,
+        this: Entity,
+        commands: &mut Commands,
+        vertex: Entity,
+        pos: Vec2,
+    ) {
+        match *self {
+            WallAction::SelectStart => {
+                *self = WallAction::PreviewStart {
+                    start: SelectedVertex::existing(vertex, pos),
+                };
+            }
+            WallAction::PreviewStart { ref mut start } => {
+                start.replace(commands, vertex, pos);
+            }
+            WallAction::SelectEnd { start } => {
+                let end = SelectedVertex::existing(vertex, pos);
+                let wall = commands
+                    .spawn((
+                        WallBundle::new(start.id, start.pos, end.id, end.pos),
+                        Blueprint,
+                    ))
+                    .set_parent(this)
+                    .id();
+
+                *self = WallAction::PreviewEnd { start, end, wall };
+            }
+            WallAction::PreviewEnd {
+                start,
+                ref mut end,
+                wall,
+                ..
+            } => {
+                end.replace(commands, vertex, pos);
+                commands.queue(set_pos(wall, start.pos.midpoint(end.pos)));
+            }
+        }
     }
 
     pub fn cancel(&mut self, commands: &mut Commands) {
         match *self {
             WallAction::SelectStart => {}
-            WallAction::PreviewStart { start, .. } => {
-                commands.entity(start).remove_parent().despawn();
-
+            WallAction::PreviewStart { start } => {
+                start.despawn(commands);
                 *self = WallAction::SelectStart;
             }
             WallAction::SelectEnd { .. } => {}
             WallAction::PreviewEnd {
-                start,
-                start_point: start_pos,
-                wall,
-                end,
-                ..
+                start, wall, end, ..
             } => {
                 commands.entity(wall).remove_parent().despawn();
-                commands.entity(end).remove_parent().despawn();
+                end.despawn(commands);
 
-                *self = WallAction::SelectEnd {
-                    start,
-                    start_point: start_pos,
-                };
+                *self = WallAction::SelectEnd { start };
             }
         }
     }
@@ -230,40 +238,23 @@ impl WallAction {
 
         match *self {
             WallAction::SelectStart => {}
-            WallAction::PreviewStart {
-                start,
-                start_point: start_pos,
-            } => {
-                *self = WallAction::SelectEnd {
-                    start,
-                    start_point: start_pos,
-                };
+            WallAction::PreviewStart { start } => {
+                *self = WallAction::SelectEnd { start };
             }
             WallAction::SelectEnd { .. } => {}
             WallAction::PreviewEnd {
-                start,
+                mut start,
                 wall,
-                end,
-                end_point,
-                ..
+                mut end,
             } => {
-                commands
-                    .entity(start)
-                    .set_parent_in_place(root)
-                    .remove::<Blueprint>();
+                start.commit(commands, root);
                 commands
                     .entity(wall)
                     .set_parent_in_place(root)
                     .remove::<Blueprint>();
-                commands
-                    .entity(end)
-                    .set_parent_in_place(root)
-                    .remove::<Blueprint>();
+                end.commit(commands, root);
 
-                *self = WallAction::SelectEnd {
-                    start: end,
-                    start_point: end_point,
-                };
+                *self = WallAction::SelectEnd { start: end };
             }
         }
     }
@@ -277,6 +268,65 @@ impl WallAction {
         _: &EngineState,
     ) {
         info!("click_vertex: {pos:?}")
+    }
+}
+
+impl SelectedVertex {
+    pub fn create(commands: &mut Commands, parent: Entity, pos: Vec2) -> Self {
+        let id = commands
+            .spawn((VertexBundle::new(pos), Blueprint))
+            .set_parent(parent)
+            .id();
+
+        SelectedVertex {
+            id,
+            pos,
+            created: true,
+        }
+    }
+
+    pub fn existing(id: Entity, pos: Vec2) -> Self {
+        SelectedVertex {
+            id,
+            pos,
+            created: false,
+        }
+    }
+
+    pub fn set_pos(&mut self, commands: &mut Commands, parent: Entity, pos: Vec2) {
+        if self.created {
+            self.pos = pos;
+            commands.queue(try_modify_component(
+                self.id,
+                move |mut transform: Mut<Transform>| {
+                    transform.translation = pos.extend(0.);
+                },
+            ));
+        } else {
+            *self = SelectedVertex::create(commands, parent, pos);
+        }
+    }
+
+    pub fn replace(&mut self, commands: &mut Commands, id: Entity, pos: Vec2) {
+        if self.created {
+            self.despawn(commands);
+        }
+
+        *self = SelectedVertex::existing(id, pos);
+    }
+
+    pub fn despawn(&self, commands: &mut Commands) {
+        commands.entity(self.id).remove_parent().despawn();
+    }
+
+    pub fn commit(&mut self, commands: &mut Commands, root: Entity) {
+        if self.created {
+            commands
+                .entity(self.id)
+                .set_parent_in_place(root)
+                .remove::<Blueprint>();
+            self.created = false;
+        }
     }
 }
 
