@@ -89,7 +89,6 @@ pub fn wall_inserted(
     let mesh = assets.reserve_handle();
 
     commands.entity(trigger.entity()).insert((
-        Transform::default(),
         WallGeometry::default(),
         MeshMaterial2d(color.clone()),
         Mesh2d(mesh),
@@ -150,8 +149,7 @@ pub fn update_wall(
 
     for id in updated_walls {
         let (wall, mut info, mesh, mut aabb) = try_res_s!(wall_mesh_q.get_mut(id));
-        let [(_, _, start_info, _, _), (_, _, end_info, _, _)] =
-            vertex_q.many([wall.start(), wall.end()]);
+        let [(_, _, start_info, _, _), (_, _, end_info, _, _)] = vertex_q.many(wall.vertices());
 
         let new_info = WallGeometry::new(id, start_info, end_info);
         if info.set_if_neq(new_info) {

@@ -8,11 +8,15 @@ pub use uuid;
 
 use bevy::{
     ecs::{
+        bundle::Bundle,
         component::Component,
         entity::Entity,
-        system::{BoxedSystem, IntoSystem, ResMut},
+        event::Event,
+        observer::Observer,
+        system::{BoxedSystem, IntoObserverSystem, IntoSystem, ResMut},
         world::{Command, Mut, World},
     },
+    hierarchy::ChildBuild,
     state::state::{FreelyMutableState, NextState},
 };
 use tracing::warn;
@@ -23,6 +27,24 @@ pub use self::{
 };
 
 use std::{any::type_name, fmt::Write};
+
+pub trait ChildBuildExt {
+    fn add_observer<E, B, M>(&mut self, observer: impl IntoObserverSystem<E, B, M>) -> &mut Self
+    where
+        E: Event,
+        B: Bundle;
+}
+
+impl<T: ChildBuild> ChildBuildExt for T {
+    fn add_observer<E, B, M>(&mut self, observer: impl IntoObserverSystem<E, B, M>) -> &mut Self
+    where
+        E: Event,
+        B: Bundle,
+    {
+        self.spawn(Observer::new(observer));
+        self
+    }
+}
 
 pub fn set_state<S>(state: S) -> BoxedSystem
 where

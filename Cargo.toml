@@ -37,6 +37,7 @@ strip = true
 dev = [
     "bevy/dynamic_linking",
     "bevy/bevy_remote",
+    "bevy/track_change_detection",
     "pb-engine/dev",
 ]
 

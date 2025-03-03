@@ -9,7 +9,7 @@ use bevy::{
 use pb_util::try_res_s;
 use serde::{Deserialize, Serialize};
 
-use crate::build::Blueprint;
+use crate::{build::Blueprint, picking::Layer};
 
 pub const RADIUS: f32 = 0.125;
 
@@ -49,6 +49,10 @@ pub struct WallBundle {
 impl Wall {
     pub fn new(start: Entity, end: Entity) -> Self {
         Wall { start, end }
+    }
+
+    pub fn vertices(&self) -> [Entity; 2] {
+        [self.start, self.end]
     }
 
     pub fn start(&self) -> Entity {
@@ -141,7 +145,7 @@ pub fn add_colliders(
     vertex_q: Query<&Transform, With<Vertex>>,
 ) {
     for (id, wall) in &wall_q {
-        let [start, end] = vertex_q.many([wall.start, wall.end]);
+        let [start, end] = vertex_q.many(wall.vertices());
 
         let midpoint = start.translation.midpoint(end.translation);
 
@@ -153,6 +157,7 @@ pub fn add_colliders(
                 (start.translation - midpoint).xy(),
                 (end.translation - midpoint).xy(),
             ),
+            CollisionLayers::new(Layer::Wall, LayerMask::ALL),
         ));
     }
 }

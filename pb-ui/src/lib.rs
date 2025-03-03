@@ -112,6 +112,9 @@ impl Plugin for PbUiPlugin {
             .add_observer(input::action::action_added)
             .add_observer(input::picking::point::grid::input)
             .add_observer(input::picking::point::root_added)
-            .add_observer(input::picking::point::grid::on_add);
+            .add_observer(input::picking::point::grid::on_add)
+            .add_observer(input::picking::collider::filter_added)
+            .add_observer(input::picking::collider::filter_removed)
+            .add_observer(input::picking::collider::wall::wall_added);
     }
 }

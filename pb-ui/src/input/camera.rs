@@ -1,3 +1,4 @@
+use avian2d::prelude::PhysicsPickingFilter;
 use bevy::{input::ButtonState, prelude::*};
 use pb_render::projection::{projection, PIXELS_PER_METER};
 
@@ -26,6 +27,7 @@ pub fn init(mut commands: Commands, theme: Res<Theme>) {
         },
         projection(),
         Msaa::Sample4,
+        PhysicsPickingFilter::default(),
     ));
 }
 
