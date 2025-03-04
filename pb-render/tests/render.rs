@@ -207,6 +207,7 @@ fn update(
                 return;
             }
 
+            // Wait for all render resources to be created...
             *ticks += 1;
             if *ticks < 100 {
                 return;

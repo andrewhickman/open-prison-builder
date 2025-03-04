@@ -1,6 +1,5 @@
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI, SQRT_2, TAU};
 
-use approx::relative_ne;
 use bevy::{
     math::FloatOrd,
     prelude::*,
@@ -243,7 +242,8 @@ fn vertex_intersections(mut a1: f32, mut a2: f32) -> SmallVec<[Vec2; 5]> {
 
     let mut result = SmallVec::new();
 
-    while da >= PI {
+    let threshold = if reflex { FRAC_PI_2 } else { PI };
+    while da > threshold {
         result.insert_from_slice(
             result.len() / 2,
             &[
@@ -257,7 +257,7 @@ fn vertex_intersections(mut a1: f32, mut a2: f32) -> SmallVec<[Vec2; 5]> {
         da -= PI;
     }
 
-    if relative_ne!(da, 0.0) {
+    if da > 0. {
         let mid = a1 + da / 2.;
         if !reflex {
             da = PI - da;
