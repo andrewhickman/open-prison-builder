@@ -144,6 +144,7 @@ fn update(
     mut images: ResMut<Assets<Image>>,
     engine_state: Res<State<EngineState>>,
     mut exit_e: EventWriter<AppExit>,
+    mut ticks: Local<u32>,
 ) {
     if timer.elapsed_secs() > 5. {
         error!("Test execution timed out");
@@ -203,6 +204,11 @@ fn update(
             }
 
             if matches!(engine_state.get(), EngineState::Disabled) {
+                return;
+            }
+
+            *ticks += 1;
+            if *ticks < 100 {
                 return;
             }
 
