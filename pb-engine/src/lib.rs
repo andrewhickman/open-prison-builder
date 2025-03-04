@@ -47,7 +47,7 @@ impl Plugin for PbEnginePlugin {
 
         app.init_state::<EngineState>();
 
-        app.add_plugins((PhysicsPlugins::default(), PhysicsPickingPlugin));
+        app.add_plugins(PhysicsPlugins::default());
 
         app.add_observer(wall::wall_added)
             .add_observer(wall::wall_removed)

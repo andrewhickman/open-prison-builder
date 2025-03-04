@@ -6,6 +6,7 @@ use bevy::{
 };
 use grid::Grid;
 use pb_engine::{EngineState, Root};
+use pb_util::try_res_s;
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct SelectPoint {
@@ -20,7 +21,7 @@ pub struct ClickPoint {
     pub point: Vec2,
 }
 
-pub fn backend(
+pub fn update_hits(
     ray_map: Res<RayMap>,
     camera_q: Query<(&Camera, &OrthographicProjection)>,
     state: Res<State<EngineState>>,
@@ -32,27 +33,30 @@ pub fn backend(
     };
 
     for (&ray_id, &ray) in ray_map.iter() {
-        if let Ok((camera, projection)) = camera_q.get(ray_id.camera) {
-            let mut pos = ray.origin.xy();
-            for grid in &grid_q {
-                if let Some(mark_x) = grid.mark(ray.origin.x, projection.scale) {
-                    pos.x = mark_x;
-                }
-                if let Some(mark_y) = grid.mark(ray.origin.y, projection.scale) {
-                    pos.y = mark_y;
-                }
-            }
-
-            let picks = vec![(
-                root,
-                HitData::new(ray_id.camera, 0., Some(pos.extend(0.)), None),
-            )];
-            hits.send(PointerHits::new(
-                ray_id.pointer,
-                picks,
-                camera.order as f32 - 0.5,
-            ));
+        let (camera, projection) = try_res_s!(camera_q.get(ray_id.camera));
+        if !camera.is_active {
+            continue;
         }
+
+        let mut pos = ray.origin.xy();
+        for grid in &grid_q {
+            if let Some(mark_x) = grid.mark(ray.origin.x, projection.scale) {
+                pos.x = mark_x;
+            }
+            if let Some(mark_y) = grid.mark(ray.origin.y, projection.scale) {
+                pos.y = mark_y;
+            }
+        }
+
+        let picks = vec![(
+            root,
+            HitData::new(ray_id.camera, 0., Some(pos.extend(0.)), None),
+        )];
+        hits.send(PointerHits::new(
+            ray_id.pointer,
+            picks,
+            camera.order as f32 - 0.5,
+        ));
     }
 }
 

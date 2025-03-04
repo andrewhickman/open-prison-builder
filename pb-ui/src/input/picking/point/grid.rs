@@ -2,7 +2,10 @@ use bevy::{prelude::*, render::view::NoFrustumCulling};
 
 use pb_render::grid::{GridMaterial, GRID_MESH_HANDLE};
 
-use crate::{input::GridInput, theme::Theme};
+use crate::{
+    input::{picking::POINT_PICKING_THRESHOLD, GridInput},
+    theme::Theme,
+};
 
 #[derive(Default, Clone, Copy, Debug, Component)]
 #[require(
@@ -63,7 +66,7 @@ impl Grid {
     pub fn mark(&self, p: f32, scale: f32) -> Option<f32> {
         let level = self.level();
         let mark = (p / level).round() * level;
-        if (p - mark).abs() < (20. * scale) {
+        if (p - mark).abs() < (POINT_PICKING_THRESHOLD * scale) {
             Some(mark)
         } else {
             None

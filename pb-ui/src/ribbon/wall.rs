@@ -9,9 +9,9 @@ use pb_util::{try_modify_component, ChildBuildExt};
 use crate::input::{
     action::InputAction,
     picking::{
-        collider::{
+        physics::{
             wall::{CancelWall, ClickWall, SelectWall, WallPickKind},
-            ColliderPickingState,
+            PhysicsPickingState,
         },
         point::{grid::Grid, CancelPoint, ClickPoint, SelectPoint},
     },
@@ -34,7 +34,7 @@ pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
 }
 
 #[derive(Default, Debug, Component)]
-#[require(InputAction, ColliderPickingState(|| ColliderPickingState::Wall), Transform, Visibility)]
+#[require(InputAction, PhysicsPickingState(|| PhysicsPickingState::Wall), Transform, Visibility)]
 pub enum WallAction {
     #[default]
     SelectStart,

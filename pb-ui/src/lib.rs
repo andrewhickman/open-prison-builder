@@ -98,7 +98,10 @@ impl Plugin for PbUiPlugin {
                     input::read
                         .after(InputSystem)
                         .run_if(on_event::<KeyboardInput>),
-                    input::picking::point::backend
+                    input::picking::point::update_hits
+                        .in_set(PickSet::Backend)
+                        .run_if(in_state(UiState::Game)),
+                    input::picking::physics::update_hits
                         .in_set(PickSet::Backend)
                         .run_if(in_state(UiState::Game)),
                 ),
@@ -113,8 +116,6 @@ impl Plugin for PbUiPlugin {
             .add_observer(input::picking::point::grid::input)
             .add_observer(input::picking::point::root_added)
             .add_observer(input::picking::point::grid::on_add)
-            .add_observer(input::picking::collider::filter_added)
-            .add_observer(input::picking::collider::filter_removed)
-            .add_observer(input::picking::collider::wall::wall_added);
+            .add_observer(input::picking::physics::wall::wall_added);
     }
 }

@@ -21,8 +21,8 @@ pub enum WallPickKind {
         vertex: Entity,
         position: Vec2,
     },
-    #[expect(unused)]
     Wall {
+        #[expect(unused)]
         wall: Entity,
         position: Vec2,
     },
