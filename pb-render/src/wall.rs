@@ -32,6 +32,9 @@ pub const WHITE: Handle<ColorMaterial> = weak_handle!("9644d394-94cd-4fd8-972a-c
 pub const TRANSLUCENT_WHITE: Handle<ColorMaterial> =
     weak_handle!("8562bf14-56d0-4fa8-ac4a-325b5e2eddef");
 
+#[derive(Debug, Default, Clone, Component)]
+pub struct Hidden;
+
 pub fn startup(mut assets: ResMut<Assets<ColorMaterial>>) {
     assets.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
     assets.insert(
@@ -117,6 +120,31 @@ pub fn preview_removed(
     wall_map.set_changed();
 }
 
+pub fn hidden_inserted(
+    trigger: Trigger<OnRemove, Hidden>,
+    mut wall_q: Query<(&mut WallGeometry, &mut Mesh2d, &mut Aabb), With<Wall>>,
+    mut wall_map: ResMut<WallMap>,
+    assets: Res<Assets<Mesh>>,
+) {
+    if let Ok((mut info, mut mesh, mut aabb)) = wall_q.get_mut(trigger.entity()) {
+        *info = Default::default();
+        mesh.0 = assets.reserve_handle();
+        *aabb = Default::default();
+
+        wall_map.set_changed();
+    }
+}
+
+pub fn hidden_removed(
+    trigger: Trigger<OnRemove, Hidden>,
+    wall_q: Query<Entity, With<Wall>>,
+    mut wall_map: ResMut<WallMap>,
+) {
+    if wall_q.contains(trigger.entity()) {
+        wall_map.set_changed();
+    }
+}
+
 pub fn update_wall(
     mut assets: ResMut<Assets<Mesh>>,
     wall_map: Res<WallMap>,
@@ -125,7 +153,10 @@ pub fn update_wall(
         (Entity, &Transform, &mut VertexGeometry, &Mesh2d, &mut Aabb),
         With<Vertex>,
     >,
-    mut wall_mesh_q: Query<(&Wall, &mut WallGeometry, &Mesh2d, &mut Aabb), Without<Vertex>>,
+    mut wall_mesh_q: Query<
+        (&Wall, &mut WallGeometry, &Mesh2d, &mut Aabb, Has<Hidden>),
+        Without<Vertex>,
+    >,
 ) {
     let mut updated_walls = HashSet::new();
 
@@ -147,7 +178,11 @@ pub fn update_wall(
     }
 
     for id in updated_walls {
-        let (wall, mut info, mesh, mut aabb) = try_res_s!(wall_mesh_q.get_mut(id));
+        let (wall, mut info, mesh, mut aabb, hidden) = try_res_s!(wall_mesh_q.get_mut(id));
+        if hidden {
+            continue;
+        }
+
         let [(_, _, start_info, _, _), (_, _, end_info, _, _)] = vertex_q.many(wall.vertices());
 
         let new_info = WallGeometry::new(id, start_info, end_info);
