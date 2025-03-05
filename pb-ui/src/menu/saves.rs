@@ -325,7 +325,7 @@ impl<'w> UiBuilder<'w, '_> {
         container.spinner(theme, theme.large_icon_size_px);
 
         spawn_io(async move {
-            let res = store.iter("saves/").await;
+            let res = store.iter("saves").await;
             callback.send_oneshot_system_with_input(on_list_complete, (res, container_id, action));
         });
 

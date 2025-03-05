@@ -53,7 +53,7 @@ impl Store {
             .map_err(map_err)
             .with_context(|| format!("failed to write to '{key}'"))?;
 
-        let metadata = Metadata::new(key);
+        let metadata = Metadata::new(file_stem(key));
         let metadata_json = serde_json::to_string(&metadata).context("failed to serialize JSON")?;
         let metadata_key = format!("{}{}", key, META_SUFFIX);
         storage
@@ -112,6 +112,11 @@ impl Store {
             .context("failed to get local storage")?
             .context("failed to get local storage")
     }
+}
+
+fn file_stem(path: &str) -> &str {
+    let name = path.rsplit_once('/').map(|(_, s)| s).unwrap_or(path);
+    name.rsplit_once('.').map(|(s, _)| s).unwrap_or(name)
 }
 
 fn map_err(err: JsValue) -> anyhow::Error {
