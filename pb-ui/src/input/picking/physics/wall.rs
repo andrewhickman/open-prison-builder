@@ -22,9 +22,12 @@ pub enum WallPickKind {
         position: Vec2,
     },
     Wall {
-        #[expect(unused)]
         wall: Entity,
         position: Vec2,
+        start: Entity,
+        start_position: Vec2,
+        end: Entity,
+        end_position: Vec2,
     },
 }
 
@@ -143,6 +146,10 @@ impl WallPickKind {
             WallPickKind::Wall {
                 wall,
                 position: closest,
+                start,
+                start_position: start_pos,
+                end,
+                end_position: end_pos,
             }
         }
     }
