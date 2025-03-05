@@ -116,6 +116,7 @@ impl Plugin for PbUiPlugin {
             .add_observer(input::picking::point::grid::input)
             .add_observer(input::picking::point::root_added)
             .add_observer(input::picking::point::grid::on_add)
-            .add_observer(input::picking::physics::wall::wall_added);
+            .add_observer(input::picking::physics::wall::wall_added)
+            .add_observer(ribbon::wall::cancel);
     }
 }

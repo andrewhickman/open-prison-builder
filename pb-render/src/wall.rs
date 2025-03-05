@@ -8,7 +8,7 @@ use bevy::{
         primitives::Aabb,
         render_asset::RenderAssetUsages,
     },
-    utils::hashbrown::HashSet,
+    utils::HashSet,
 };
 use pb_engine::{
     build::Blueprint,
@@ -108,8 +108,20 @@ pub fn preview_moved(
     }
 }
 
+pub fn preview_inserted(
+    trigger: Trigger<OnInsert, Blueprint>,
+    mut commands: Commands,
+    mut wall_map: ResMut<WallMap>,
+) {
+    commands.queue(try_modify_component(
+        trigger.entity(),
+        |mut color: Mut<MeshMaterial2d<ColorMaterial>>| color.0 = TRANSLUCENT_WHITE,
+    ));
+    wall_map.set_changed();
+}
+
 pub fn preview_removed(
-    trigger: Trigger<OnRemove, Blueprint>,
+    trigger: Trigger<OnReplace, Blueprint>,
     mut commands: Commands,
     mut wall_map: ResMut<WallMap>,
 ) {
@@ -121,7 +133,7 @@ pub fn preview_removed(
 }
 
 pub fn hidden_inserted(
-    trigger: Trigger<OnRemove, Hidden>,
+    trigger: Trigger<OnInsert, Hidden>,
     mut wall_q: Query<(&mut WallGeometry, &mut Mesh2d, &mut Aabb), With<Wall>>,
     mut wall_map: ResMut<WallMap>,
     assets: Res<Assets<Mesh>>,
@@ -136,7 +148,7 @@ pub fn hidden_inserted(
 }
 
 pub fn hidden_removed(
-    trigger: Trigger<OnRemove, Hidden>,
+    trigger: Trigger<OnReplace, Hidden>,
     wall_q: Query<Entity, With<Wall>>,
     mut wall_map: ResMut<WallMap>,
 ) {
@@ -149,6 +161,7 @@ pub fn update_wall(
     mut assets: ResMut<Assets<Mesh>>,
     wall_map: Res<WallMap>,
     transform_q: Query<&Transform, With<Vertex>>,
+    hidden_q: Query<Entity, With<Hidden>>,
     mut vertex_q: Query<
         (Entity, &Transform, &mut VertexGeometry, &Mesh2d, &mut Aabb),
         With<Vertex>,
@@ -165,6 +178,7 @@ pub fn update_wall(
             transform,
             wall_map
                 .get(id)
+                .filter(|entry| !hidden_q.contains(entry.wall))
                 .filter_map(|entry| transform_q.get(entry.end).ok().map(|pos| (entry.wall, pos))),
         );
 

@@ -17,18 +17,19 @@ pub const RADIUS: f32 = 0.125;
 #[reflect(Component, Serialize, Deserialize)]
 pub struct Vertex;
 
-#[derive(Debug, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize, MapEntities)]
 pub struct Wall {
     start: Entity,
     end: Entity,
 }
 
-#[derive(Default, Resource)]
+#[derive(Default, Debug, Resource)]
 pub struct WallMap {
     map: HashMap<Entity, Vec<WallMapEntry>>,
 }
 
+#[derive(Debug)]
 pub struct WallMapEntry {
     pub wall: Entity,
     pub end: Entity,
@@ -40,15 +41,13 @@ pub struct VertexBundle {
     pub transform: Transform,
 }
 
-#[derive(Bundle)]
-pub struct WallBundle {
-    pub wall: Wall,
-    pub transform: Transform,
-}
-
 impl Wall {
-    pub fn new(start: Entity, end: Entity) -> Self {
+    pub(crate) fn new(start: Entity, end: Entity) -> Self {
         Wall { start, end }
+    }
+
+    pub fn transform(start_pos: Vec2, end_pos: Vec2) -> Transform {
+        Transform::from_translation(start_pos.midpoint(end_pos).extend(0.))
     }
 
     pub fn vertices(&self) -> [Entity; 2] {
@@ -72,6 +71,25 @@ impl MapEntities for Wall {
 }
 
 impl WallMap {
+    pub fn insert<'a>(
+        &mut self,
+        commands: &'a mut Commands,
+        start: Entity,
+        end: Entity,
+    ) -> Option<EntityCommands<'a>> {
+        if start == end {
+            return None;
+        }
+
+        if self.get_wall(start, end).is_some() {
+            return None;
+        }
+
+        let entity = commands.spawn(Wall::new(start, end));
+        self.add(entity.id(), start, end);
+        Some(entity)
+    }
+
     pub fn get(&self, start: Entity) -> impl Iterator<Item = &'_ WallMapEntry> {
         match self.map.get(&start) {
             Some(entries) => entries.iter(),
@@ -79,24 +97,38 @@ impl WallMap {
         }
     }
 
-    fn add(&mut self, id: Entity, wall: Wall) {
-        self.map.entry(wall.start).or_default().push(WallMapEntry {
+    pub fn get_wall(&self, start: Entity, end: Entity) -> Option<Entity> {
+        self.get(start)
+            .find(|entry| entry.end == end)
+            .map(|entry| entry.wall)
+    }
+
+    fn add(&mut self, id: Entity, start: Entity, end: Entity) {
+        match self.get_wall(start, end) {
+            Some(existing) if existing == id => return,
+            Some(_) => {
+                warn!("inserting duplicate wall between {start} and {end}")
+            }
+            _ => (),
+        }
+
+        self.map
+            .entry(start)
+            .or_default()
+            .push(WallMapEntry { wall: id, end });
+        self.map.entry(end).or_default().push(WallMapEntry {
             wall: id,
-            end: wall.end,
-        });
-        self.map.entry(wall.end).or_default().push(WallMapEntry {
-            wall: id,
-            end: wall.start,
+            end: start,
         });
     }
 
-    fn remove(&mut self, id: Entity, wall: Wall) {
+    fn remove(&mut self, id: Entity, start: Entity, end: Entity) {
         self.map
-            .get_mut(&wall.start)
+            .get_mut(&start)
             .expect("wall map not updated")
             .retain(|entry| entry.wall != id);
         self.map
-            .get_mut(&wall.end)
+            .get_mut(&end)
             .expect("wall map not updated")
             .retain(|entry| entry.wall != id);
     }
@@ -111,23 +143,13 @@ impl VertexBundle {
     }
 }
 
-impl WallBundle {
-    pub fn new(start: Entity, start_pos: Vec2, end: Entity, end_pos: Vec2) -> Self {
-        WallBundle {
-            wall: Wall::new(start, end),
-            transform: Transform::from_translation(start_pos.midpoint(end_pos).extend(0.)),
-        }
-    }
-}
-
 pub fn wall_added(
     trigger: Trigger<OnInsert, Wall>,
     mut map: ResMut<WallMap>,
     wall_q: Query<&Wall>,
 ) {
     let wall = try_res_s!(wall_q.get(trigger.entity()));
-
-    map.add(trigger.entity(), *wall);
+    map.add(trigger.entity(), wall.start(), wall.end());
 }
 
 pub fn wall_removed(
@@ -136,7 +158,7 @@ pub fn wall_removed(
     wall_q: Query<&Wall>,
 ) {
     let wall = try_res_s!(wall_q.get(trigger.entity()));
-    map.remove(trigger.entity(), *wall);
+    map.remove(trigger.entity(), wall.start(), wall.end());
 }
 
 pub fn add_colliders(

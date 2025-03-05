@@ -4,15 +4,15 @@ pub mod build;
 pub mod map;
 pub mod pawn;
 pub mod picking;
+pub mod root;
 pub mod save;
 pub mod wall;
 
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use build::Blueprint;
-use map::Map;
 use pawn::Pawn;
-use serde::{Deserialize, Serialize};
+use root::Root;
 use wall::{Vertex, Wall, WallMap};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
@@ -20,17 +20,6 @@ pub enum EngineState {
     #[default]
     Disabled,
     Running(Entity),
-}
-
-#[derive(Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component, Serialize, Deserialize)]
-pub struct Root;
-
-#[derive(Default, Clone, Bundle)]
-pub struct RootBundle {
-    pub root: Root,
-    pub map: Map,
-    pub transform: Transform,
 }
 
 pub struct PbEnginePlugin;

@@ -1,4 +1,4 @@
-mod wall;
+pub mod wall;
 
 use bevy::prelude::*;
 

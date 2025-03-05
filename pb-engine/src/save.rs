@@ -16,8 +16,8 @@ use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
 use crate::{
     map::Map,
     pawn::Pawn,
+    root::Root,
     wall::{Vertex, Wall},
-    Root,
 };
 
 #[derive(TypePath)]

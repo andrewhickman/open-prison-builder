@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
 };
 use grid::Grid;
-use pb_engine::{EngineState, Root};
+use pb_engine::{root::Root, EngineState};
 use pb_util::try_res_s;
 
 #[derive(Event, Debug, Clone, Copy)]

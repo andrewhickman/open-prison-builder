@@ -24,6 +24,7 @@ impl Plugin for PbRenderPlugin {
         )
         .add_observer(wall::vertex_inserted)
         .add_observer(wall::wall_inserted)
+        .add_observer(wall::preview_inserted)
         .add_observer(wall::preview_removed)
         .add_observer(wall::hidden_inserted)
         .add_observer(wall::hidden_removed)
