@@ -5,6 +5,7 @@ use avian2d::{
     prelude::*,
 };
 use bevy::{
+    math::FloatOrd,
     picking::backend::{ray::RayMap, HitData, PointerHits},
     prelude::*,
 };
@@ -58,6 +59,17 @@ pub fn update_hits(
                 true
             },
         );
+
+        hits.sort_unstable_by_key(|hit| {
+            FloatOrd(
+                hit.1
+                    .position
+                    .unwrap()
+                    .xy()
+                    .distance_squared(ray.origin.xy()),
+            )
+        });
+        hits.truncate(1);
 
         output_events.send(PointerHits::new(ray_id.pointer, hits, camera.order as f32));
     }
