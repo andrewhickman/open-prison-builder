@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use pb_engine::{
     build::Blueprint,
-    wall::{VertexBundle, WallBundle},
+    wall::{VertexBundle, Wall, WallMap},
     EngineState,
 };
 use pb_render::wall::Hidden;
@@ -62,7 +62,7 @@ pub struct SelectedVertex {
 
 #[derive(Debug, Copy, Clone)]
 pub struct SelectedWall {
-    id: Entity,
+    id: Option<Entity>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -75,10 +75,11 @@ pub struct SplitWall {
 fn select_point(
     trigger: Trigger<SelectPoint>,
     mut commands: Commands,
+    mut wall_map: ResMut<WallMap>,
     mut action: Single<(Entity, &mut WallAction)>,
 ) {
     let (id, ref mut action) = *action;
-    action.select_point(id, &mut commands, trigger.event().point);
+    action.select_point(id, &mut commands, &mut wall_map, trigger.event().point);
 }
 
 fn cancel_point(
@@ -93,23 +94,25 @@ fn cancel_point(
 fn click_point(
     trigger: Trigger<ClickPoint>,
     mut commands: Commands,
+    mut wall_map: ResMut<WallMap>,
     mut action: Single<(Entity, &mut WallAction)>,
     engine_state: Res<State<EngineState>>,
 ) {
     let (id, ref mut action) = *action;
-    action.select_point(id, &mut commands, trigger.event().point);
+    action.select_point(id, &mut commands, &mut wall_map, trigger.event().point);
     action.click(&mut commands, &engine_state)
 }
 
 fn select_wall(
     trigger: Trigger<SelectWall>,
     mut commands: Commands,
+    mut wall_map: ResMut<WallMap>,
     mut action: Single<(Entity, &mut WallAction)>,
 ) {
     let (id, ref mut action) = *action;
     match trigger.event().kind {
         WallPickKind::Vertex { vertex, position } => {
-            action.select_vertex(vertex, &mut commands, vertex, position)
+            action.select_vertex(vertex, &mut commands, &mut wall_map, vertex, position)
         }
         WallPickKind::Wall {
             wall,
@@ -121,6 +124,7 @@ fn select_wall(
         } => action.select_wall(
             id,
             &mut commands,
+            &mut wall_map,
             wall,
             position,
             start,
@@ -143,13 +147,14 @@ fn cancel_wall(
 fn click_wall(
     trigger: Trigger<ClickWall>,
     mut commands: Commands,
+    mut wall_map: ResMut<WallMap>,
     mut action: Single<(Entity, &mut WallAction)>,
     engine_state: Res<State<EngineState>>,
 ) {
     let (id, ref mut action) = *action;
     match trigger.event().kind {
         WallPickKind::Vertex { vertex, position } => {
-            action.select_vertex(id, &mut commands, vertex, position);
+            action.select_vertex(id, &mut commands, &mut wall_map, vertex, position);
             action.click(&mut commands, &engine_state)
         }
         WallPickKind::Wall {
@@ -163,6 +168,7 @@ fn click_wall(
             action.select_wall(
                 id,
                 &mut commands,
+                &mut wall_map,
                 wall,
                 position,
                 start,
@@ -176,7 +182,13 @@ fn click_wall(
 }
 
 impl WallAction {
-    pub fn select_point(&mut self, this: Entity, commands: &mut Commands, point: Vec2) {
+    pub fn select_point(
+        &mut self,
+        this: Entity,
+        commands: &mut Commands,
+        wall_map: &mut WallMap,
+        point: Vec2,
+    ) {
         match *self {
             WallAction::SelectStart => {
                 *self = WallAction::PreviewStart {
@@ -188,7 +200,7 @@ impl WallAction {
             }
             WallAction::SelectEnd { start } => {
                 let end = SelectedVertex::spawn(commands, this, point);
-                let wall = SelectedWall::spawn(commands, this, start, end);
+                let wall = SelectedWall::spawn(commands, wall_map, this, start, end);
 
                 *self = WallAction::PreviewEnd { start, end, wall };
             }
@@ -199,7 +211,7 @@ impl WallAction {
                 ..
             } => {
                 if end.update_spawned(commands, this, point) {
-                    wall.replace(commands, this, start, *end);
+                    wall.replace(commands, wall_map, this, start, *end);
                 } else {
                     wall.update(commands, start, *end);
                 }
@@ -211,6 +223,7 @@ impl WallAction {
         &mut self,
         this: Entity,
         commands: &mut Commands,
+        wall_map: &mut WallMap,
         vertex: Entity,
         pos: Vec2,
     ) {
@@ -225,7 +238,7 @@ impl WallAction {
             }
             WallAction::SelectEnd { start } => {
                 let end = SelectedVertex::existing(vertex, pos);
-                let wall = SelectedWall::spawn(commands, this, start, end);
+                let wall = SelectedWall::spawn(commands, wall_map, this, start, end);
 
                 *self = WallAction::PreviewEnd { start, end, wall };
             }
@@ -236,7 +249,7 @@ impl WallAction {
                 ..
             } => {
                 if end.update_existing(commands, vertex, pos) {
-                    wall.replace(commands, this, start, *end);
+                    wall.replace(commands, wall_map, this, start, *end);
                 } else {
                     wall.update(commands, start, *end);
                 }
@@ -248,6 +261,7 @@ impl WallAction {
         &mut self,
         this: Entity,
         commands: &mut Commands,
+        wall_map: &mut WallMap,
         prev_wall: Entity,
         pos: Vec2,
         wall_start: Entity,
@@ -260,6 +274,7 @@ impl WallAction {
                 *self = WallAction::PreviewStart {
                     start: SelectedVertex::split(
                         commands,
+                        wall_map,
                         this,
                         prev_wall,
                         pos,
@@ -273,6 +288,7 @@ impl WallAction {
             WallAction::PreviewStart { ref mut start } => {
                 start.update_split(
                     commands,
+                    wall_map,
                     this,
                     prev_wall,
                     pos,
@@ -285,6 +301,7 @@ impl WallAction {
             WallAction::SelectEnd { start } => {
                 let end = SelectedVertex::split(
                     commands,
+                    wall_map,
                     this,
                     prev_wall,
                     pos,
@@ -293,7 +310,7 @@ impl WallAction {
                     wall_end,
                     wall_end_pos,
                 );
-                let wall = SelectedWall::spawn(commands, this, start, end);
+                let wall = SelectedWall::spawn(commands, wall_map, this, start, end);
 
                 *self = WallAction::PreviewEnd { start, end, wall };
             }
@@ -305,6 +322,7 @@ impl WallAction {
             } => {
                 if end.update_split(
                     commands,
+                    wall_map,
                     this,
                     prev_wall,
                     pos,
@@ -313,7 +331,7 @@ impl WallAction {
                     wall_end,
                     wall_end_pos,
                 ) {
-                    wall.replace(commands, this, start, *end);
+                    wall.replace(commands, wall_map, this, start, *end);
                 } else {
                     wall.update(commands, start, *end);
                 }
@@ -393,6 +411,7 @@ impl SelectedVertex {
 
     pub fn split(
         commands: &mut Commands,
+        wall_map: &mut WallMap,
         parent: Entity,
         wall: Entity,
         pos: Vec2,
@@ -404,6 +423,7 @@ impl SelectedVertex {
         let vertex = SelectedVertex::spawn(commands, parent, pos);
         let split = SplitWall::spawn(
             commands,
+            wall_map,
             parent,
             wall,
             SelectedVertex::existing(start, start_pos),
@@ -448,6 +468,7 @@ impl SelectedVertex {
     pub fn update_split(
         &mut self,
         commands: &mut Commands,
+        wall_map: &mut WallMap,
         parent: Entity,
         wall: Entity,
         pos: Vec2,
@@ -475,6 +496,7 @@ impl SelectedVertex {
             } else {
                 self.split = Some(SplitWall::spawn(
                     commands,
+                    wall_map,
                     parent,
                     wall,
                     SelectedVertex::existing(start, start_pos),
@@ -485,8 +507,9 @@ impl SelectedVertex {
 
             false
         } else {
-            *self =
-                SelectedVertex::split(commands, parent, wall, pos, start, start_pos, end, end_pos);
+            *self = SelectedVertex::split(
+                commands, wall_map, parent, wall, pos, start, start_pos, end, end_pos,
+            );
             true
         }
     }
@@ -523,56 +546,62 @@ impl SelectedVertex {
 impl SelectedWall {
     pub fn spawn(
         commands: &mut Commands,
+        wall_map: &mut WallMap,
         parent: Entity,
         start: SelectedVertex,
         end: SelectedVertex,
     ) -> Self {
-        let id = commands
-            .spawn((
-                WallBundle::new(start.id, start.pos, end.id, end.pos),
-                Blueprint,
-            ))
-            .set_parent(parent)
-            .id();
+        if let Some(mut entity) = wall_map.insert(commands, start.id, end.id) {
+            entity.insert((Wall::transform(start.pos, end.pos), Blueprint));
+            entity.set_parent(parent);
+            let id = entity.id();
 
-        SelectedWall { id }
+            SelectedWall { id: Some(id) }
+        } else {
+            SelectedWall { id: None }
+        }
     }
 
     pub fn replace(
         &mut self,
         commands: &mut Commands,
+        wall_map: &mut WallMap,
         parent: Entity,
         start: SelectedVertex,
         end: SelectedVertex,
     ) {
         self.despawn(commands);
-        *self = SelectedWall::spawn(commands, parent, start, end);
+        *self = SelectedWall::spawn(commands, wall_map, parent, start, end);
     }
 
     pub fn update(&mut self, commands: &mut Commands, start: SelectedVertex, end: SelectedVertex) {
-        commands.queue(try_modify_component(
-            self.id,
-            move |mut transform: Mut<Transform>| {
-                transform.translation = start.pos.midpoint(end.pos).extend(0.);
-            },
-        ));
+        if let Some(id) = self.id {
+            commands.queue(try_modify_component(
+                id,
+                move |mut transform: Mut<Transform>| {
+                    transform.set_if_neq(Wall::transform(start.pos, end.pos));
+                },
+            ));
+        }
     }
 
     pub fn despawn(&self, commands: &mut Commands) {
-        commands.entity(self.id).remove_parent().despawn();
+        if let Some(id) = self.id {
+            commands.entity(id).remove_parent().despawn();
+        }
     }
 
     pub fn commit(&self, commands: &mut Commands, root: Entity) {
-        commands
-            .entity(self.id)
-            .set_parent(root)
-            .remove::<Blueprint>();
+        if let Some(id) = self.id {
+            commands.entity(id).set_parent(root).remove::<Blueprint>();
+        }
     }
 }
 
 impl SplitWall {
     pub fn spawn(
         commands: &mut Commands,
+        wall_map: &mut WallMap,
         parent: Entity,
         prev: Entity,
         start: SelectedVertex,
@@ -582,8 +611,8 @@ impl SplitWall {
         commands.entity(prev).insert(Hidden);
 
         SplitWall {
-            start: SelectedWall::spawn(commands, parent, start, mid),
-            end: SelectedWall::spawn(commands, parent, mid, end),
+            start: SelectedWall::spawn(commands, wall_map, parent, start, mid),
+            end: SelectedWall::spawn(commands, wall_map, parent, mid, end),
             prev,
         }
     }

@@ -8,7 +8,7 @@ use bevy::{
         primitives::Aabb,
         render_asset::RenderAssetUsages,
     },
-    utils::hashbrown::HashSet,
+    utils::HashSet,
 };
 use pb_engine::{
     build::Blueprint,
@@ -149,6 +149,7 @@ pub fn update_wall(
     mut assets: ResMut<Assets<Mesh>>,
     wall_map: Res<WallMap>,
     transform_q: Query<&Transform, With<Vertex>>,
+    hidden_q: Query<Entity, With<Hidden>>,
     mut vertex_q: Query<
         (Entity, &Transform, &mut VertexGeometry, &Mesh2d, &mut Aabb),
         With<Vertex>,
@@ -165,6 +166,7 @@ pub fn update_wall(
             transform,
             wall_map
                 .get(id)
+                .filter(|entry| !hidden_q.contains(entry.wall))
                 .filter_map(|entry| transform_q.get(entry.end).ok().map(|pos| (entry.wall, pos))),
         );
 

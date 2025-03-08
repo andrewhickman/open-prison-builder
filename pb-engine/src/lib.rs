@@ -49,8 +49,7 @@ impl Plugin for PbEnginePlugin {
 
         app.add_plugins(PhysicsPlugins::default());
 
-        app.add_observer(wall::wall_added)
-            .add_observer(wall::wall_removed)
+        app.add_observer(wall::wall_removed)
             .add_systems(Update, wall::add_colliders);
 
         #[cfg(feature = "dev")]
