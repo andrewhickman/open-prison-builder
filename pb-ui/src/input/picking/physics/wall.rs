@@ -132,12 +132,14 @@ impl WallPickKind {
 
         let t = hit_dir.dot(wall_dir) / wall_dir.length_squared();
 
-        if t < 0.5 && (t * wall_dir).length_squared() < (wall::RADIUS * wall::RADIUS) {
+        if t < 0.0 || (t < 0.5 && (t * wall_dir).length_squared() < (wall::RADIUS * wall::RADIUS)) {
             WallPickKind::Vertex {
                 vertex: start,
                 position: start_pos,
             }
-        } else if ((1. - t) * wall_dir).length_squared() < (wall::RADIUS * wall::RADIUS) {
+        } else if t > 1.0
+            || (((1. - t) * wall_dir).length_squared() < (wall::RADIUS * wall::RADIUS))
+        {
             WallPickKind::Vertex {
                 vertex: end,
                 position: end_pos,

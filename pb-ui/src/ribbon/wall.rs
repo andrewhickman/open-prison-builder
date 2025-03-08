@@ -20,7 +20,7 @@ use crate::input::{
 
 pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
     commands
-        .spawn(WallAction::default())
+        .spawn((WallAction::default(), Name::new(WallAction::type_path())))
         .with_children(|builder| {
             builder.spawn(Grid::default());
 
@@ -34,7 +34,7 @@ pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
         });
 }
 
-#[derive(Default, Debug, Component)]
+#[derive(Default, Debug, Component, TypePath)]
 #[require(InputAction, PhysicsPickingState(|| PhysicsPickingState::Wall), Transform, Visibility)]
 pub enum WallAction {
     #[default]
@@ -112,7 +112,7 @@ fn select_wall(
     let (id, ref mut action) = *action;
     match trigger.event().kind {
         WallPickKind::Vertex { vertex, position } => {
-            action.select_vertex(vertex, &mut commands, &mut wall_map, vertex, position)
+            action.select_vertex(id, &mut commands, &mut wall_map, vertex, position)
         }
         WallPickKind::Wall {
             wall,
