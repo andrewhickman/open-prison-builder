@@ -27,7 +27,7 @@ pub fn init(mut commands: Commands, assets: Res<AssetHandles>) {
 
     commands.insert_resource(Theme {
         background: Srgba::hex("192a28").unwrap().into(),
-        text: Srgba::hex("dedcdf").unwrap().into(),
+        text,
         panel: Srgba::hex("5f4754").unwrap().into(),
         accent: Srgba::hex("b45627").unwrap().into(),
         error: Srgba::hex("f2200d").unwrap().into(),
