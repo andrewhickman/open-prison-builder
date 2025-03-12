@@ -243,7 +243,7 @@ impl VertexGeometry {
             }
         }
 
-        let mut vertices = Vec::new();
+        let mut vertices = Vec::with_capacity(intersections.len() * 3);
         for (i, v1) in intersections.iter().enumerate() {
             let v2 = wrapping_idx(&intersections, i, 1);
             vertices.extend([v1.extend(0.), Vec3::ZERO, v2.extend(0.)]);
