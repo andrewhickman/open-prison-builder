@@ -7,7 +7,9 @@ use bevy::{
         mesh::{MeshAabb, PrimitiveTopology},
         primitives::Aabb,
         render_asset::RenderAssetUsages,
+        render_resource::AsBindGroup,
     },
+    sprite::{AlphaMode2d, Material2d},
     utils::HashSet,
 };
 use pb_engine::{
@@ -16,6 +18,15 @@ use pb_engine::{
 };
 use pb_util::{try_modify_component, try_res_s, weak_handle};
 use smallvec::SmallVec;
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct WallMaterial {
+    #[uniform(0)]
+    color: LinearRgba,
+    #[texture(1)]
+    #[sampler(2)]
+    texture: Handle<Image>,
+}
 
 #[derive(Debug, Default, Component, PartialEq)]
 pub struct VertexGeometry {
@@ -32,14 +43,34 @@ pub const WHITE: Handle<ColorMaterial> = weak_handle!("9644d394-94cd-4fd8-972a-c
 pub const TRANSLUCENT_WHITE: Handle<ColorMaterial> =
     weak_handle!("8562bf14-56d0-4fa8-ac4a-325b5e2eddef");
 
+const WALL_SHADER_HANDLE: Handle<Shader> = weak_handle!("a4ac33ac-2844-457f-b883-e73925dfdf97");
+
 #[derive(Debug, Default, Clone, Component)]
 pub struct Hidden;
 
-pub fn startup(mut assets: ResMut<Assets<ColorMaterial>>) {
+impl Material2d for WallMaterial {
+    fn fragment_shader() -> bevy::render::render_resource::ShaderRef {
+        WALL_SHADER_HANDLE.into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Blend
+    }
+}
+
+pub fn startup(mut assets: ResMut<Assets<ColorMaterial>>, mut shaders: ResMut<Assets<Shader>>) {
     assets.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
     assets.insert(
         &TRANSLUCENT_WHITE,
         ColorMaterial::from_color(Color::WHITE.with_alpha(0.38)),
+    );
+
+    shaders.insert(
+        WALL_SHADER_HANDLE.id(),
+        Shader::from_wgsl(
+            include_str!("../../assets/shaders/wall.wgsl"),
+            "assets/shaders/wall.wgsl",
+        ),
     );
 }
 
