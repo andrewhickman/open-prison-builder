@@ -7,71 +7,52 @@ use bevy::{
         mesh::{MeshAabb, PrimitiveTopology},
         primitives::Aabb,
         render_asset::RenderAssetUsages,
-        render_resource::AsBindGroup,
     },
-    sprite::{AlphaMode2d, Material2d},
     utils::HashSet,
 };
+use pb_assets::AssetHandles;
 use pb_engine::{
     build::Blueprint,
     wall::{self, Vertex, Wall, WallMap},
 };
-use pb_util::{try_modify_component, try_res_s, weak_handle};
+use pb_util::{math::line_intersection, try_modify_component, try_res_s, weak_handle};
 use smallvec::SmallVec;
 
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct WallMaterial {
-    #[uniform(0)]
-    color: LinearRgba,
-    #[texture(1)]
-    #[sampler(2)]
-    texture: Handle<Image>,
-}
+const VERTEX_LOCUS: Vec2 = Vec2::new(0., 0.5 * wall::RADIUS);
 
 #[derive(Debug, Default, Component, PartialEq)]
 pub struct VertexGeometry {
     pos: Vec2,
-    walls: SmallVec<[(Entity, f32); 4]>,
+    walls: SmallVec<[(Option<Entity>, f32); 4]>,
 }
 
 #[derive(Debug, Default, Component, PartialEq)]
 pub struct WallGeometry {
-    intersections: [Vec2; 4],
+    intersections: [Vec2; 6],
 }
 
 pub const WHITE: Handle<ColorMaterial> = weak_handle!("9644d394-94cd-4fd8-972a-c76026f4d08a");
 pub const TRANSLUCENT_WHITE: Handle<ColorMaterial> =
     weak_handle!("8562bf14-56d0-4fa8-ac4a-325b5e2eddef");
 
-const WALL_SHADER_HANDLE: Handle<Shader> = weak_handle!("a4ac33ac-2844-457f-b883-e73925dfdf97");
-
 #[derive(Debug, Default, Clone, Component)]
 pub struct Hidden;
 
-impl Material2d for WallMaterial {
-    fn fragment_shader() -> bevy::render::render_resource::ShaderRef {
-        WALL_SHADER_HANDLE.into()
-    }
-
-    fn alpha_mode(&self) -> AlphaMode2d {
-        AlphaMode2d::Blend
-    }
-}
-
-pub fn startup(mut assets: ResMut<Assets<ColorMaterial>>, mut shaders: ResMut<Assets<Shader>>) {
-    assets.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
-    assets.insert(
+pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, _assets: Res<AssetHandles>) {
+    materials.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
+    materials.insert(
         &TRANSLUCENT_WHITE,
         ColorMaterial::from_color(Color::WHITE.with_alpha(0.38)),
     );
-
-    shaders.insert(
-        WALL_SHADER_HANDLE.id(),
-        Shader::from_wgsl(
-            include_str!("../../assets/shaders/wall.wgsl"),
-            "assets/shaders/wall.wgsl",
-        ),
-    );
+    // materials.insert(&WHITE, ColorMaterial::from(assets.brick_image.clone()));
+    // materials.insert(
+    //     &TRANSLUCENT_WHITE,
+    //     ColorMaterial {
+    //         color: Color::WHITE.with_alpha(0.38),
+    //         alpha_mode: AlphaMode2d::Blend,
+    //         texture: Some(assets.brick_image.clone()),
+    //     },
+    // );
 }
 
 pub fn vertex_inserted(
@@ -79,7 +60,7 @@ pub fn vertex_inserted(
     mut commands: Commands,
     transform_q: Query<&Transform>,
     preview_q: Query<&Blueprint>,
-    mut assets: ResMut<Assets<Mesh>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let color = if preview_q.contains(trigger.entity()) {
         TRANSLUCENT_WHITE.clone()
@@ -91,12 +72,12 @@ pub fn vertex_inserted(
         pos: try_res_s!(transform_q.get(trigger.entity()))
             .translation
             .xy(),
-        walls: default(),
+        walls: SmallVec::from_iter([(None, 0.)]),
     };
 
     let mesh = vertex_info.mesh();
     let aabb = mesh.compute_aabb().unwrap_or_default();
-    let mesh = assets.add(vertex_info.mesh());
+    let mesh = meshes.add(vertex_info.mesh());
 
     commands.entity(trigger.entity()).insert((
         vertex_info,
@@ -111,7 +92,7 @@ pub fn wall_inserted(
     trigger: Trigger<OnInsert, Wall>,
     mut commands: Commands,
     preview_q: Query<&Blueprint>,
-    assets: Res<Assets<Mesh>>,
+    meshes: Res<Assets<Mesh>>,
 ) {
     let color = if preview_q.contains(trigger.entity()) {
         TRANSLUCENT_WHITE.clone()
@@ -119,7 +100,7 @@ pub fn wall_inserted(
         WHITE.clone()
     };
 
-    let mesh = assets.reserve_handle();
+    let mesh = meshes.reserve_handle();
 
     commands.entity(trigger.entity()).insert((
         WallGeometry::default(),
@@ -245,39 +226,41 @@ impl VertexGeometry {
         walls: impl Iterator<Item = (Entity, &'a Transform)>,
     ) -> Self {
         let start = transform.translation.xy();
-        let mut walls: SmallVec<[(Entity, f32); 4]> = walls
-            .map(|(id, end)| (id, (end.translation.xy() - start).to_angle()))
+        let mut walls: SmallVec<[(Option<Entity>, f32); 4]> = walls
+            .map(|(id, end)| (Some(id), (end.translation.xy() - start).to_angle()))
             .collect();
         walls.sort_by_key(|&(_, angle)| FloatOrd(angle));
+
+        if walls.is_empty() {
+            walls.push((None, 0.));
+        }
+
         VertexGeometry { pos: start, walls }
     }
 
-    fn wall_intersection(&self, id: Entity) -> Option<(Vec2, Vec2)> {
-        let index = self.walls.iter().position(|&(w, _)| w == id)?;
+    fn wall_intersection(&self, id: Entity) -> Option<(Vec2, Vec2, Vec2)> {
+        let index = self.walls.iter().position(|&(w, _)| w == Some(id))?;
         let a1 = wrapping_idx(&self.walls, index, -1).1;
         let a2 = wrapping_idx(&self.walls, index, 0).1;
         let a3 = wrapping_idx(&self.walls, index, 1).1;
 
-        let (i1, i2) = wall_intersection(a1, a2, a3);
-        Some((self.pos + i1, self.pos + i2))
+        let (i1, i2, i3) = wall_intersection(a1, a2, a3);
+        Some((self.pos + i1, self.pos + i2, self.pos + i3))
     }
 
     fn mesh(&self) -> Mesh {
         let mut intersections = SmallVec::<[Vec2; 4]>::new();
 
-        if self.walls.is_empty() {
-            intersections.extend(vertex_intersections(0., 0.));
-        } else {
-            for (i, &(_, a1)) in self.walls.iter().enumerate() {
-                let a2 = wrapping_idx(&self.walls, i, 1).1;
-                intersections.extend(vertex_intersections(a1, a2));
-            }
+        assert!(!self.walls.is_empty());
+        for (i, &(_, a1)) in self.walls.iter().enumerate() {
+            let a2 = wrapping_idx(&self.walls, i, 1).1;
+            intersections.extend(vertex_intersections(a1, a2));
         }
 
         let mut vertices = Vec::with_capacity(intersections.len() * 3);
         for (i, v1) in intersections.iter().enumerate() {
             let v2 = wrapping_idx(&intersections, i, 1);
-            vertices.extend([v1.extend(0.), Vec3::ZERO, v2.extend(0.)]);
+            vertices.extend([v1.extend(0.), VERTEX_LOCUS.extend(0.), v2.extend(0.)]);
         }
 
         Mesh::new(
@@ -291,11 +274,18 @@ impl VertexGeometry {
 impl WallGeometry {
     fn new(id: Entity, start: &VertexGeometry, end: &VertexGeometry) -> Self {
         let pos = start.pos.midpoint(end.pos);
-        let (start1, start2) = start.wall_intersection(id).unwrap();
-        let (end1, end2) = end.wall_intersection(id).unwrap();
+        let (start1, start2, start3) = start.wall_intersection(id).unwrap();
+        let (end1, end2, end3) = end.wall_intersection(id).unwrap();
 
         WallGeometry {
-            intersections: [start1 - pos, start2 - pos, end1 - pos, end2 - pos],
+            intersections: [
+                start1 - pos,
+                start2 - pos,
+                start3 - pos,
+                end1 - pos,
+                end2 - pos,
+                end3 - pos,
+            ],
         }
     }
 
@@ -308,9 +298,11 @@ impl WallGeometry {
             Mesh::ATTRIBUTE_POSITION,
             vec![
                 self.intersections[0].extend(0.),
+                self.intersections[5].extend(0.),
                 self.intersections[1].extend(0.),
-                self.intersections[3].extend(0.),
+                self.intersections[4].extend(0.),
                 self.intersections[2].extend(0.),
+                self.intersections[3].extend(0.),
             ],
         )
     }
@@ -327,8 +319,8 @@ fn vertex_intersections(mut a1: f32, mut a2: f32) -> SmallVec<[Vec2; 5]> {
         result.insert_from_slice(
             result.len() / 2,
             &[
-                SQRT_2 * Vec2::from_angle(a1 + FRAC_PI_4) * wall::RADIUS,
-                SQRT_2 * Vec2::from_angle(a2 - FRAC_PI_4) * wall::RADIUS,
+                right_angle_intersection(a1 + FRAC_PI_4),
+                right_angle_intersection(a2 - FRAC_PI_4),
             ],
         );
 
@@ -339,39 +331,43 @@ fn vertex_intersections(mut a1: f32, mut a2: f32) -> SmallVec<[Vec2; 5]> {
 
     if da > 0. {
         let mid = a1 + da / 2.;
-        if !reflex {
+        if reflex {
             da = PI - da;
         }
 
-        let len = wall::RADIUS / f32::cos(da / 2.);
-        result.insert(result.len() / 2, len * Vec2::from_angle(mid));
+        result.insert(result.len() / 2, angle_intersection(mid, da / 2.));
     }
 
     result
 }
 
-fn wall_intersection(a1: f32, a2: f32, a3: f32) -> (Vec2, Vec2) {
+fn wall_intersection(a1: f32, a2: f32, a3: f32) -> (Vec2, Vec2, Vec2) {
     let da1 = angle_delta(a1, a2);
     let da3 = angle_delta(a2, a3);
 
     let i1 = if da1 >= PI {
-        SQRT_2 * Vec2::from_angle(a2 - FRAC_PI_4) * wall::RADIUS
+        right_angle_intersection(a2 - FRAC_PI_4)
     } else {
-        let mid = a2 - da1 / 2.;
-        let len = wall::RADIUS / f32::sin(da1 / 2.);
-
-        len * Vec2::from_angle(mid)
+        angle_intersection(a2 - da1 / 2., da1 / 2.)
     };
-    let i2 = if da3 >= PI {
-        SQRT_2 * Vec2::from_angle(a2 + FRAC_PI_4) * wall::RADIUS
+    let i3 = if da3 >= PI {
+        right_angle_intersection(a2 + FRAC_PI_4)
     } else {
-        let mid = a2 + da3 / 2.;
-        let len = wall::RADIUS / f32::sin(da3 / 2.);
-
-        len * Vec2::from_angle(mid)
+        angle_intersection(a2 + da3 / 2., da3 / 2.)
     };
 
-    (i1, i2)
+    let i2 = line_intersection(VERTEX_LOCUS, Vec2::from_angle(a2), i1, i3 - i1)
+        .unwrap_or_else(|| i1.midpoint(i3));
+
+    (i1, i2, i3)
+}
+
+fn right_angle_intersection(a: f32) -> Vec2 {
+    Vec2::from_angle(a) * wall::RADIUS * SQRT_2
+}
+
+fn angle_intersection(mid: f32, da: f32) -> Vec2 {
+    Vec2::from_angle(mid) * wall::RADIUS / f32::sin(da)
 }
 
 fn angle_delta(a1: f32, a2: f32) -> f32 {
