@@ -1,4 +1,7 @@
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI, SQRT_2, TAU};
+use std::{
+    f32::consts::{FRAC_PI_2, FRAC_PI_4, PI, SQRT_2, TAU},
+    iter,
+};
 
 use bevy::{
     math::FloatOrd,
@@ -20,15 +23,27 @@ use smallvec::SmallVec;
 
 const VERTEX_LOCUS: Vec2 = Vec2::new(0., 0.5 * wall::RADIUS);
 
-#[derive(Debug, Default, Component, PartialEq)]
+#[derive(Debug, Component, PartialEq)]
 pub struct VertexGeometry {
     pos: Vec2,
-    walls: SmallVec<[(Option<Entity>, f32); 4]>,
+    points: SmallVec<[VertexGeometryPoint; 8]>,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+struct VertexGeometryPoint {
+    kind: VertexGeometryPointKind,
+    point: Vec2,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum VertexGeometryPointKind {
+    Wall(Entity),
+    Corner,
 }
 
 #[derive(Debug, Default, Component, PartialEq)]
 pub struct WallGeometry {
-    intersections: [Vec2; 6],
+    points: [Vec2; 6],
 }
 
 pub const WHITE: Handle<ColorMaterial> = weak_handle!("9644d394-94cd-4fd8-972a-c76026f4d08a");
@@ -68,12 +83,8 @@ pub fn vertex_inserted(
         WHITE.clone()
     };
 
-    let vertex_info = VertexGeometry {
-        pos: try_res_s!(transform_q.get(trigger.entity()))
-            .translation
-            .xy(),
-        walls: SmallVec::from_iter([(None, 0.)]),
-    };
+    let vertex_info =
+        VertexGeometry::new(try_res_s!(transform_q.get(trigger.entity())), iter::empty());
 
     let mesh = vertex_info.mesh();
     let aabb = mesh.compute_aabb().unwrap_or_default();
@@ -226,41 +237,66 @@ impl VertexGeometry {
         walls: impl Iterator<Item = (Entity, &'a Transform)>,
     ) -> Self {
         let start = transform.translation.xy();
-        let mut walls: SmallVec<[(Option<Entity>, f32); 4]> = walls
-            .map(|(id, end)| (Some(id), (end.translation.xy() - start).to_angle()))
-            .collect();
-        walls.sort_by_key(|&(_, angle)| FloatOrd(angle));
 
-        if walls.is_empty() {
-            walls.push((None, 0.));
+        let mut angles: SmallVec<[(VertexGeometryPointKind, f32); 4]> = walls
+            .map(|(id, end)| {
+                (
+                    VertexGeometryPointKind::Wall(id),
+                    (end.translation.xy() - start).to_angle(),
+                )
+            })
+            .collect();
+        angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
+
+        if angles.is_empty() {
+            angles.push((VertexGeometryPointKind::Corner, 0.));
         }
 
-        VertexGeometry { pos: start, walls }
+        let mut points: SmallVec<[VertexGeometryPoint; 8]> = default();
+        for (index, &(wall, a2)) in angles.iter().enumerate() {
+            if index == 0 {
+                let a1 = wrapping_idx(&angles, index, -1).1;
+                points.extend(vertex_intersections(a1, a2).map(VertexGeometryPoint::corner));
+            }
+            let i1 = points[points.len() - 1].point;
+
+            let mid = points.len();
+
+            let i3 = if index != (angles.len() - 1) {
+                let a3 = wrapping_idx(&angles, index, 1).1;
+                points.extend(vertex_intersections(a2, a3).map(VertexGeometryPoint::corner));
+                points[mid].point
+            } else {
+                points[0].point
+            };
+
+            if let VertexGeometryPointKind::Wall(wall) = wall {
+                let i2 = line_intersection(VERTEX_LOCUS, Vec2::from_angle(a2), i1, i3 - i1)
+                    .unwrap_or_else(|| i1.midpoint(i3));
+                points.insert(mid, VertexGeometryPoint::wall(wall, i2));
+            }
+        }
+
+        VertexGeometry { pos: start, points }
     }
 
     fn wall_intersection(&self, id: Entity) -> Option<(Vec2, Vec2, Vec2)> {
-        let index = self.walls.iter().position(|&(w, _)| w == Some(id))?;
-        let a1 = wrapping_idx(&self.walls, index, -1).1;
-        let a2 = wrapping_idx(&self.walls, index, 0).1;
-        let a3 = wrapping_idx(&self.walls, index, 1).1;
+        let index = self
+            .points
+            .iter()
+            .position(|p| p.kind == VertexGeometryPointKind::Wall(id))?;
+        let i1 = wrapping_idx(&self.points, index, -1).point;
+        let i2 = wrapping_idx(&self.points, index, 0).point;
+        let i3 = wrapping_idx(&self.points, index, 1).point;
 
-        let (i1, i2, i3) = wall_intersection(a1, a2, a3);
         Some((self.pos + i1, self.pos + i2, self.pos + i3))
     }
 
     fn mesh(&self) -> Mesh {
-        let mut intersections = SmallVec::<[Vec2; 4]>::new();
-
-        assert!(!self.walls.is_empty());
-        for (i, &(_, a1)) in self.walls.iter().enumerate() {
-            let a2 = wrapping_idx(&self.walls, i, 1).1;
-            intersections.extend(vertex_intersections(a1, a2));
-        }
-
-        let mut vertices = Vec::with_capacity(intersections.len() * 3);
-        for (i, v1) in intersections.iter().enumerate() {
-            let v2 = wrapping_idx(&intersections, i, 1);
-            vertices.extend([v1.extend(0.), VERTEX_LOCUS.extend(0.), v2.extend(0.)]);
+        let mut vertices = Vec::with_capacity(self.points.len() * 3);
+        for (i, i1) in self.points.iter().enumerate() {
+            let i2 = wrapping_idx(&self.points, i, 1);
+            vertices.extend([i1.to_vec3(), VERTEX_LOCUS.extend(0.), i2.to_vec3()]);
         }
 
         Mesh::new(
@@ -278,7 +314,7 @@ impl WallGeometry {
         let (end1, end2, end3) = end.wall_intersection(id).unwrap();
 
         WallGeometry {
-            intersections: [
+            points: [
                 start1 - pos,
                 start2 - pos,
                 start3 - pos,
@@ -297,22 +333,42 @@ impl WallGeometry {
         .with_inserted_attribute(
             Mesh::ATTRIBUTE_POSITION,
             vec![
-                self.intersections[0].extend(0.),
-                self.intersections[5].extend(0.),
-                self.intersections[1].extend(0.),
-                self.intersections[4].extend(0.),
-                self.intersections[2].extend(0.),
-                self.intersections[3].extend(0.),
+                self.points[0].extend(0.),
+                self.points[5].extend(0.),
+                self.points[1].extend(0.),
+                self.points[4].extend(0.),
+                self.points[2].extend(0.),
+                self.points[3].extend(0.),
             ],
         )
     }
 }
 
-fn vertex_intersections(mut a1: f32, mut a2: f32) -> SmallVec<[Vec2; 5]> {
+impl VertexGeometryPoint {
+    fn wall(wall: Entity, point: Vec2) -> Self {
+        VertexGeometryPoint {
+            point,
+            kind: VertexGeometryPointKind::Wall(wall),
+        }
+    }
+
+    fn corner(point: Vec2) -> Self {
+        VertexGeometryPoint {
+            point,
+            kind: VertexGeometryPointKind::Corner,
+        }
+    }
+
+    fn to_vec3(self) -> Vec3 {
+        self.point.extend(0.)
+    }
+}
+
+fn vertex_intersections(mut a1: f32, mut a2: f32) -> impl Iterator<Item = Vec2> {
     let mut da = angle_delta(a1, a2);
     let reflex = da >= PI;
 
-    let mut result = SmallVec::new();
+    let mut result = SmallVec::<[Vec2; 8]>::new();
 
     let threshold = if reflex { FRAC_PI_2 } else { PI };
     while da >= threshold {
@@ -338,17 +394,7 @@ fn vertex_intersections(mut a1: f32, mut a2: f32) -> SmallVec<[Vec2; 5]> {
         result.insert(result.len() / 2, angle_intersection(mid, da / 2.));
     }
 
-    result
-}
-
-fn wall_intersection(a1: f32, a2: f32, a3: f32) -> (Vec2, Vec2, Vec2) {
-    let i1 = *vertex_intersections(a1, a2).last().unwrap();
-    let i3 = *vertex_intersections(a2, a3).first().unwrap();
-
-    let i2 = line_intersection(VERTEX_LOCUS, Vec2::from_angle(a2), i1, i3 - i1)
-        .unwrap_or_else(|| i1.midpoint(i3));
-
-    (i1, i2, i3)
+    result.into_iter()
 }
 
 fn right_angle_intersection(a: f32) -> Vec2 {
