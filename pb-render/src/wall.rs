@@ -39,7 +39,7 @@ pub const TRANSLUCENT_WHITE: Handle<ColorMaterial> =
 pub struct Hidden;
 
 pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, _assets: Res<AssetHandles>) {
-    materials.insert(&WHITE, ColorMaterial::from_color(Color::WHITE));
+    materials.insert(&WHITE, ColorMaterial::from_color(Color::NONE));
     materials.insert(
         &TRANSLUCENT_WHITE,
         ColorMaterial::from_color(Color::WHITE.with_alpha(0.38)),
@@ -315,7 +315,7 @@ fn vertex_intersections(mut a1: f32, mut a2: f32) -> SmallVec<[Vec2; 5]> {
     let mut result = SmallVec::new();
 
     let threshold = if reflex { FRAC_PI_2 } else { PI };
-    while da > threshold {
+    while da >= threshold {
         result.insert_from_slice(
             result.len() / 2,
             &[
@@ -342,19 +342,8 @@ fn vertex_intersections(mut a1: f32, mut a2: f32) -> SmallVec<[Vec2; 5]> {
 }
 
 fn wall_intersection(a1: f32, a2: f32, a3: f32) -> (Vec2, Vec2, Vec2) {
-    let da1 = angle_delta(a1, a2);
-    let da3 = angle_delta(a2, a3);
-
-    let i1 = if da1 >= PI {
-        right_angle_intersection(a2 - FRAC_PI_4)
-    } else {
-        angle_intersection(a2 - da1 / 2., da1 / 2.)
-    };
-    let i3 = if da3 >= PI {
-        right_angle_intersection(a2 + FRAC_PI_4)
-    } else {
-        angle_intersection(a2 + da3 / 2., da3 / 2.)
-    };
+    let i1 = *vertex_intersections(a1, a2).last().unwrap();
+    let i3 = *vertex_intersections(a2, a3).first().unwrap();
 
     let i2 = line_intersection(VERTEX_LOCUS, Vec2::from_angle(a2), i1, i3 - i1)
         .unwrap_or_else(|| i1.midpoint(i3));
