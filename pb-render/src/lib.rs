@@ -5,10 +5,7 @@ pub mod projection;
 pub mod sprite;
 pub mod wall;
 
-use bevy::{
-    prelude::*,
-    sprite::{Material2dPlugin, Wireframe2dConfig, Wireframe2dPlugin},
-};
+use bevy::{prelude::*, sprite::Material2dPlugin};
 use grid::GridMaterial;
 use pb_engine::wall::WallMap;
 
@@ -35,11 +32,5 @@ impl Plugin for PbRenderPlugin {
         .add_observer(sprite::pawn_added);
 
         app.add_plugins(Material2dPlugin::<GridMaterial>::default());
-        app.add_plugins(Wireframe2dPlugin);
-
-        app.insert_resource(Wireframe2dConfig {
-            global: true,
-            default_color: Color::WHITE,
-        });
     }
 }

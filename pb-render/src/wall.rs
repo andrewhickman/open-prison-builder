@@ -7,10 +7,11 @@ use bevy::{
     math::FloatOrd,
     prelude::*,
     render::{
-        mesh::{MeshAabb, PrimitiveTopology},
+        mesh::{Indices, MeshAabb, PrimitiveTopology},
         primitives::Aabb,
         render_asset::RenderAssetUsages,
     },
+    sprite::AlphaMode2d,
     utils::HashSet,
 };
 use pb_assets::AssetHandles;
@@ -18,7 +19,7 @@ use pb_engine::{
     build::Blueprint,
     wall::{self, Vertex, Wall, WallMap},
 };
-use pb_util::{math::line_intersection, try_modify_component, try_res_s, weak_handle};
+use pb_util::{try_modify_component, try_res_s, weak_handle};
 use smallvec::SmallVec;
 
 const VERTEX_LOCUS: Vec2 = Vec2::new(0., 0.5 * wall::RADIUS);
@@ -44,6 +45,7 @@ enum VertexGeometryPointKind {
 #[derive(Debug, Default, Component, PartialEq)]
 pub struct WallGeometry {
     points: [Vec2; 6],
+    lens: [f32; 6],
 }
 
 pub const WHITE: Handle<ColorMaterial> = weak_handle!("9644d394-94cd-4fd8-972a-c76026f4d08a");
@@ -53,21 +55,21 @@ pub const TRANSLUCENT_WHITE: Handle<ColorMaterial> =
 #[derive(Debug, Default, Clone, Component)]
 pub struct Hidden;
 
-pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, _assets: Res<AssetHandles>) {
-    materials.insert(&WHITE, ColorMaterial::from_color(Color::NONE));
-    materials.insert(
-        &TRANSLUCENT_WHITE,
-        ColorMaterial::from_color(Color::WHITE.with_alpha(0.38)),
-    );
-    // materials.insert(&WHITE, ColorMaterial::from(assets.brick_image.clone()));
+pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, assets: Res<AssetHandles>) {
+    // materials.insert(&WHITE, ColorMaterial::from_color(Color::NONE));
     // materials.insert(
     //     &TRANSLUCENT_WHITE,
-    //     ColorMaterial {
-    //         color: Color::WHITE.with_alpha(0.38),
-    //         alpha_mode: AlphaMode2d::Blend,
-    //         texture: Some(assets.brick_image.clone()),
-    //     },
+    //     ColorMaterial::from_color(Color::WHITE.with_alpha(0.38)),
     // );
+    materials.insert(&WHITE, ColorMaterial::from(assets.brick_image.clone()));
+    materials.insert(
+        &TRANSLUCENT_WHITE,
+        ColorMaterial {
+            color: Color::WHITE.with_alpha(0.38),
+            alpha_mode: AlphaMode2d::Blend,
+            texture: Some(assets.brick_image.clone()),
+        },
+    );
 }
 
 pub fn vertex_inserted(
@@ -238,18 +240,13 @@ impl VertexGeometry {
     ) -> Self {
         let start = transform.translation.xy();
 
-        let mut angles: SmallVec<[(VertexGeometryPointKind, f32); 4]> = walls
-            .map(|(id, end)| {
-                (
-                    VertexGeometryPointKind::Wall(id),
-                    (end.translation.xy() - start).to_angle(),
-                )
-            })
+        let mut angles: SmallVec<[(Option<Entity>, f32); 4]> = walls
+            .map(|(id, end)| (Some(id), (end.translation.xy() - start).to_angle()))
             .collect();
         angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
 
         if angles.is_empty() {
-            angles.push((VertexGeometryPointKind::Corner, 0.));
+            angles.push((None, 0.));
         }
 
         let mut points: SmallVec<[VertexGeometryPoint; 8]> = default();
@@ -258,29 +255,22 @@ impl VertexGeometry {
                 let a1 = wrapping_idx(&angles, index, -1).1;
                 points.extend(vertex_intersections(a1, a2).map(VertexGeometryPoint::corner));
             }
-            let i1 = points[points.len() - 1].point;
 
-            let mid = points.len();
+            if let Some(wall) = wall {
+                points.push(VertexGeometryPoint::wall(wall));
+            }
 
-            let i3 = if index != (angles.len() - 1) {
+            if index != (angles.len() - 1) {
                 let a3 = wrapping_idx(&angles, index, 1).1;
                 points.extend(vertex_intersections(a2, a3).map(VertexGeometryPoint::corner));
-                points[mid].point
-            } else {
-                points[0].point
-            };
-
-            if let VertexGeometryPointKind::Wall(wall) = wall {
-                let i2 = line_intersection(VERTEX_LOCUS, Vec2::from_angle(a2), i1, i3 - i1)
-                    .unwrap_or_else(|| i1.midpoint(i3));
-                points.insert(mid, VertexGeometryPoint::wall(wall, i2));
             }
         }
 
         VertexGeometry { pos: start, points }
     }
 
-    fn wall_intersection(&self, id: Entity) -> Option<(Vec2, Vec2, Vec2)> {
+    fn wall_intersection(&self, id: Entity, pos: Vec2) -> Option<(Vec2, Vec2, Vec2)> {
+        let offset = self.pos - pos;
         let index = self
             .points
             .iter()
@@ -289,14 +279,30 @@ impl VertexGeometry {
         let i2 = wrapping_idx(&self.points, index, 0).point;
         let i3 = wrapping_idx(&self.points, index, 1).point;
 
-        Some((self.pos + i1, self.pos + i2, self.pos + i3))
+        Some((i1 + offset, i2 + offset, i3 + offset))
     }
 
     fn mesh(&self) -> Mesh {
-        let mut vertices = Vec::with_capacity(self.points.len() * 3);
+        let mut vertices = Vec::new();
+        let mut uvs = Vec::new();
         for (i, i1) in self.points.iter().enumerate() {
             let i2 = wrapping_idx(&self.points, i, 1);
+
+            if i1.is_wall() || i2.is_wall() {
+                continue;
+            }
+
             vertices.extend([i1.to_vec3(), VERTEX_LOCUS.extend(0.), i2.to_vec3()]);
+
+            let di = i2.point - i1.point;
+            let base_len = di.length();
+            let locus_len = (VERTEX_LOCUS - i1.point).project_onto(di).length();
+
+            uvs.extend([
+                Vec2::new(0.0, 1.0),
+                Vec2::new(locus_len, 0.0),
+                Vec2::new(base_len, 1.0),
+            ]);
         }
 
         Mesh::new(
@@ -304,50 +310,57 @@ impl VertexGeometry {
             RenderAssetUsages::RENDER_WORLD,
         )
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
+        // .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
     }
 }
 
 impl WallGeometry {
     fn new(id: Entity, start: &VertexGeometry, end: &VertexGeometry) -> Self {
         let pos = start.pos.midpoint(end.pos);
-        let (start1, start2, start3) = start.wall_intersection(id).unwrap();
-        let (end1, end2, end3) = end.wall_intersection(id).unwrap();
+        let (start1, start2, start3) = start.wall_intersection(id, pos).unwrap();
+        let (end1, end2, end3) = end.wall_intersection(id, pos).unwrap();
 
         WallGeometry {
-            points: [
-                start1 - pos,
-                start2 - pos,
-                start3 - pos,
-                end1 - pos,
-                end2 - pos,
-                end3 - pos,
+            points: [start1, start2, start3, end1, end2, end3],
+            lens: [
+                start1.project_onto(start2).length(),
+                start2.length(),
+                start3.project_onto(start2).length(),
+                end1.project_onto(end2).length(),
+                end2.length(),
+                end3.project_onto(end2).length(),
             ],
         }
     }
 
     fn mesh(&self) -> Mesh {
         Mesh::new(
-            PrimitiveTopology::TriangleStrip,
+            PrimitiveTopology::TriangleList,
             RenderAssetUsages::RENDER_WORLD,
         )
         .with_inserted_attribute(
             Mesh::ATTRIBUTE_POSITION,
+            self.points.iter().map(|p| p.extend(0.)).collect::<Vec<_>>(),
+        )
+        .with_inserted_attribute(
+            Mesh::ATTRIBUTE_UV_0,
             vec![
-                self.points[0].extend(0.),
-                self.points[5].extend(0.),
-                self.points[1].extend(0.),
-                self.points[4].extend(0.),
-                self.points[2].extend(0.),
-                self.points[3].extend(0.),
+                Vec2::new(-self.lens[0], 1.0),
+                Vec2::new(-self.lens[1], 0.0),
+                Vec2::new(-self.lens[2], 1.0),
+                Vec2::new(self.lens[3], 1.0),
+                Vec2::new(self.lens[4], 0.0),
+                Vec2::new(self.lens[5], 1.0),
             ],
         )
+        .with_inserted_indices(Indices::U16(vec![0, 1, 5, 1, 5, 4, 1, 2, 4, 2, 4, 3]))
     }
 }
 
 impl VertexGeometryPoint {
-    fn wall(wall: Entity, point: Vec2) -> Self {
+    fn wall(wall: Entity) -> Self {
         VertexGeometryPoint {
-            point,
+            point: VERTEX_LOCUS,
             kind: VertexGeometryPointKind::Wall(wall),
         }
     }
@@ -357,6 +370,10 @@ impl VertexGeometryPoint {
             point,
             kind: VertexGeometryPointKind::Corner,
         }
+    }
+
+    fn is_wall(&self) -> bool {
+        matches!(self.kind, VertexGeometryPointKind::Wall(_))
     }
 
     fn to_vec3(self) -> Vec3 {

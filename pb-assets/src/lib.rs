@@ -47,8 +47,8 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
         brick_image: server.load_with_settings("image/brick.png", |settings: &mut _| {
             *settings = ImageLoaderSettings {
                 sampler: ImageSampler::Descriptor(ImageSamplerDescriptor {
-                    address_mode_u: ImageAddressMode::ClampToEdge,
-                    address_mode_v: ImageAddressMode::Repeat,
+                    address_mode_u: ImageAddressMode::Repeat,
+                    address_mode_v: ImageAddressMode::ClampToEdge,
                     min_filter: ImageFilterMode::Linear,
                     mag_filter: ImageFilterMode::Linear,
                     ..default()
