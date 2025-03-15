@@ -1,74 +1,76 @@
 {
     "resources": {},
     "entities": {
-        "8589934685": {
+        "4294967392": {
             "components": {
-                "avian2d::dynamics::rigid_body::LinearVelocity": [
-                    0.0,
-                    0.0
+                "bevy_hierarchy::components::children::Children": [
+                    8589934648,
+                    8589934646,
+                    8589934647,
+                    8589934700,
+                    8589934695,
+                    8589934706,
+                    8589934701,
+                    8589934712,
+                    8589934707,
+                    8589934722,
+                    8589934723,
+                    8589934724,
+                    12884902014,
+                    8589934734,
+                    8589934735,
+                    8589934741,
+                    17179869318,
+                    8589934742,
+                    12884902033,
+                    8589934748,
+                    8589934743,
+                    4294967454,
+                    4294967453,
+                    4294967460,
+                    4294967459,
+                    4294967466,
+                    4294967465,
+                    8589934772,
+                    8589934767,
+                    25769803966,
+                    30064771256,
+                    21474836667,
+                    30064771258,
+                    8589934790,
+                    21474836675,
+                    8589934796,
+                    8589934791,
+                    8589934802,
+                    8589934797,
+                    17179869398,
+                    17179869399,
+                    12884902115,
+                    4294967534,
+                    38654705890,
+                    55834575076,
+                    42949673189,
+                    51539607782,
+                    8589934846,
+                    21474836726,
+                    8589934855,
+                    21474836735,
+                    8589934856,
+                    12884902147,
+                    4294967562,
+                    4294967561,
+                    4294967568,
+                    4294967567,
+                    8589934878,
+                    8589934879,
+                    8589934880,
+                    12884902170,
+                    12884902192,
+                    17179869489
                 ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
-                        3.5,
-                        1.5,
-                        0.0
-                    ],
-                    "rotation": [
                         0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::wall::Wall": {
-                    "start": 8589934742,
-                    "end": 8589934727
-                }
-            }
-        },
-        "8589934706": {
-            "components": {
-                "avian2d::dynamics::rigid_body::LinearVelocity": [
-                    0.0,
-                    0.0
-                ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        6.0,
-                        0.5,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::wall::Wall": {
-                    "start": 8589934727,
-                    "end": 8589934745
-                }
-            }
-        },
-        "8589934723": {
-            "components": {
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        -4.0,
                         0.0,
                         0.0
                     ],
@@ -84,15 +86,15 @@
                         1.0
                     ]
                 },
-                "pb_engine::wall::Vertex": null
+                "pb_engine::root::Root": null
             }
         },
-        "8589934724": {
+        "4294967453": {
             "components": {
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
-                        -3.0,
+                        -2.0,
                         -2.0,
                         0.0
                     ],
@@ -111,209 +113,13 @@
                 "pb_engine::wall::Vertex": null
             }
         },
-        "8589934725": {
-            "components": {
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        0.0,
-                        4.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::wall::Vertex": null
-            }
-        },
-        "8589934726": {
+        "4294967454": {
             "components": {
                 "avian2d::dynamics::rigid_body::LinearVelocity": [
                     0.0,
                     0.0
                 ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        -1.5,
-                        3.5,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::wall::Wall": {
-                    "start": 8589934739,
-                    "end": 8589934725
-                }
-            }
-        },
-        "8589934727": {
-            "components": {
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        5.0,
-                        2.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::wall::Vertex": null
-            }
-        },
-        "8589934728": {
-            "components": {
-                "avian2d::dynamics::rigid_body::LinearVelocity": [
-                    0.0,
-                    0.0
-                ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        1.0,
-                        2.5,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::wall::Wall": {
-                    "start": 8589934725,
-                    "end": 8589934742
-                }
-            }
-        },
-        "8589934734": {
-            "components": {
-                "avian2d::dynamics::rigid_body::LinearVelocity": [
-                    0.0,
-                    0.0
-                ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        -3.5,
-                        -1.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::wall::Wall": {
-                    "start": 8589934724,
-                    "end": 8589934723
-                }
-            }
-        },
-        "8589934735": {
-            "components": {
-                "avian2d::dynamics::rigid_body::LinearVelocity": [
-                    0.0,
-                    0.0
-                ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        -3.0,
-                        0.5,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::wall::Wall": {
-                    "start": 8589934723,
-                    "end": 8589934736
-                }
-            }
-        },
-        "8589934736": {
-            "components": {
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        -2.0,
-                        1.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::wall::Vertex": null
-            }
-        },
-        "8589934737": {
-            "components": {
-                "avian2d::dynamics::rigid_body::LinearVelocity": [
-                    0.0,
-                    0.0
-                ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
                         -1.5,
@@ -334,20 +140,271 @@
                 },
                 "pb_engine::wall::Wall": {
                     "start": 8589934743,
-                    "end": 8589934724
+                    "end": 4294967453
                 }
             }
         },
-        "8589934738": {
+        "4294967459": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -3.0,
+                        -2.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "4294967460": {
             "components": {
                 "avian2d::dynamics::rigid_body::LinearVelocity": [
                     0.0,
                     0.0
                 ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
                         -2.5,
+                        -2.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 4294967453,
+                    "end": 4294967459
+                }
+            }
+        },
+        "4294967465": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -4.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "4294967466": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -3.5,
+                        -1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 4294967459,
+                    "end": 4294967465
+                }
+            }
+        },
+        "4294967534": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -2.5,
+                        -1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934767,
+                    "end": 4294967453
+                }
+            }
+        },
+        "4294967561": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        0.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "4294967562": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -0.5,
+                        -0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 12884902147,
+                    "end": 4294967561
+                }
+            }
+        },
+        "4294967567": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -1.0,
+                        -2.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "4294967568": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -0.5,
+                        -1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 4294967561,
+                    "end": 4294967567
+                }
+            }
+        },
+        "8589934646": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        0.5,
                         2.0,
                         0.0
                     ],
@@ -364,14 +421,571 @@
                     ]
                 },
                 "pb_engine::wall::Wall": {
-                    "start": 8589934736,
-                    "end": 8589934739
+                    "start": 8589934648,
+                    "end": 8589934647
                 }
             }
         },
-        "8589934739": {
+        "8589934647": {
             "components": {
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.0,
+                        2.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934648": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        0.0,
+                        2.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934695": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        2.0,
+                        1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934700": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.5,
+                        1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934647,
+                    "end": 8589934695
+                }
+            }
+        },
+        "8589934701": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        2.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934706": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        2.0,
+                        0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934695,
+                    "end": 8589934701
+                }
+            }
+        },
+        "8589934707": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.0,
+                        1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934712": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.5,
+                        0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934701,
+                    "end": 8589934707
+                }
+            }
+        },
+        "8589934722": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.0,
+                        0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934707,
+                    "end": 8589934723
+                }
+            }
+        },
+        "8589934723": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934724": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.5,
+                        -0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934723,
+                    "end": 12884902014
+                }
+            }
+        },
+        "8589934734": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.5,
+                        -1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 12884902014,
+                    "end": 8589934735
+                }
+            }
+        },
+        "8589934735": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934741": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.0,
+                        -1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934735,
+                    "end": 17179869318
+                }
+            }
+        },
+        "8589934742": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        0.5,
+                        -2.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 17179869318,
+                    "end": 12884902033
+                }
+            }
+        },
+        "8589934743": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -1.0,
+                        -3.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934748": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -0.5,
+                        -3.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 12884902033,
+                    "end": 8589934743
+                }
+            }
+        },
+        "8589934767": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -3.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934772": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -3.5,
+                        -1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 4294967465,
+                    "end": 8589934767
+                }
+            }
+        },
+        "8589934790": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -3.5,
+                        1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 30064771258,
+                    "end": 21474836675
+                }
+            }
+        },
+        "8589934791": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
                         -3.0,
@@ -393,61 +1007,17 @@
                 "pb_engine::wall::Vertex": null
             }
         },
-        "8589934740": {
-            "components": {
-                "bevy_hierarchy::components::children::Children": [
-                    8589934737,
-                    8589934724,
-                    8589934734,
-                    8589934723,
-                    8589934735,
-                    8589934736,
-                    8589934738,
-                    8589934739,
-                    8589934726,
-                    8589934725,
-                    8589934728,
-                    8589934685,
-                    8589934727,
-                    8589934706,
-                    8589934745,
-                    8589934744,
-                    8589934743,
-                    8589934741,
-                    8589934742
-                ],
-                "bevy_transform::components::transform::Transform": {
-                    "translation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "pb_engine::Root": null
-            }
-        },
-        "8589934741": {
+        "8589934796": {
             "components": {
                 "avian2d::dynamics::rigid_body::LinearVelocity": [
                     0.0,
                     0.0
                 ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
-                        1.0,
-                        -1.0,
+                        -3.5,
+                        2.5,
                         0.0
                     ],
                     "rotation": [
@@ -463,18 +1033,18 @@
                     ]
                 },
                 "pb_engine::wall::Wall": {
-                    "start": 8589934743,
-                    "end": 8589934742
+                    "start": 21474836675,
+                    "end": 8589934791
                 }
             }
         },
-        "8589934742": {
+        "8589934797": {
             "components": {
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
+                        -2.0,
                         2.0,
-                        1.0,
                         0.0
                     ],
                     "rotation": [
@@ -492,9 +1062,243 @@
                 "pb_engine::wall::Vertex": null
             }
         },
-        "8589934743": {
+        "8589934802": {
             "components": {
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -2.5,
+                        2.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934791,
+                    "end": 8589934797
+                }
+            }
+        },
+        "8589934846": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -0.5,
+                        1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 51539607782,
+                    "end": 8589934648
+                }
+            }
+        },
+        "8589934855": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        0.5,
+                        0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934707,
+                    "end": 21474836735
+                }
+            }
+        },
+        "8589934856": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -0.5,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 21474836735,
+                    "end": 12884902147
+                }
+            }
+        },
+        "8589934878": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -1.5,
+                        -1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 4294967567,
+                    "end": 8589934879
+                }
+            }
+        },
+        "8589934879": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -2.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "8589934880": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -2.0,
+                        -0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934879,
+                    "end": 12884902170
+                }
+            }
+        },
+        "12884902014": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        2.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "12884902033": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
                         0.0,
@@ -516,17 +1320,17 @@
                 "pb_engine::wall::Vertex": null
             }
         },
-        "8589934744": {
+        "12884902115": {
             "components": {
                 "avian2d::dynamics::rigid_body::LinearVelocity": [
                     0.0,
                     0.0
                 ],
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
-                        3.5,
-                        -2.0,
+                        -0.5,
+                        2.5,
                         0.0
                     ],
                     "rotation": [
@@ -542,18 +1346,18 @@
                     ]
                 },
                 "pb_engine::wall::Wall": {
-                    "start": 8589934745,
-                    "end": 8589934743
+                    "start": 17179869399,
+                    "end": 8589934648
                 }
             }
         },
-        "8589934745": {
+        "12884902147": {
             "components": {
-                "bevy_hierarchy::components::parent::Parent": 8589934740,
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
                 "bevy_transform::components::transform::Transform": {
                     "translation": [
-                        7.0,
                         -1.0,
+                        0.0,
                         0.0
                     ],
                     "rotation": [
@@ -569,6 +1373,477 @@
                     ]
                 },
                 "pb_engine::wall::Vertex": null
+            }
+        },
+        "12884902170": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -2.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "12884902192": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -2.5,
+                        -0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 12884902170,
+                    "end": 8589934767
+                }
+            }
+        },
+        "17179869318": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        1.0,
+                        -2.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "17179869398": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -1.5,
+                        2.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934797,
+                    "end": 17179869399
+                }
+            }
+        },
+        "17179869399": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -1.0,
+                        3.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "17179869489": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -2.5,
+                        -1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934879,
+                    "end": 8589934767
+                }
+            }
+        },
+        "21474836667": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -3.5,
+                        0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 30064771256,
+                    "end": 30064771258
+                }
+            }
+        },
+        "21474836675": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -4.0,
+                        2.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "21474836726": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        0.5,
+                        1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934648,
+                    "end": 8589934707
+                }
+            }
+        },
+        "21474836735": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "25769803966": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -3.5,
+                        -0.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934767,
+                    "end": 30064771256
+                }
+            }
+        },
+        "30064771256": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -4.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "30064771258": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -3.0,
+                        1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "38654705890": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -3.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934767,
+                    "end": 30064771258
+                }
+            }
+        },
+        "42949673189": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -1.5,
+                        1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 8589934797,
+                    "end": 51539607782
+                }
+            }
+        },
+        "51539607782": {
+            "components": {
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -1.0,
+                        1.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Vertex": null
+            }
+        },
+        "55834575076": {
+            "components": {
+                "avian2d::dynamics::rigid_body::LinearVelocity": [
+                    0.0,
+                    0.0
+                ],
+                "bevy_hierarchy::components::parent::Parent": 4294967392,
+                "bevy_transform::components::transform::Transform": {
+                    "translation": [
+                        -2.5,
+                        1.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "pb_engine::wall::Wall": {
+                    "start": 30064771258,
+                    "end": 8589934797
+                }
             }
         }
     }
