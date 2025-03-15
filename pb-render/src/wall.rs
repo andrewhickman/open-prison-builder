@@ -1,5 +1,5 @@
 use std::{
-    f32::consts::{FRAC_PI_2, FRAC_PI_4, PI, SQRT_2, TAU},
+    f32::consts::{FRAC_PI_2, FRAC_PI_4, SQRT_2, TAU},
     iter,
 };
 
@@ -22,12 +22,15 @@ use pb_engine::{
 use pb_util::{try_modify_component, try_res_s, weak_handle};
 use smallvec::SmallVec;
 
-const VERTEX_LOCUS: Vec2 = Vec2::new(0., 0.5 * wall::RADIUS);
+const VERTEX_LOCUS: Vec2 = Vec2::new(0.25 * wall::RADIUS, 0.5 * wall::RADIUS);
+
+const TEXTURE_TOP: f32 = 0.0;
+const TEXTURE_BOTTOM: f32 = 1.0;
 
 #[derive(Debug, Component, PartialEq)]
 pub struct VertexGeometry {
     pos: Vec2,
-    points: SmallVec<[VertexGeometryPoint; 8]>,
+    points: SmallVec<[VertexGeometryPoint; 4]>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -56,11 +59,6 @@ pub const TRANSLUCENT_WHITE: Handle<ColorMaterial> =
 pub struct Hidden;
 
 pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, assets: Res<AssetHandles>) {
-    // materials.insert(&WHITE, ColorMaterial::from_color(Color::NONE));
-    // materials.insert(
-    //     &TRANSLUCENT_WHITE,
-    //     ColorMaterial::from_color(Color::WHITE.with_alpha(0.38)),
-    // );
     materials.insert(&WHITE, ColorMaterial::from(assets.brick_image.clone()));
     materials.insert(
         &TRANSLUCENT_WHITE,
@@ -245,11 +243,7 @@ impl VertexGeometry {
             .collect();
         angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
 
-        if angles.is_empty() {
-            angles.push((None, 0.));
-        }
-
-        let mut points: SmallVec<[VertexGeometryPoint; 8]> = default();
+        let mut points: SmallVec<[VertexGeometryPoint; 4]> = default();
         for (index, &(wall, a2)) in angles.iter().enumerate() {
             if index == 0 {
                 let a1 = wrapping_idx(&angles, index, -1).1;
@@ -264,6 +258,15 @@ impl VertexGeometry {
                 let a3 = wrapping_idx(&angles, index, 1).1;
                 points.extend(vertex_intersections(a2, a3).map(VertexGeometryPoint::corner));
             }
+        }
+
+        if points.is_empty() {
+            points.extend_from_slice(&[
+                VertexGeometryPoint::corner(right_angle_intersection(FRAC_PI_4)),
+                VertexGeometryPoint::corner(right_angle_intersection(3. * FRAC_PI_4)),
+                VertexGeometryPoint::corner(right_angle_intersection(5. * FRAC_PI_4)),
+                VertexGeometryPoint::corner(right_angle_intersection(7. * FRAC_PI_4)),
+            ]);
         }
 
         VertexGeometry { pos: start, points }
@@ -299,9 +302,9 @@ impl VertexGeometry {
             let locus_len = (VERTEX_LOCUS - i1.point).project_onto(di).length();
 
             uvs.extend([
-                Vec2::new(0.0, 1.0),
-                Vec2::new(locus_len, 0.0),
-                Vec2::new(base_len, 1.0),
+                Vec2::new(0.0, TEXTURE_BOTTOM),
+                Vec2::new(locus_len, TEXTURE_TOP),
+                Vec2::new(base_len, TEXTURE_BOTTOM),
             ]);
         }
 
@@ -310,7 +313,7 @@ impl VertexGeometry {
             RenderAssetUsages::RENDER_WORLD,
         )
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
-        // .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
     }
 }
 
@@ -345,12 +348,12 @@ impl WallGeometry {
         .with_inserted_attribute(
             Mesh::ATTRIBUTE_UV_0,
             vec![
-                Vec2::new(-self.lens[0], 1.0),
-                Vec2::new(-self.lens[1], 0.0),
-                Vec2::new(-self.lens[2], 1.0),
-                Vec2::new(self.lens[3], 1.0),
-                Vec2::new(self.lens[4], 0.0),
-                Vec2::new(self.lens[5], 1.0),
+                Vec2::new(-self.lens[0], TEXTURE_BOTTOM),
+                Vec2::new(-self.lens[1], TEXTURE_TOP),
+                Vec2::new(-self.lens[2], TEXTURE_BOTTOM),
+                Vec2::new(self.lens[3], TEXTURE_BOTTOM),
+                Vec2::new(self.lens[4], TEXTURE_TOP),
+                Vec2::new(self.lens[5], TEXTURE_BOTTOM),
             ],
         )
         .with_inserted_indices(Indices::U16(vec![0, 1, 5, 1, 5, 4, 1, 2, 4, 2, 4, 3]))
@@ -381,34 +384,19 @@ impl VertexGeometryPoint {
     }
 }
 
-fn vertex_intersections(mut a1: f32, mut a2: f32) -> impl Iterator<Item = Vec2> {
-    let mut da = angle_delta(a1, a2);
-    let reflex = da >= PI;
+fn vertex_intersections(a1: f32, a2: f32) -> impl Iterator<Item = Vec2> {
+    let da = angle_delta(a1, a2);
 
-    let mut result = SmallVec::<[Vec2; 8]>::new();
+    let mut result = SmallVec::<[Vec2; 2]>::new();
 
-    let threshold = if reflex { FRAC_PI_2 } else { PI };
-    while da >= threshold {
-        result.insert_from_slice(
-            result.len() / 2,
-            &[
-                right_angle_intersection(a1 + FRAC_PI_4),
-                right_angle_intersection(a2 - FRAC_PI_4),
-            ],
-        );
-
-        a1 += FRAC_PI_2;
-        a2 -= FRAC_PI_2;
-        da -= PI;
-    }
-
-    if da > 0. {
+    if da > 3. * FRAC_PI_2 {
+        result.extend_from_slice(&[
+            right_angle_intersection(a1 + 3. * FRAC_PI_4),
+            right_angle_intersection(a2 - 3. * FRAC_PI_4),
+        ]);
+    } else {
         let mid = a1 + da / 2.;
-        if reflex {
-            da = PI - da;
-        }
-
-        result.insert(result.len() / 2, angle_intersection(mid, da / 2.));
+        result.push(angle_intersection(mid, da / 2.));
     }
 
     result.into_iter()
