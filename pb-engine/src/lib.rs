@@ -13,6 +13,7 @@ use bevy::prelude::*;
 use build::Blueprint;
 use pawn::Pawn;
 use root::Root;
+use vleue_navigator::prelude::*;
 use wall::{Vertex, Wall, WallMap};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
@@ -36,7 +37,11 @@ impl Plugin for PbEnginePlugin {
 
         app.init_state::<EngineState>();
 
-        app.add_plugins(PhysicsPlugins::default());
+        app.add_plugins((
+            PhysicsPlugins::default(),
+            VleueNavigatorPlugin,
+            NavmeshUpdaterPlugin::<Collider, Wall>::default(),
+        ));
 
         app.add_observer(wall::wall_added)
             .add_observer(wall::wall_removed)
@@ -44,5 +49,10 @@ impl Plugin for PbEnginePlugin {
 
         #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());
+
+        #[cfg(feature = "dev")]
+        app.insert_resource(NavMeshesDebug(
+            bevy::color::palettes::tailwind::RED_800.into(),
+        ));
     }
 }

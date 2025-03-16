@@ -8,6 +8,7 @@ use bevy::{
 };
 use pb_util::try_res_s;
 use serde::{Deserialize, Serialize};
+use vleue_navigator::prelude::CachableObstacle;
 
 use crate::{build::Blueprint, picking::Layer};
 
@@ -180,6 +181,7 @@ pub fn add_colliders(
                 (end.translation - midpoint).xy(),
             ),
             CollisionLayers::new(Layer::Wall, LayerMask::ALL),
+            CachableObstacle,
         ));
     }
 }

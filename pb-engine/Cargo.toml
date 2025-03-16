@@ -6,7 +6,7 @@ publish = false
 edition = "2021"
 
 [features]
-dev = ["avian2d/debug-plugin"]
+dev = ["avian2d/debug-plugin", "vleue_navigator/debug-with-gizmos"]
 
 [dependencies]
 anyhow = "1.0.86"
@@ -14,3 +14,4 @@ avian2d = { version = "0.2.1", default-features = false, features = ["2d", "f32"
 bevy = { version = "0.15.0", default-features = false, features = ["bevy_state", "bevy_scene", "bevy_render"] }
 pb-util = { version = "0.1.0", path = "../pb-util" }
 serde = { version = "1.0.203", features = ["derive"] }
+vleue_navigator = { version = "0.11.1", features = ["avian2d", "tracing"], default-features = false }
