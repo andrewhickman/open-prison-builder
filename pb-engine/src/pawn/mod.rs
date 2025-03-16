@@ -10,6 +10,7 @@ pub const RADIUS: f32 = 0.16;
 #[reflect(Component, Serialize, Deserialize)]
 #[require(
     RigidBody(|| RigidBody::Dynamic),
+    AngularInertia,
     Collider(|| Collider::circle(RADIUS)),
     CollisionLayers(|| CollisionLayers::new(Layer::Pawn, LayerMask::ALL)))]
 pub struct Pawn;

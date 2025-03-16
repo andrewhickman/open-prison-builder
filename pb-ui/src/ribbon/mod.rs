@@ -1,3 +1,4 @@
+pub mod pawn;
 pub mod wall;
 
 use bevy::prelude::*;
@@ -119,6 +120,7 @@ impl<'w> UiBuilder<'w, '_> {
         let mut icon_grid = self.container(Node {
             padding: UiRect::new(theme.gutter, theme.gutter, Val::ZERO, theme.gutter),
             display: Display::Grid,
+            grid_auto_flow: GridAutoFlow::Column,
             grid_auto_columns: vec![GridTrack::max_content()],
             grid_auto_rows: vec![GridTrack::max_content()],
             row_gap: theme.gutter,
@@ -130,6 +132,9 @@ impl<'w> UiBuilder<'w, '_> {
         icon_grid
             .tile_button(theme, "Wall", assets.ribbon_button_wall_image.clone())
             .on_click(wall::wall);
+        icon_grid
+            .tile_button(theme, "Pawn", assets.pawn_image.clone())
+            .on_click(pawn::pawn);
 
         icon_grid
     }

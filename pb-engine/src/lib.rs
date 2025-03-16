@@ -43,8 +43,11 @@ impl Plugin for PbEnginePlugin {
             NavmeshUpdaterPlugin::<Collider, Wall>::default(),
         ));
 
+        app.insert_resource(Gravity::ZERO);
+
         app.add_observer(wall::wall_added)
             .add_observer(wall::wall_removed)
+            .add_observer(map::map_added)
             .add_systems(Update, wall::add_colliders);
 
         #[cfg(feature = "dev")]
