@@ -40,11 +40,9 @@ pub fn update_hits(
 
         let mut pos = ray.origin.xy();
         for grid in &grid_q {
-            if let Some(mark_x) = grid.mark(ray.origin.x, projection.scale) {
-                pos.x = mark_x;
-            }
-            if let Some(mark_y) = grid.mark(ray.origin.y, projection.scale) {
-                pos.y = mark_y;
+            if let Some(mark) = grid.point_mark(ray.origin.xy(), projection.scale) {
+                pos = mark;
+                break;
             }
         }
 

@@ -27,18 +27,15 @@ pub fn init(mut commands: Commands, theme: Res<Theme>) {
 
     let menu = builder
         .menu_root(&theme)
-        .insert(Name::new("pb_ui::layout::menu_root"))
+        .named("pb_ui::layout::menu_root")
         .id();
 
     let ribbon = builder
         .ribbon_root()
-        .insert(Name::new("pb_ui::layout::ribbon_root"))
+        .named("pb_ui::layout::ribbon_root")
         .id();
 
-    let messages = builder
-        .messages()
-        .insert(Name::new("pb_ui::layout::messages"))
-        .id();
+    let messages = builder.messages().named("pb_ui::layout::messages").id();
 
     commands.insert_resource(Layout {
         root,

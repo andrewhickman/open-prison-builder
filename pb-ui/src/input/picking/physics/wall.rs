@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use pb_engine::wall::{self, Wall};
 use pb_util::{try_opt, try_res_s};
 
+use crate::input::picking::point::grid::Grid;
+
 #[derive(Event, Debug, Clone, Copy)]
 pub struct SelectWall {
     pub kind: WallPickKind,
@@ -45,6 +47,8 @@ fn over(
     mut commands: Commands,
     wall_q: Query<&Wall>,
     vertex_q: Query<&Transform>,
+    grid_q: Query<&Grid>,
+    projection_q: Query<&OrthographicProjection>,
 ) {
     trigger.propagate(false);
 
@@ -60,6 +64,8 @@ fn over(
             start.translation.xy(),
             wall.end(),
             end.translation.xy(),
+            &grid_q,
+            try_res_s!(projection_q.get(trigger.event().hit.camera)).scale,
         ),
     });
 }
@@ -69,6 +75,8 @@ fn moved(
     mut commands: Commands,
     wall_q: Query<&Wall>,
     vertex_q: Query<&Transform>,
+    grid_q: Query<&Grid>,
+    projection_q: Query<&OrthographicProjection>,
 ) {
     trigger.propagate(false);
 
@@ -84,6 +92,8 @@ fn moved(
             start.translation.xy(),
             wall.end(),
             end.translation.xy(),
+            &grid_q,
+            try_res_s!(projection_q.get(trigger.event().hit.camera)).scale,
         ),
     });
 }
@@ -99,6 +109,8 @@ fn click(
     mut commands: Commands,
     wall_q: Query<&Wall>,
     vertex_q: Query<&Transform>,
+    grid_q: Query<&Grid>,
+    projection_q: Query<&OrthographicProjection>,
 ) {
     trigger.propagate(false);
 
@@ -114,6 +126,8 @@ fn click(
             start.translation.xy(),
             wall.end(),
             end.translation.xy(),
+            &grid_q,
+            try_res_s!(projection_q.get(trigger.event().hit.camera)).scale,
         ),
     });
 }
@@ -126,11 +140,13 @@ impl WallPickKind {
         start_pos: Vec2,
         end: Entity,
         end_pos: Vec2,
+        grid_q: &Query<&Grid>,
+        scale: f32,
     ) -> Self {
         let hit_dir = hit_pos - start_pos;
         let wall_dir = end_pos - start_pos;
 
-        let t = hit_dir.dot(wall_dir) / wall_dir.length_squared();
+        let mut t = hit_dir.dot(wall_dir) / wall_dir.length_squared();
 
         if t < 0.0 || (t < 0.5 && (t * wall_dir).length_squared() < (wall::RADIUS * wall::RADIUS)) {
             WallPickKind::Vertex {
@@ -145,6 +161,13 @@ impl WallPickKind {
                 position: end_pos,
             }
         } else {
+            for grid in grid_q {
+                if let Some(grid_t) = grid.line_mark(start_pos, wall_dir, t, scale) {
+                    t = grid_t;
+                    break;
+                }
+            }
+
             let closest = start_pos + t * wall_dir;
 
             WallPickKind::Wall {

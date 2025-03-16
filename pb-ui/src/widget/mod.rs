@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use bevy::{
     ecs::system::{EntityCommands, IntoObserverSystem},
     picking::focus::PickingInteraction,
@@ -75,6 +77,10 @@ impl<'w, 's> UiBuilder<'w, 's> {
 
     pub fn id(&self) -> Entity {
         self.entity
+    }
+
+    pub fn named(&mut self, name: impl Into<Cow<'static, str>>) -> UiBuilder<'w, '_> {
+        self.insert(Name::new(name))
     }
 }
 
