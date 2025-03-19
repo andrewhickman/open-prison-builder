@@ -2,18 +2,19 @@ use bevy::prelude::*;
 use pb_engine::{pawn::PawnBundle, EngineState};
 use pb_util::ChildBuildExt;
 
-use crate::input::{action::InputAction, picking::point::ClickPoint};
+use crate::{
+    action::Action,
+    input::{cancel::Cancellable, picking::point::ClickPoint},
+};
 
 pub fn pawn(_: Trigger<Pointer<Click>>, mut commands: Commands) {
-    commands
-        .spawn((PawnAction, Name::new(PawnAction::type_path())))
-        .with_children(|builder| {
-            builder.add_observer(click_point);
-        });
+    commands.spawn(PawnAction).with_children(|builder| {
+        builder.add_observer(click_point);
+    });
 }
 
 #[derive(Default, Debug, Component, TypePath)]
-#[require(InputAction, Transform, Visibility)]
+#[require(Action, Cancellable, Name(|| Name::new(PawnAction::type_path())))]
 pub struct PawnAction;
 
 fn click_point(

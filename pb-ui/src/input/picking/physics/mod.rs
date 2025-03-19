@@ -1,3 +1,4 @@
+pub mod pawn;
 pub mod wall;
 
 use avian2d::{

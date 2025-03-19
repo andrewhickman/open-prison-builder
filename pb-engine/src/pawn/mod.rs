@@ -1,3 +1,5 @@
+pub mod ai;
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -5,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::picking::Layer;
 
 pub const RADIUS: f32 = 0.16;
+pub const SPEED: f32 = 1.42;
 
 #[derive(Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]

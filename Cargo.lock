@@ -3793,6 +3793,7 @@ name = "pb-engine"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-channel",
  "avian2d",
  "bevy",
  "pb-util",
