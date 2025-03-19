@@ -3,11 +3,13 @@ use pb_engine::pawn::Pawn;
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct SelectPawn {
+    #[expect(unused)]
     pub pawn: Entity,
 }
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct CancelPawn {
+    #[expect(unused)]
     pub pawn: Entity,
 }
 

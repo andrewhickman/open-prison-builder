@@ -1,5 +1,10 @@
 use bevy::prelude::*;
-use pb_util::ChildBuildExt;
+use pb_engine::pawn::{ai::PawnActor, Pawn};
+use pb_util::{
+    callback::{spawn_compute, CallbackSender},
+    try_opt, try_res_s, ChildBuildExt,
+};
+use vleue_navigator::{prelude::ManagedNavMesh, NavMesh};
 
 use crate::{
     action::Action,
@@ -31,20 +36,25 @@ pub fn spawn(mut commands: Commands) {
         });
 }
 
-fn select_pawn(trigger: Trigger<SelectPawn>, _: Single<&mut DefaultAction>) {
-    info!("selected pawn {}", trigger.event().pawn);
-}
+fn select_pawn(_trigger: Trigger<SelectPawn>, _: Single<&mut DefaultAction>) {}
 
-fn cancel_pawn(trigger: Trigger<CancelPawn>, _: Single<&mut DefaultAction>) {
-    info!("canceled pawn {}", trigger.event().pawn);
-}
+fn cancel_pawn(_trigger: Trigger<CancelPawn>, _: Single<&mut DefaultAction>) {}
 
 fn click_pawn(trigger: Trigger<ClickPawn>, mut action: Single<&mut DefaultAction>) {
     action.click_pawn(trigger.pawn);
 }
 
-fn click_point(trigger: Trigger<ClickPoint>, mut action: Single<&mut DefaultAction>) {
-    action.click_point(trigger.point);
+fn click_point(
+    trigger: Trigger<ClickPoint>,
+    mut action: Single<&mut DefaultAction>,
+    transform_q: Query<&Transform, With<Pawn>>,
+    sender: Res<CallbackSender>,
+    navmesh_q: Single<&ManagedNavMesh>,
+    navmeshes: Res<Assets<NavMesh>>,
+) {
+    let navmesh = try_opt!(navmeshes.get(navmesh_q.id()));
+
+    action.click_point(trigger.point, &transform_q, &sender, navmesh);
 }
 
 impl DefaultAction {
@@ -52,10 +62,27 @@ impl DefaultAction {
         *self = DefaultAction::SelectedPawn { pawn };
     }
 
-    fn click_point(&mut self, point: Vec2) {
-        match self {
+    fn click_point(
+        &mut self,
+        to: Vec2,
+        transform_q: &Query<&Transform, With<Pawn>>,
+        sender: &CallbackSender,
+        navmesh: &NavMesh,
+    ) {
+        match *self {
             DefaultAction::Default => (),
-            DefaultAction::SelectedPawn { pawn } => info!("move pawn {pawn} to {point}"),
+            DefaultAction::SelectedPawn { pawn } => {
+                let from = try_res_s!(transform_q.get(pawn)).translation.xy();
+                let sender = sender.clone();
+                let navmesh = navmesh.clone();
+
+                spawn_compute(async move {
+                    let res = PawnActor::new(pawn, sender)
+                        .move_to(navmesh, from, to)
+                        .await;
+                    info!("move result: {res:?}");
+                });
+            }
         }
     }
 }
