@@ -12,10 +12,12 @@ pub const SPEED: f32 = 1.42;
 #[derive(Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
 #[require(
-    RigidBody(|| RigidBody::Dynamic),
-    AngularInertia,
+    RigidBody(|| RigidBody::Kinematic),
     Collider(|| Collider::circle(RADIUS)),
-    CollisionLayers(|| CollisionLayers::new(Layer::Pawn, LayerMask::ALL)))]
+    CollisionLayers(|| CollisionLayers::new(Layer::Pawn, LayerMask::ALL)),
+    CollidingEntities,
+    TranslationInterpolation
+)]
 pub struct Pawn;
 
 #[derive(Default, Clone, Bundle)]

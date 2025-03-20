@@ -49,10 +49,10 @@ fn click_point(
     mut action: Single<&mut DefaultAction>,
     transform_q: Query<&Transform, With<Pawn>>,
     sender: Res<CallbackSender>,
-    navmesh_q: Single<&ManagedNavMesh>,
+    navmesh_q: Option<Single<&ManagedNavMesh>>,
     navmeshes: Res<Assets<NavMesh>>,
 ) {
-    let navmesh = try_opt!(navmeshes.get(navmesh_q.id()));
+    let navmesh = try_opt!(navmeshes.get(try_opt!(navmesh_q).id()));
 
     action.click_point(trigger.point, &transform_q, &sender, navmesh);
 }

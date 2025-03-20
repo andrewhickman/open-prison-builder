@@ -2,10 +2,7 @@ pub mod default;
 
 use bevy::prelude::*;
 
-use crate::input::cancel::Cancellable;
-
 #[derive(Default, Clone, Copy, Debug, Component)]
-#[require(Cancellable)]
 pub struct Action;
 
 pub fn action_added(

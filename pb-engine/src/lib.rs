@@ -48,7 +48,8 @@ impl Plugin for PbEnginePlugin {
         app.add_observer(wall::wall_added)
             .add_observer(wall::wall_removed)
             .add_observer(map::map_added)
-            .add_systems(Update, (wall::add_colliders, pawn::ai::path::update));
+            .add_systems(Update, wall::add_colliders)
+            .add_systems(FixedUpdate, pawn::ai::path::update);
 
         #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());
