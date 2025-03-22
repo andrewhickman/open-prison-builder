@@ -34,7 +34,7 @@ impl Plugin for CallbackPlugin {
         app.insert_resource(CallbackSender(sender));
         app.insert_resource(CallbackReceiver(receiver));
 
-        app.add_systems(Update, apply_callbacks.run_if(apply_callbacks_condition));
+        app.add_systems(Update, apply_callbacks);
     }
 }
 
@@ -64,10 +64,6 @@ impl CallbackSender {
     pub fn send_batch(&self, queue: CommandQueue) {
         self.0.send(queue).expect("channel disconnected");
     }
-}
-
-pub fn apply_callbacks_condition(receiver: Res<CallbackReceiver>) -> bool {
-    !receiver.0.is_empty()
 }
 
 pub fn apply_callbacks(mut commands: Commands, receiver: Res<CallbackReceiver>) {
