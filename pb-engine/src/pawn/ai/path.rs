@@ -32,14 +32,10 @@ pub fn update(
     mut commands: Commands,
     mut task_q: Query<(Entity, &mut PathTask)>,
     mut pawn_q: Query<(&Transform, &mut LinearVelocity, &CollidingEntities), With<Pawn>>,
-    time: Res<Time<Virtual>>,
+    time: Res<Time<Fixed>>,
     navmesh_q: Option<Single<&ManagedNavMesh>>,
     navmeshes: Res<Assets<NavMesh>>,
 ) {
-    if time.is_paused() {
-        return;
-    }
-
     let navmesh = try_opt!(navmeshes.get(try_opt!(navmesh_q).id()));
 
     for (id, mut task) in &mut task_q {

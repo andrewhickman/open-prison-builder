@@ -1,0 +1,12 @@
+[package]
+name = "pb-learn"
+version = "0.1.0"
+authors = ["Andrew Hickman <me@andrewhickman.dev>"]
+publish = false
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.15.3", default-features = false }
+candle = { package = "candle-core", version = "0.8.4" }
+candle-nn = "0.8.4"
+pb-engine = { version = "0.1.0", path = "../pb-engine" }
