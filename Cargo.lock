@@ -4183,10 +4183,13 @@ dependencies = [
 name = "pb-learn"
 version = "0.1.0"
 dependencies = [
+ "avian2d",
  "bevy",
  "candle-core",
  "candle-nn",
+ "glam",
  "pb-engine",
+ "rand 0.9.0",
 ]
 
 [[package]]

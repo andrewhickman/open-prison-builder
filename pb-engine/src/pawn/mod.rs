@@ -24,6 +24,8 @@ pub struct Pawn;
 pub struct PawnBundle {
     pawn: Pawn,
     transform: Transform,
+    position: Position,
+    rotation: Rotation,
 }
 
 impl PawnBundle {
@@ -31,6 +33,8 @@ impl PawnBundle {
         Self {
             pawn: default(),
             transform: Transform::from_translation(position.extend(0.)),
+            position: Position(position),
+            rotation: Rotation::default(),
         }
     }
 }

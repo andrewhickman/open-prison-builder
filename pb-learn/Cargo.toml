@@ -6,7 +6,10 @@ publish = false
 edition = "2021"
 
 [dependencies]
+avian2d = { version = "0.2.1", default-features = false }
 bevy = { version = "0.15.3", default-features = false }
 candle = { package = "candle-core", version = "0.8.4" }
 candle-nn = "0.8.4"
+glam = { version = "0.29.2", default-features = false, features = ["rand"] }
 pb-engine = { version = "0.1.0", path = "../pb-engine" }
+rand = "0.9.0"
