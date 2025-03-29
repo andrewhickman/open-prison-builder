@@ -6,6 +6,7 @@ publish = false
 edition = "2021"
 
 [dependencies]
+approx = "0.5.1"
 avian2d = { version = "0.2.1", default-features = false }
 bevy = { version = "0.15.3", default-features = false }
 candle = { package = "candle-core", version = "0.8.4" }

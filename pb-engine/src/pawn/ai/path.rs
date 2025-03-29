@@ -32,7 +32,7 @@ pub fn update(
     mut commands: Commands,
     mut task_q: Query<(Entity, &mut PathTask)>,
     mut pawn_q: Query<(&Transform, &mut LinearVelocity, &CollidingEntities), With<Pawn>>,
-    time: Res<Time<Fixed>>,
+    time: Res<Time>,
     navmesh_q: Option<Single<&ManagedNavMesh>>,
     navmeshes: Res<Assets<NavMesh>>,
 ) {
@@ -57,11 +57,11 @@ pub fn update(
         if let Some(next_step) = task.steps.front() {
             let dir = *next_step - transform.translation.xy();
             let distance_remaining = dir.length();
-            if distance_remaining <= time.delta_secs() * pawn::SPEED {
+            if distance_remaining <= time.delta_secs() * pawn::MAX_SPEED {
                 velocity.0 = dir / time.delta_secs();
                 task.steps.pop_front();
             } else {
-                velocity.0 = dir / distance_remaining * pawn::SPEED;
+                velocity.0 = dir / distance_remaining * pawn::MAX_SPEED;
             }
         } else {
             velocity.0 = Vec2::ZERO;

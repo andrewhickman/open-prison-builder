@@ -1,9 +1,6 @@
 use bevy::prelude::*;
-use pb_engine::pawn::{ai::PawnActor, Pawn};
-use pb_util::{
-    callback::{spawn_compute, CallbackSender},
-    try_opt, try_res_s, ChildBuildExt,
-};
+use pb_engine::pawn::Pawn;
+use pb_util::{callback::CallbackSender, try_opt, ChildBuildExt};
 use vleue_navigator::{prelude::ManagedNavMesh, NavMesh};
 
 use crate::{
@@ -65,23 +62,14 @@ impl DefaultAction {
     fn click_point(
         &mut self,
         to: Vec2,
-        transform_q: &Query<&Transform, With<Pawn>>,
-        sender: &CallbackSender,
-        navmesh: &NavMesh,
+        _transform_q: &Query<&Transform, With<Pawn>>,
+        _sender: &CallbackSender,
+        _navmesh: &NavMesh,
     ) {
         match *self {
             DefaultAction::Default => (),
             DefaultAction::SelectedPawn { pawn } => {
-                let from = try_res_s!(transform_q.get(pawn)).translation.xy();
-                let sender = sender.clone();
-                let navmesh = navmesh.clone();
-
-                spawn_compute(async move {
-                    let res = PawnActor::new(pawn, sender)
-                        .move_to(navmesh, from, to)
-                        .await;
-                    info!("move result: {res:?}");
-                });
+                info!("move {pawn} to {to}")
             }
         }
     }
