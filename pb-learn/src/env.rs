@@ -1,7 +1,4 @@
-use std::{
-    f32::consts::{PI, TAU},
-    time::Duration,
-};
+use std::{f32::consts::PI, time::Duration};
 
 use approx::relative_eq;
 use avian2d::prelude::*;
@@ -9,12 +6,12 @@ use bevy::{
     ecs::entity::EntityHashMap, prelude::*, scene::ScenePlugin, state::app::StatesPlugin,
     time::TimeUpdateStrategy,
 };
-use candle::{Device, Tensor};
+use burn::prelude::*;
 use pb_engine::{
-    pawn::{PawnBundle, MAX_ANGULAR_VELOCITY, MAX_VELOCITY},
+    pawn::{PawnBundle, MAX_ACCELERATION, MAX_ANGULAR_VELOCITY, MAX_TORQUE, MAX_VELOCITY},
     PbEnginePlugin,
 };
-use rand::{distr::Uniform, rngs::SmallRng, Rng, SeedableRng};
+use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 pub struct Environment {
     app: App,
@@ -40,7 +37,6 @@ pub struct Action {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Observation {
-    pub position: Vec2,
     pub rotation: Vec2,
     pub linear_velocity: Vec2,
     pub angular_velocity: f32,
@@ -50,7 +46,7 @@ pub struct Observation {
 const TIMESTEP: Duration = Duration::from_micros(15625);
 
 impl Environment {
-    pub fn new() -> Self {
+    pub fn new(seed: Option<u64>) -> Self {
         let mut app = App::new();
 
         app.add_plugins((
@@ -73,20 +69,34 @@ impl Environment {
         app.cleanup();
         app.update();
 
-        let rng = SmallRng::from_os_rng();
+        let rng = match seed {
+            Some(seed) => SmallRng::seed_from_u64(seed),
+            None => SmallRng::from_os_rng(),
+        };
         let query = app.world_mut().query();
 
         Environment { app, rng, query }
     }
 
+    pub fn action_space(&self) -> usize {
+        Action::SIZE
+    }
+
+    pub fn observation_space(&self) -> &[usize] {
+        static OBSERVATION_SPACE: [usize; 1] = [Observation::SIZE];
+        OBSERVATION_SPACE.as_ref()
+    }
+
     pub fn reset(&mut self) -> EntityHashMap<Observation> {
-        for (entity, observation) in self.observe() {
+        for (entity, _) in self.observe() {
             self.app.world_mut().entity_mut(entity).despawn();
         }
 
-        let position: Vec2 = self.rng.random::<[f32; 2]>().into() * 10.;
+        let mut position: Vec2 = self.rng.random::<[f32; 2]>().into();
+        position *= 10.;
         let rotation = self.rng.random_range(-PI..PI);
-        let target: Vec2 = self.rng.random::<[f32; 2]>().into() * 10.;
+        let mut target: Vec2 = self.rng.random::<[f32; 2]>().into();
+        target *= 10.;
 
         let linear_velocity_angle = self.rng.random_range(-PI..PI);
         let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., linear_velocity_angle);
@@ -133,11 +143,10 @@ impl Environment {
                     (
                         entity,
                         Observation {
-                            position: position.0,
                             rotation: Vec2::new(rotation.cos, rotation.sin),
                             linear_velocity: linear_velocity.0,
                             angular_velocity: angular_velocity.0,
-                            target: target.0,
+                            target: target.0 - position.0,
                         },
                     )
                 },
@@ -149,25 +158,33 @@ impl Environment {
 impl Action {
     pub const SIZE: usize = 3;
 
-    pub fn from_tensor(tensor: &Tensor) -> Self {
-        let data = tensor.to_vec1().unwrap();
+    pub fn from_tensor<B>(tensor: &Tensor<B, 1>) -> Self
+    where
+        B: Backend,
+    {
+        let data = tensor.to_data();
+        let data = data.as_slice().unwrap();
         assert_eq!(data.len(), Self::SIZE);
 
         Action {
-            force: Vec2::new(data[0], data[1]),
-            torque: data[2],
+            force: Vec2::new(
+                f32::lerp(-MAX_ACCELERATION, MAX_ACCELERATION, data[0]),
+                f32::lerp(-MAX_ACCELERATION, MAX_ACCELERATION, data[1]),
+            ),
+            torque: f32::lerp(-MAX_TORQUE, MAX_TORQUE, data[2]),
         }
     }
 }
 
 impl Observation {
-    pub const SIZE: usize = 9;
+    pub const SIZE: usize = 7;
 
-    pub fn to_tensor(&self, device: &Device) -> Tensor {
-        Tensor::from_slice(
-            &[
-                self.position.x,
-                self.position.y,
+    pub fn to_tensor<B>(&self, device: &Device<B>) -> Tensor<B, 1>
+    where
+        B: Backend,
+    {
+        Tensor::from_floats(
+            [
                 self.rotation.x,
                 self.rotation.y,
                 self.linear_velocity.x,
@@ -175,15 +192,17 @@ impl Observation {
                 self.angular_velocity,
                 self.target.x,
                 self.target.y,
-            ],
-            Self::SIZE,
+            ]
+            .as_slice(),
             device,
         )
-        .unwrap()
     }
 }
 
-pub fn all_rewards(prev: &EntityHashMap<Observation>, curr: &EntityHashMap<Observation>) -> Option<f32> {
+pub fn all_rewards(
+    prev: &EntityHashMap<Observation>,
+    curr: &EntityHashMap<Observation>,
+) -> Option<f32> {
     curr.keys()
         .map(|entity| reward(&prev[entity], &curr[entity]))
         .fold(None, |a, b| match (a, b) {
@@ -194,14 +213,13 @@ pub fn all_rewards(prev: &EntityHashMap<Observation>, curr: &EntityHashMap<Obser
 }
 
 pub fn reward(prev: &Observation, curr: &Observation) -> Option<f32> {
-    if relative_eq!(curr.position, prev.position) {
+    if relative_eq!(curr.target, Vec2::ZERO) {
         return None;
     }
 
-    let target = prev.target - prev.position;
-    let delta = curr.position - prev.position;
+    let delta = curr.target - prev.target;
 
-    let on_target = delta.project_onto(target);
+    let on_target = delta.project_onto(prev.target);
     let off_target = delta - on_target;
 
     Some((on_target.length() - off_target.length()) / (MAX_VELOCITY * TIMESTEP.as_secs_f32()))

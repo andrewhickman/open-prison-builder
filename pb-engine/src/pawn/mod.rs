@@ -1,6 +1,6 @@
 // pub mod ai;
 
-use std::f32::consts::PI;
+use std::f32::consts::{PI, TAU};
 
 use avian2d::prelude::*;
 use bevy::prelude::*;
@@ -9,9 +9,10 @@ use serde::{Deserialize, Serialize};
 use crate::picking::Layer;
 
 pub const RADIUS: f32 = 0.16;
-pub const ACCELERATION: f32 = 0.68;
+pub const MAX_ACCELERATION: f32 = 0.68;
 pub const MAX_VELOCITY: f32 = 1.5;
 pub const REVERSE_VELOCITY: f32 = 0.7;
+pub const MAX_TORQUE: f32 = TAU;
 pub const MAX_ANGULAR_VELOCITY: f32 = PI;
 
 #[derive(Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
