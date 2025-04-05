@@ -2,10 +2,7 @@ use std::{f32::consts::PI, time::Duration};
 
 use approx::relative_eq;
 use avian2d::prelude::*;
-use bevy::{
-    ecs::entity::EntityHashMap, prelude::*, scene::ScenePlugin, state::app::StatesPlugin,
-    time::TimeUpdateStrategy,
-};
+use bevy::{prelude::*, scene::ScenePlugin, state::app::StatesPlugin, time::TimeUpdateStrategy};
 use burn::prelude::*;
 use pb_engine::{
     pawn::{PawnBundle, MAX_ACCELERATION, MAX_ANGULAR_VELOCITY, MAX_TORQUE, MAX_VELOCITY},
@@ -17,13 +14,13 @@ pub struct Environment {
     app: App,
     rng: SmallRng,
     query: QueryState<(
-        Entity,
         &'static Position,
         &'static Rotation,
         &'static LinearVelocity,
         &'static AngularVelocity,
         &'static TargetPosition,
     )>,
+    entities: Vec<Entity>,
 }
 
 #[derive(Copy, Clone, Debug, Component)]
@@ -41,6 +38,12 @@ pub struct Observation {
     pub linear_velocity: Vec2,
     pub angular_velocity: f32,
     pub target: Vec2,
+}
+
+pub struct Step<B: Backend> {
+    pub state: Tensor<B, 2>,
+    pub reward: Tensor<B, 1>,
+    pub done: Tensor<B, 1, Bool>,
 }
 
 const TIMESTEP: Duration = Duration::from_micros(15625);
@@ -75,7 +78,12 @@ impl Environment {
         };
         let query = app.world_mut().query();
 
-        Environment { app, rng, query }
+        Environment {
+            app,
+            rng,
+            query,
+            entities: Vec::new(),
+        }
     }
 
     pub fn action_space(&self) -> usize {
@@ -87,8 +95,12 @@ impl Environment {
         OBSERVATION_SPACE.as_ref()
     }
 
-    pub fn reset(&mut self) -> EntityHashMap<Observation> {
-        for (entity, _) in self.observe() {
+    pub fn entity_count(&self) -> usize {
+        self.entities.len()
+    }
+
+    pub fn reset(&mut self) -> Vec<Observation> {
+        for entity in self.entities.drain(..) {
             self.app.world_mut().entity_mut(entity).despawn();
         }
 
@@ -99,9 +111,9 @@ impl Environment {
         target *= 10.;
 
         let linear_velocity_angle = self.rng.random_range(-PI..PI);
-        let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., linear_velocity_angle);
-        let linear_velocity =
-            Vec2::from_angle(linear_velocity_angle) * self.rng.random_range(0.0..max_velocity);
+        let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., linear_velocity_angle.abs() / PI);
+        let linear_velocity = Vec2::from_angle(rotation + linear_velocity_angle)
+            * self.rng.random_range(0.0..max_velocity);
 
         let max_angular_velocity = MAX_ANGULAR_VELOCITY.lerp(
             MAX_ANGULAR_VELOCITY / 2.,
@@ -111,7 +123,8 @@ impl Environment {
             .rng
             .random_range(-max_angular_velocity..max_angular_velocity);
 
-        self.app
+        let entity = self
+            .app
             .world_mut()
             .spawn(PawnBundle::new(Vec2::ZERO))
             .insert((
@@ -119,12 +132,16 @@ impl Environment {
                 LinearVelocity(linear_velocity),
                 AngularVelocity(angular_velocity),
                 TargetPosition(target),
-            ));
+            ))
+            .id();
+        self.entities.push(entity);
         self.observe()
     }
 
-    pub fn step(&mut self, actions: &EntityHashMap<Action>) -> EntityHashMap<Observation> {
-        for (&entity, action) in actions {
+    pub fn step<B: Backend>(&mut self, device: &Device<B>, actions: &[Action]) -> Step<B> {
+        let prev_state = self.observe();
+
+        for (&entity, action) in self.entities.iter().zip(actions) {
             self.app.world_mut().entity_mut(entity).insert((
                 ExternalForce::new(action.force).with_persistence(false),
                 ExternalTorque::new(action.torque),
@@ -132,25 +149,30 @@ impl Environment {
         }
 
         self.app.update();
-        self.observe()
+
+        let state = self.observe();
+
+        Step {
+            state: Observation::to_tensor(&state, device),
+            reward: rewards(device, &prev_state, &state),
+            done: done(device, &prev_state, &state),
+        }
     }
 
-    pub fn observe(&mut self) -> EntityHashMap<Observation> {
-        self.query
-            .iter(self.app.world())
-            .map(
-                |(entity, position, rotation, linear_velocity, angular_velocity, target)| {
-                    (
-                        entity,
-                        Observation {
-                            rotation: Vec2::new(rotation.cos, rotation.sin),
-                            linear_velocity: linear_velocity.0,
-                            angular_velocity: angular_velocity.0,
-                            target: target.0 - position.0,
-                        },
-                    )
-                },
-            )
+    pub fn observe(&mut self) -> Vec<Observation> {
+        let world = self.app.world();
+        self.entities
+            .iter()
+            .map(|&entity| {
+                let (position, rotation, linear_velocity, angular_velocity, target) =
+                    self.query.get(world, entity).unwrap();
+                Observation {
+                    rotation: Vec2::new(rotation.cos, rotation.sin),
+                    linear_velocity: linear_velocity.0,
+                    angular_velocity: angular_velocity.0,
+                    target: target.0 - position.0,
+                }
+            })
             .collect()
     }
 }
@@ -158,61 +180,87 @@ impl Environment {
 impl Action {
     pub const SIZE: usize = 3;
 
-    pub fn from_tensor<B>(tensor: &Tensor<B, 1>) -> Self
+    pub fn from_tensor<B>(actions: &Tensor<B, 2>) -> Vec<Self>
     where
         B: Backend,
     {
-        let data = tensor.to_data();
-        let data = data.as_slice().unwrap();
-        assert_eq!(data.len(), Self::SIZE);
+        let data = actions.to_data();
+        assert_eq!(data.num_elements() % Self::SIZE, 0);
 
-        Action {
-            force: Vec2::new(
-                f32::lerp(-MAX_ACCELERATION, MAX_ACCELERATION, data[0]),
-                f32::lerp(-MAX_ACCELERATION, MAX_ACCELERATION, data[1]),
-            ),
-            torque: f32::lerp(-MAX_TORQUE, MAX_TORQUE, data[2]),
-        }
+        data.as_slice::<f32>()
+            .unwrap()
+            .chunks_exact(Self::SIZE)
+            .map(|chunk| Action {
+                force: Vec2::new(chunk[0] * MAX_ACCELERATION, chunk[1] * MAX_ACCELERATION),
+                torque: chunk[2] * MAX_TORQUE,
+            })
+            .collect()
     }
 }
 
 impl Observation {
     pub const SIZE: usize = 7;
 
-    pub fn to_tensor<B>(&self, device: &Device<B>) -> Tensor<B, 1>
+    pub fn to_tensor<B>(obs: &[Self], device: &Device<B>) -> Tensor<B, 2>
     where
         B: Backend,
     {
         Tensor::from_floats(
-            [
-                self.rotation.x,
-                self.rotation.y,
-                self.linear_velocity.x,
-                self.linear_velocity.y,
-                self.angular_velocity,
-                self.target.x,
-                self.target.y,
-            ]
-            .as_slice(),
+            TensorData::new(
+                obs.iter()
+                    .flat_map(|obs| {
+                        [
+                            obs.rotation.x,
+                            obs.rotation.y,
+                            obs.linear_velocity.x,
+                            obs.linear_velocity.y,
+                            obs.angular_velocity,
+                            obs.target.x,
+                            obs.target.y,
+                        ]
+                    })
+                    .collect(),
+                [obs.len(), Observation::SIZE],
+            ),
             device,
         )
     }
 }
 
-pub fn all_rewards(
-    prev: &EntityHashMap<Observation>,
-    curr: &EntityHashMap<Observation>,
-) -> Option<f32> {
-    curr.keys()
-        .map(|entity| reward(&prev[entity], &curr[entity]))
-        .fold(None, |a, b| match (a, b) {
-            (None, None) => None,
-            (Some(a), None) | (None, Some(a)) => Some(a),
-            (Some(a), Some(b)) => Some(a + b),
-        })
+fn rewards<B: Backend>(
+    device: &Device<B>,
+    prev: &[Observation],
+    curr: &[Observation],
+) -> Tensor<B, 1> {
+    assert_eq!(prev.len(), curr.len());
+    Tensor::from_floats(
+        prev.iter()
+            .zip(curr.iter())
+            .map(|(prev, curr)| reward(prev, curr).unwrap_or(0.))
+            .collect::<Vec<_>>()
+            .as_slice(),
+        device,
+    )
 }
 
-pub fn reward(prev: &Observation, curr: &Observation) -> Option<f32> {
+fn done<B: Backend>(
+    device: &Device<B>,
+    prev: &[Observation],
+    curr: &[Observation],
+) -> Tensor<B, 1, Bool> {
+    assert_eq!(prev.len(), curr.len());
+    Tensor::from_bool(
+        prev.iter()
+            .zip(curr.iter())
+            .map(|(prev, curr)| reward(prev, curr).is_none())
+            .collect::<Vec<_>>()
+            .as_slice()
+            .into(),
+        device,
+    )
+}
+
+fn reward(prev: &Observation, curr: &Observation) -> Option<f32> {
     if relative_eq!(curr.target, Vec2::ZERO) {
         return None;
     }

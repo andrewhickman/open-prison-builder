@@ -50,25 +50,27 @@ impl PawnBundle {
 pub fn clamp_velocity(
     mut pawn_q: Query<(&Rotation, &mut LinearVelocity, &mut AngularVelocity), With<Pawn>>,
 ) {
-    for (rotation, mut linear_velocity, mut angular_velocity) in &mut pawn_q {
-        let mut velocity = linear_velocity.length();
+    pawn_q
+        .par_iter_mut()
+        .for_each(|(rotation, mut linear_velocity, mut angular_velocity)| {
+            let mut velocity = linear_velocity.length();
 
-        if velocity > 0.0 {
-            let forward_velocity = rotation.inverse() * linear_velocity.0;
-            let angle_t = forward_velocity.to_angle().abs() / PI;
-            let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., angle_t);
+            if velocity > 0.0 {
+                let forward_velocity = rotation.inverse() * linear_velocity.0;
+                let angle_t = forward_velocity.to_angle().abs() / PI;
+                let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., angle_t);
 
-            if velocity > max_velocity {
-                linear_velocity.0 *= max_velocity / velocity;
-                velocity = max_velocity;
+                if velocity > max_velocity {
+                    linear_velocity.0 *= max_velocity / velocity;
+                    velocity = max_velocity;
+                }
             }
-        }
 
-        if angular_velocity.0 > 0.0 {
-            let max_angular_velocity =
-                MAX_ANGULAR_VELOCITY.lerp(MAX_ANGULAR_VELOCITY / 2., velocity / MAX_VELOCITY);
-            angular_velocity.0 =
-                angular_velocity.clamp(-max_angular_velocity, max_angular_velocity);
-        }
-    }
+            if angular_velocity.0 > 0.0 {
+                let max_angular_velocity =
+                    MAX_ANGULAR_VELOCITY.lerp(MAX_ANGULAR_VELOCITY / 2., velocity / MAX_VELOCITY);
+                angular_velocity.0 =
+                    angular_velocity.clamp(-max_angular_velocity, max_angular_velocity);
+            }
+        });
 }
