@@ -20,7 +20,7 @@ use env::{Action, Environment, Observation};
 use rand::rng;
 use rand_distr::{Distribution as _, Normal};
 
-const NSTEPS: usize = 256;
+const NSTEPS: usize = 512;
 const UPDATES: usize = 1000000;
 const OPTIM_BATCHSIZE: usize = 64;
 const OPTIM_EPOCHS: usize = 4;
@@ -55,7 +55,7 @@ impl<B: Backend> PpoModel<B> {
     fn forward(&self, input: Tensor<B, 2>) -> (Tensor<B, 2>, Tensor<B, 2>, Tensor<B, 2>) {
         let output = self.input.forward(input);
         let mu = tanh(self.actor_mu.forward(output.clone()));
-        let sigma = tanh(self.actor_sigma.forward(output.clone()));
+        let sigma = relu(self.actor_sigma.forward(output.clone()));
         let values = self.critic.forward(output);
 
         (values, mu, sigma)
@@ -69,7 +69,7 @@ pub fn main() {
 
     let device = WgpuDevice::default();
     let mut model =
-        PpoModel::<Autodiff<Wgpu>>::new(env.observation_space()[0], 150, env.action_space());
+        PpoModel::<Autodiff<Wgpu>>::new(env.observation_space()[0], 5, env.action_space());
     let mut opt = AdamWConfig::new()
         .init()
         .with_grad_clipping(GradientClipping::Norm(0.5));
@@ -77,11 +77,12 @@ pub fn main() {
     let mut state = Observation::to_tensor(&env.reset(), &device);
 
     let mut sum_rewards = Tensor::zeros([env.entity_count()], &device);
-    let mut total_rewards = 0f64;
-    let mut total_episodes = 0f64;
 
     let train_size = NSTEPS * env.entity_count();
     for update_index in 0..UPDATES {
+        let mut total_rewards = 0f64;
+        let mut total_episodes = 0f64;
+
         let mut s_states =
             Tensor::<_, 3>::zeros([NSTEPS, env.entity_count(), Observation::SIZE], &device);
         let mut s_values = Tensor::<_, 2>::zeros([NSTEPS, env.entity_count()], &device);
@@ -174,12 +175,12 @@ pub fn main() {
             let loss = value_loss * 0.5 + action_loss - dist_entropy * 0.01;
 
             let grads = GradientsParams::from_grads(loss.backward(), &model);
-            model = opt.step(0.001, model, grads);
+            model = opt.step(0.002, model, grads);
         }
         // if update_index > 0 && update_index % 25 == 0 {
-        println!("{} {:.0} {}", update_index, total_episodes, total_rewards);
-        total_rewards = 0.;
-        total_episodes = 0.;
+
+        let mean_rewards = s_rewards.mean().to_data().as_slice::<f32>().unwrap()[0];
+        println!("{} {:.0} {}", update_index, total_episodes, mean_rewards);
         // }
     }
 }

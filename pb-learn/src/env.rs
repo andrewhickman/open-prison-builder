@@ -105,10 +105,10 @@ impl Environment {
         }
 
         let mut position: Vec2 = self.rng.random::<[f32; 2]>().into();
-        position *= 2.;
+        position *= 5.;
         let rotation = self.rng.random_range(-PI..PI);
         let mut target: Vec2 = self.rng.random::<[f32; 2]>().into();
-        target *= 2.;
+        target *= 5.;
 
         let linear_velocity_angle = self.rng.random_range(-PI..PI);
         let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., linear_velocity_angle.abs() / PI);
@@ -272,9 +272,12 @@ fn done<B: Backend>(
 }
 
 fn reward(prev: &Observation, curr: &Observation) -> Option<f32> {
-    if relative_eq!(curr.target, Vec2::ZERO) {
+    if curr.target.length() < 0.1 {
         return None;
     }
+    // if relative_eq!(curr.target, Vec2::ZERO) {
+    //     return None;
+    // }
 
     let delta = prev.target - curr.target;
 
