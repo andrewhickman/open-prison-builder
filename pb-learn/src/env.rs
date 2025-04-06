@@ -105,10 +105,10 @@ impl Environment {
         }
 
         let mut position: Vec2 = self.rng.random::<[f32; 2]>().into();
-        position *= 10.;
+        position *= 2.;
         let rotation = self.rng.random_range(-PI..PI);
         let mut target: Vec2 = self.rng.random::<[f32; 2]>().into();
-        target *= 10.;
+        target *= 2.;
 
         let linear_velocity_angle = self.rng.random_range(-PI..PI);
         let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., linear_velocity_angle.abs() / PI);
@@ -187,12 +187,23 @@ impl Action {
         let data = actions.to_data();
         assert_eq!(data.num_elements() % Self::SIZE, 0);
 
+        fn normalize(f: f32) -> f32 {
+            if !f.is_finite() {
+                0.
+            } else {
+                f
+            }
+        }
+
         data.as_slice::<f32>()
             .unwrap()
             .chunks_exact(Self::SIZE)
             .map(|chunk| Action {
-                force: Vec2::new(chunk[0] * MAX_ACCELERATION, chunk[1] * MAX_ACCELERATION),
-                torque: chunk[2] * MAX_TORQUE,
+                force: Vec2::new(
+                    normalize(chunk[0] * MAX_ACCELERATION),
+                    normalize(chunk[1] * MAX_ACCELERATION),
+                ),
+                torque: normalize(chunk[2] * MAX_TORQUE),
             })
             .collect()
     }
@@ -265,7 +276,7 @@ fn reward(prev: &Observation, curr: &Observation) -> Option<f32> {
         return None;
     }
 
-    let delta = curr.target - prev.target;
+    let delta = prev.target - curr.target;
 
     let on_target = delta.project_onto(prev.target);
     let off_target = delta - on_target;

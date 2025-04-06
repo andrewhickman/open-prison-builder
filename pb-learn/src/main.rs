@@ -53,7 +53,7 @@ impl<B: Backend> PpoModel<B> {
     }
 
     fn forward(&self, input: Tensor<B, 2>) -> (Tensor<B, 2>, Tensor<B, 2>, Tensor<B, 2>) {
-        let output = relu(self.input.forward(input));
+        let output = self.input.forward(input);
         let mu = tanh(self.actor_mu.forward(output.clone()));
         let sigma = tanh(self.actor_sigma.forward(output.clone()));
         let values = self.critic.forward(output);
@@ -69,7 +69,7 @@ pub fn main() {
 
     let device = WgpuDevice::default();
     let mut model =
-        PpoModel::<Autodiff<Wgpu>>::new(env.observation_space()[0], 5, env.action_space());
+        PpoModel::<Autodiff<Wgpu>>::new(env.observation_space()[0], 150, env.action_space());
     let mut opt = AdamWConfig::new()
         .init()
         .with_grad_clipping(GradientClipping::Norm(0.5));
@@ -177,12 +177,7 @@ pub fn main() {
             model = opt.step(0.001, model, grads);
         }
         // if update_index > 0 && update_index % 25 == 0 {
-        println!(
-            "{} {:.0} {}",
-            update_index,
-            total_episodes,
-            total_rewards / total_episodes
-        );
+        println!("{} {:.0} {}", update_index, total_episodes, total_rewards);
         total_rewards = 0.;
         total_episodes = 0.;
         // }
