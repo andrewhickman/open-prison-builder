@@ -14,26 +14,26 @@ pub struct RlLinkClient {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum Message {
+enum Message<O = (), A = ()> {
     Ping,
     Pong,
     GetConfig,
     SetConfig(SetConfig),
     GetState,
-    EpisodesAndGetState(EpisodesAndGetState),
+    EpisodesAndGetState(EpisodesAndGetState<O, A>),
     SetState(SetState),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SetConfig {
-    pub env_steps_per_sample: u32,
+    pub env_steps_per_sample: usize,
     pub force_on_policy: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct EpisodesAndGetState {
-    pub episodes: Vec<Episode>,
-    pub env_steps: u32,
+pub struct EpisodesAndGetState<O, A> {
+    pub episodes: Vec<Episode<O, A>>,
+    pub env_steps: usize,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -43,12 +43,12 @@ pub struct SetState {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Episode {
-    obs: Vec<Vec<f32>>,
-    actions: Vec<f32>,
-    rewards: Vec<f32>,
-    is_terminated: bool,
-    is_truncated: bool,
+pub struct Episode<O, A> {
+    pub obs: Vec<O>,
+    pub actions: Vec<A>,
+    pub rewards: Vec<f32>,
+    pub is_terminated: bool,
+    pub is_truncated: bool,
 }
 
 impl RlLinkClient {
@@ -59,34 +59,42 @@ impl RlLinkClient {
     }
 
     pub fn ping(&self) {
-        match self.request(&Message::Ping) {
+        match self.request::<(), ()>(&Message::Ping) {
             Message::Pong => (),
             res => panic!("unexpected response type for PING {res:?}"),
         }
     }
 
     pub fn get_config(&self) -> SetConfig {
-        match self.request(&Message::GetConfig) {
+        match self.request::<(), ()>(&Message::GetConfig) {
             Message::SetConfig(res) => res,
             res => panic!("unexpected response type for GET_CONFIG {res:?}"),
         }
     }
 
     pub fn get_state(&self) -> SetState {
-        match self.request(&Message::GetState) {
+        match self.request::<(), ()>(&Message::GetState) {
             Message::SetState(res) => res,
             res => panic!("unexpected response type for GET_CONFIG {res:?}"),
         }
     }
 
-    pub fn episodes_and_get_state(&self, request: EpisodesAndGetState) -> SetState {
+    pub fn episodes_and_get_state<O, A>(&self, request: EpisodesAndGetState<O, A>) -> SetState
+    where
+        O: Serialize,
+        A: Serialize,
+    {
         match self.request(&Message::EpisodesAndGetState(request)) {
             Message::SetState(res) => res,
             res => panic!("unexpected response type for EPISODES_AND_GET_STATE {res:?}"),
         }
     }
 
-    fn request(&self, request: &Message) -> Message {
+    fn request<O, A>(&self, request: &Message<O, A>) -> Message
+    where
+        O: Serialize,
+        A: Serialize,
+    {
         let mut buf = Vec::with_capacity(24);
         buf.extend_from_slice(&[0; 8]);
         serde_json::to_writer(&mut buf, request).unwrap();
@@ -106,5 +114,17 @@ impl RlLinkClient {
 impl Default for RlLinkClient {
     fn default() -> Self {
         RlLinkClient::new()
+    }
+}
+
+impl<O, A> Default for Episode<O, A> {
+    fn default() -> Self {
+        Self {
+            obs: Default::default(),
+            actions: Default::default(),
+            rewards: Default::default(),
+            is_terminated: Default::default(),
+            is_truncated: Default::default(),
+        }
     }
 }

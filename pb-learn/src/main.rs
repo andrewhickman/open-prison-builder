@@ -1,15 +1,15 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod rl_link;
 mod learn;
+mod rl_link;
 
 use bevy::prelude::*;
 
+use learn::PbLearnPlugin;
 use pb_assets::PbAssetsPlugin;
 use pb_engine::PbEnginePlugin;
 use pb_render::{projection::projection, PbRenderPlugin};
 use pb_util::CallbackPlugin;
-use learn::PbLearnPlugin;
 
 fn main() -> AppExit {
     let mut app = App::new();
