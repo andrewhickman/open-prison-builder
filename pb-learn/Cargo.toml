@@ -5,9 +5,17 @@ authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 publish = false
 edition = "2021"
 
-[lib]
-name = "pb_learn"
-crate-type = ["cdylib"]
-
 [dependencies]
-pyo3 = "0.24.0"
+base64 = "0.22.1"
+bevy = { version = "0.15.3", default-features = false, features = ["bevy_winit"] }
+candle-onnx = "0.8.4"
+flate2 = "1.1.1"
+onnx-ir = "0.16.1"
+pb-assets = { version = "0.1.0", path = "../pb-assets" }
+pb-engine = { version = "0.1.0", path = "../pb-engine" }
+pb-render = { version = "0.1.0", path = "../pb-render" }
+pb-util = { version = "0.1.0", path = "../pb-util" }
+prost = "0.12.6"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+tracing = "0.1.41"

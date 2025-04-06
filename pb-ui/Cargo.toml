@@ -18,4 +18,4 @@ pb-util = { version = "0.1.0", path = "../pb-util" }
 serde = { version = "1.0.203", features = ["derive"] }
 smol_str = { version = "0.2.2", features = ["serde"] }
 vleue_navigator = { version = "0.11.1", default-features = false }
-webbrowser = "1.0.1"
+webbrowser = { version = "1.0.1", features = ["hardened"] }
