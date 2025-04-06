@@ -80,7 +80,6 @@ pub fn main() {
 
     let train_size = NSTEPS * env.entity_count();
     for update_index in 0..UPDATES {
-        let mut total_rewards = 0f64;
         let mut total_episodes = 0f64;
 
         let mut s_states =

@@ -1,6 +1,5 @@
 use std::{f32::consts::PI, time::Duration};
 
-use approx::relative_eq;
 use avian2d::prelude::*;
 use bevy::{prelude::*, scene::ScenePlugin, state::app::StatesPlugin, time::TimeUpdateStrategy};
 use burn::prelude::*;
