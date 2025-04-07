@@ -2,6 +2,7 @@
 
 use std::f32::consts::{PI, TAU};
 
+use approx::relative_ne;
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -55,7 +56,7 @@ pub fn clamp_velocity(
         .for_each(|(rotation, mut linear_velocity, mut angular_velocity)| {
             let mut velocity = linear_velocity.length();
 
-            if velocity > 0.0 {
+            if relative_ne!(velocity, 0.0) {
                 let forward_velocity = rotation.inverse() * linear_velocity.0;
                 let angle_t = forward_velocity.to_angle().abs() / PI;
                 let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., angle_t);
@@ -66,7 +67,7 @@ pub fn clamp_velocity(
                 }
             }
 
-            if angular_velocity.0 > 0.0 {
+            if relative_ne!(angular_velocity.0, 0.0) {
                 let max_angular_velocity =
                     MAX_ANGULAR_VELOCITY.lerp(MAX_ANGULAR_VELOCITY / 2., velocity / MAX_VELOCITY);
                 angular_velocity.0 =

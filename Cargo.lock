@@ -4030,6 +4030,7 @@ name = "pb-engine"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "approx",
  "avian2d",
  "bevy",
  "pb-util",
@@ -4045,6 +4046,7 @@ dependencies = [
  "avian2d",
  "base64 0.22.1",
  "bevy",
+ "blocking",
  "flate2",
  "pb-assets",
  "pb-engine",

@@ -108,6 +108,7 @@ if __name__ == "__main__":
         .env_runners(
             # Point RLlib to the custom EnvRunner to be used here.
             env_runner_cls=TcpClientInferenceEnvRunner,
+            sample_timeout_s=10000000,
         )
         .training(
             num_epochs=10,

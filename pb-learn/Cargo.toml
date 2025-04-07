@@ -9,6 +9,7 @@ edition = "2021"
 avian2d = "0.2.1"
 base64 = "0.22.1"
 bevy = { version = "0.15.3", default-features = false, features = ["bevy_winit"] }
+blocking = "1.6.1"
 flate2 = "1.1.1"
 pb-assets = { version = "0.1.0", path = "../pb-assets" }
 pb-engine = { version = "0.1.0", path = "../pb-engine" }

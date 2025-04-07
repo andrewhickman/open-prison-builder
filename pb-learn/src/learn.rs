@@ -1,29 +1,45 @@
 use std::{f32::consts::PI, io::Read, mem::replace};
 
-use avian2d::prelude::*;
+use avian2d::{dynamics::integrator::IntegrationSet, prelude::*};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use bevy::{ecs::system::SystemParam, prelude::*};
+use blocking::unblock;
 use flate2::bufread::GzDecoder;
 use pb_assets::AssetHandles;
 use pb_engine::pawn::{
     self, PawnBundle, MAX_ACCELERATION, MAX_ANGULAR_VELOCITY, MAX_TORQUE, MAX_VELOCITY,
 };
+use pb_util::callback::{spawn_compute, CallbackSender};
 use prost::Message;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use serde::Serialize;
 use smallvec::SmallVec;
 use tract_onnx::{onnx, pb::ModelProto, prelude::*};
 
-use crate::rl_link::{Episode, EpisodesAndGetState, RlLinkClient};
+use crate::rl_link::{Episode, EpisodesAndGetState, RlLinkClient, SetState};
 
 pub struct PbLearnPlugin;
 
 impl Plugin for PbLearnPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<RlLinkClient>();
+        app.init_resource::<RlLinkClient>()
+            .init_resource::<LearnerState>();
 
-        app.add_systems(Startup, startup)
-            .add_systems(FixedUpdate, update);
+        app.add_systems(Startup, |mut learner: Learner| learner.startup())
+            .add_systems(
+                FixedPreUpdate,
+                (|mut learner: Learner| learner.pre_update()).run_if(have_model),
+            )
+            .add_systems(
+                FixedUpdate,
+                (|mut learner: Learner| learner.update()).run_if(have_model),
+            )
+            .add_systems(
+                FixedPostUpdate,
+                (|mut learner: Learner| learner.post_update())
+                    .after(IntegrationSet::Position)
+                    .run_if(have_model),
+            );
     }
 }
 
@@ -64,13 +80,14 @@ pub struct Learner<'w, 's> {
     state: ResMut<'w, LearnerState>,
     time: Res<'w, Time>,
     assets: Res<'w, AssetHandles>,
+    sender: Res<'w, CallbackSender>,
 }
 
 #[derive(Resource)]
 struct LearnerState {
     env_steps: usize,
     env_steps_per_sample: usize,
-    model: Model,
+    model: Option<Model>,
     entities: Vec<Entity>,
     episodes: Vec<Episode<Observation, Action>>,
     rng: SmallRng,
@@ -78,84 +95,51 @@ struct LearnerState {
 
 type Model = SimplePlan<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>;
 
-pub fn startup(mut commands: Commands, client: Res<RlLinkClient>) {
-    client.ping();
-    info!("connected to RLlink");
-
-    let config = client.get_config();
-
-    let state = client.get_state();
-    let model = parse_model(&state.onnx_file);
-
-    commands.insert_resource(LearnerState {
-        env_steps_per_sample: config.env_steps_per_sample,
-        env_steps: 0,
-        model,
-        entities: Vec::new(),
-        episodes: vec![Episode::default()],
-        rng: SmallRng::from_os_rng(),
-    });
+impl Default for LearnerState {
+    fn default() -> Self {
+        LearnerState {
+            env_steps: 0,
+            env_steps_per_sample: 0,
+            model: None,
+            entities: Vec::new(),
+            episodes: vec![Episode::default()],
+            rng: SmallRng::from_os_rng(),
+        }
+    }
 }
 
-pub fn update(mut learner: Learner) {
-    learner.update();
+fn have_model(state: Res<LearnerState>) -> bool {
+    state.model.is_some()
 }
 
 impl Learner<'_, '_> {
-    fn update(&mut self) {
+    fn startup(&mut self) {
+        self.client.ping();
+        info!("connected to RLlink");
+
+        let config = self.client.get_config();
+        self.state.env_steps_per_sample = config.env_steps_per_sample;
+
+        let state = self.client.get_state();
+        self.set_state(state);
+    }
+
+    fn pre_update(&mut self) {
         if self.state.entities.is_empty() {
-            info!("initializing environment");
+            info!("reinitializing environment");
             self.reset();
-            return;
         }
+    }
 
+    fn update(&mut self) {
         let observation = self.observe();
-        if let Some(prev_observation) = self.episode().obs.last() {
-            match reward(prev_observation, &observation, &self.time) {
-                Some(reward) => {
-                    info!("reward: {reward}");
-                    self.episode_mut().rewards.push(reward);
-                }
-                None => {
-                    info!("finished episode");
-                    self.episode_mut().rewards.push(0.);
-                    self.episode_mut().is_terminated = true;
-                    assert_eq!(self.episode().obs.len(), self.episode().actions.len() + 1);
-                    assert_eq!(self.episode().actions.len(), self.episode().rewards.len());
-                    self.state.episodes.push(Episode::default());
-                    self.reset();
-                    return;
-                }
-            }
-        }
-
-        if observation.target.abs().max_element() > 10. {
-            self.episode_mut().rewards.push(0.);
-            self.episode_mut().is_truncated = true;
-            assert_eq!(self.episode().obs.len(), self.episode().actions.len() + 1);
-            assert_eq!(self.episode().actions.len(), self.episode().rewards.len());
-            self.state.episodes.push(Episode::default());
-            self.reset();
-            return;
-        }
-
         self.episode_mut().obs.push(observation);
-
-        if self.state.env_steps == self.state.env_steps_per_sample {
-            return self.finish_step();
-        }
-        self.state.env_steps += 1;
-
-        if self.state.env_steps % 100 == 0 {
-            info!(
-                "step {} out of {}",
-                self.state.env_steps, self.state.env_steps_per_sample
-            );
-        }
 
         let res = self
             .state
             .model
+            .as_ref()
+            .unwrap()
             .run(SmallVec::from_iter([TValue::from(observation.to_tensor())]))
             .unwrap();
         assert_eq!(res.len(), 1);
@@ -166,11 +150,55 @@ impl Learner<'_, '_> {
         self.episode_mut().actions.push(action);
     }
 
-    fn reset(&mut self) {
+    fn post_update(&mut self) {
+        let observation = self.observe();
+        let prev_observation = self.episode().obs.last().unwrap();
+
+        let reward = reward(prev_observation, &observation, &self.time);
+        match reward {
+            Some(reward) if observation.target.abs().max_element() > 10. => {
+                self.episode_mut().rewards.push(reward);
+                self.episode_mut().is_truncated = true;
+                self.finish_episode(observation);
+            }
+            Some(reward) => {
+                info!("reward: {reward}");
+                self.episode_mut().rewards.push(reward);
+            }
+            None => {
+                self.episode_mut().rewards.push(0.);
+                self.episode_mut().is_terminated = true;
+                self.finish_episode(observation);
+            }
+        }
+
+        if self.state.env_steps == self.state.env_steps_per_sample {
+            self.finish_episode(observation);
+            return self.finish_step();
+        }
+        self.state.env_steps += 1;
+
+        if self.state.env_steps % 100 == 0 {
+            info!(
+                "step {} out of {}, episode count {}, reward: {reward:?}",
+                self.state.env_steps,
+                self.state.env_steps_per_sample,
+                self.state.episodes.len(),
+            );
+        }
+    }
+
+    fn finish_episode(&mut self, observation: Observation) {
+        self.episode_mut().obs.push(observation);
+        assert_eq!(self.episode().obs.len(), self.episode().actions.len() + 1);
+        assert_eq!(self.episode().actions.len(), self.episode().rewards.len());
+        self.state.episodes.push(Episode::default());
         for entity in self.state.entities.drain(..) {
             self.commands.entity(entity).despawn();
         }
+    }
 
+    fn reset(&mut self) {
         let mut position: Vec2 = self.state.rng.random::<[f32; 2]>().into();
         position *= 5.;
         let rotation = self.state.rng.random_range(-PI..PI);
@@ -218,21 +246,15 @@ impl Learner<'_, '_> {
     }
 
     fn observe(&self) -> Observation {
-        self.state
-            .entities
-            .iter()
-            .map(|&entity| {
-                let (position, rotation, linear_velocity, angular_velocity, target) =
-                    self.query.get(entity).unwrap();
-                Observation {
-                    rotation: Vec2::new(rotation.cos, rotation.sin),
-                    linear_velocity: linear_velocity.0,
-                    angular_velocity: angular_velocity.0,
-                    target: target.0 - position.0,
-                }
-            })
-            .next()
-            .unwrap()
+        let entity = self.state.entities[0];
+        let (position, rotation, linear_velocity, angular_velocity, target) =
+            self.query.get(entity).unwrap();
+        Observation {
+            rotation: Vec2::new(rotation.cos, rotation.sin),
+            linear_velocity: linear_velocity.0,
+            angular_velocity: angular_velocity.0,
+            target: target.0 - position.0,
+        }
     }
 
     fn act(&mut self, act: Action) {
@@ -257,9 +279,25 @@ impl Learner<'_, '_> {
             env_steps: self.state.env_steps,
         });
 
-        info!("weights_seq_no: {}", state.weights_seq_no);
-        self.state.model = parse_model(&state.onnx_file);
+        self.state.model = None;
+        self.set_state(state);
         self.state.env_steps = 0;
+    }
+
+    fn set_state(&mut self, state: SetState) {
+        info!("weights_seq_no: {}", state.weights_seq_no);
+
+        let sender = self.sender.clone();
+        spawn_compute(async move {
+            let model = unblock(move || parse_model(&state.onnx_file)).await;
+            sender.send_oneshot_system_with_input(
+                |In(model): In<Model>, mut learner: Learner| {
+                    info!("finished parsing new model");
+                    learner.state.model = Some(model);
+                },
+                model,
+            );
+        });
     }
 }
 
@@ -323,7 +361,7 @@ fn reward(prev: &Observation, curr: &Observation, time: &Time) -> Option<f32> {
     let movement_reward =
         (prev.target.length() - curr.target.length()) / (MAX_VELOCITY * time.delta_secs());
 
-    let angular_velocity_penalty = curr.angular_velocity / MAX_ANGULAR_VELOCITY;
+    let angular_velocity_penalty = curr.angular_velocity.abs() / MAX_ANGULAR_VELOCITY;
 
     Some(movement_reward - angular_velocity_penalty)
 }
@@ -336,6 +374,7 @@ fn parse_model(onnx_file: &str) -> Model {
         .unwrap();
     let model = ModelProto::decode(onnx_buf.as_slice()).unwrap();
 
+    info!("parsing new model");
     onnx()
         .parse(&model, None)
         .unwrap()
