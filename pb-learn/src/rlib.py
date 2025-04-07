@@ -113,7 +113,7 @@ if __name__ == "__main__":
             num_epochs=10,
             vf_loss_coeff=0.01,
         )
-        .rl_module(model_config=DefaultModelConfig(vf_share_layers=True))
+        .rl_module(model_config=DefaultModelConfig(vf_share_layers=True, fcnet_hiddens=[16, 16]))
     )
 
     run_rllib_example_script_experiment(base_config, args)

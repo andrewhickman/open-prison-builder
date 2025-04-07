@@ -9,16 +9,15 @@ edition = "2021"
 avian2d = "0.2.1"
 base64 = "0.22.1"
 bevy = { version = "0.15.3", default-features = false, features = ["bevy_winit"] }
-candle-core = "0.8.4"
-candle-onnx = "0.8.4"
 flate2 = "1.1.1"
-onnx-ir = "0.16.1"
 pb-assets = { version = "0.1.0", path = "../pb-assets" }
 pb-engine = { version = "0.1.0", path = "../pb-engine" }
 pb-render = { version = "0.1.0", path = "../pb-render" }
 pb-util = { version = "0.1.0", path = "../pb-util" }
-prost = "0.12.6"
+prost = "0.11.9"
 rand = "0.9.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+smallvec = "1.15.0"
 tracing = "0.1.41"
+tract-onnx = "0.21.11"

@@ -1,17 +1,18 @@
-use std::{collections::HashMap, f32::consts::PI, io::Read, mem::replace};
+use std::{f32::consts::PI, io::Read, mem::replace};
 
 use avian2d::prelude::*;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use bevy::{ecs::system::SystemParam, prelude::*};
-use candle_core::{Device, Tensor};
-use candle_onnx::{eval, onnx::ModelProto};
 use flate2::bufread::GzDecoder;
+use pb_assets::AssetHandles;
 use pb_engine::pawn::{
-    PawnBundle, MAX_ACCELERATION, MAX_ANGULAR_VELOCITY, MAX_TORQUE, MAX_VELOCITY,
+    self, PawnBundle, MAX_ACCELERATION, MAX_ANGULAR_VELOCITY, MAX_TORQUE, MAX_VELOCITY,
 };
 use prost::Message;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use serde::Serialize;
+use smallvec::SmallVec;
+use tract_onnx::{onnx, pb::ModelProto, prelude::*};
 
 use crate::rl_link::{Episode, EpisodesAndGetState, RlLinkClient};
 
@@ -62,20 +63,20 @@ pub struct Learner<'w, 's> {
     >,
     state: ResMut<'w, LearnerState>,
     time: Res<'w, Time>,
+    assets: Res<'w, AssetHandles>,
 }
 
 #[derive(Resource)]
 struct LearnerState {
     env_steps: usize,
     env_steps_per_sample: usize,
-    model: ModelProto,
+    model: Model,
     entities: Vec<Entity>,
     episodes: Vec<Episode<Observation, Action>>,
-    input_name: String,
-    output_name: String,
-    device: Device,
     rng: SmallRng,
 }
+
+type Model = SimplePlan<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>;
 
 pub fn startup(mut commands: Commands, client: Res<RlLinkClient>) {
     client.ping();
@@ -86,21 +87,12 @@ pub fn startup(mut commands: Commands, client: Res<RlLinkClient>) {
     let state = client.get_state();
     let model = parse_model(&state.onnx_file);
 
-    let graph = model.graph.as_ref().unwrap();
-    assert_eq!(graph.input.len(), 1);
-    let input_name = graph.input[0].name.clone();
-    assert_eq!(graph.output.len(), 1);
-    let output_name = graph.input[0].name.clone();
-
     commands.insert_resource(LearnerState {
         env_steps_per_sample: config.env_steps_per_sample,
         env_steps: 0,
         model,
         entities: Vec::new(),
         episodes: vec![Episode::default()],
-        input_name,
-        output_name,
-        device: Device::Cpu,
         rng: SmallRng::from_os_rng(),
     });
 }
@@ -112,19 +104,20 @@ pub fn update(mut learner: Learner) {
 impl Learner<'_, '_> {
     fn update(&mut self) {
         if self.state.entities.is_empty() {
+            info!("initializing environment");
             self.reset();
             return;
         }
 
         let observation = self.observe();
-        self.episode_mut().obs.push(observation);
-
         if let Some(prev_observation) = self.episode().obs.last() {
             match reward(prev_observation, &observation, &self.time) {
                 Some(reward) => {
+                    info!("reward: {reward}");
                     self.episode_mut().rewards.push(reward);
                 }
                 None => {
+                    info!("finished episode");
                     self.episode_mut().rewards.push(0.);
                     self.episode_mut().is_terminated = true;
                     assert_eq!(self.episode().obs.len(), self.episode().actions.len() + 1);
@@ -136,21 +129,38 @@ impl Learner<'_, '_> {
             }
         }
 
+        if observation.target.abs().max_element() > 10. {
+            self.episode_mut().rewards.push(0.);
+            self.episode_mut().is_truncated = true;
+            assert_eq!(self.episode().obs.len(), self.episode().actions.len() + 1);
+            assert_eq!(self.episode().actions.len(), self.episode().rewards.len());
+            self.state.episodes.push(Episode::default());
+            self.reset();
+            return;
+        }
+
+        self.episode_mut().obs.push(observation);
+
         if self.state.env_steps == self.state.env_steps_per_sample {
             return self.finish_step();
         }
         self.state.env_steps += 1;
 
-        let action = Action::from_tensor(
-            &eval::simple_eval(
-                &self.state.model,
-                HashMap::from_iter([(
-                    self.state.input_name.clone(),
-                    observation.to_tensor(&self.state.device),
-                )]),
-            )
-            .unwrap()[&self.state.output_name],
-        );
+        if self.state.env_steps % 100 == 0 {
+            info!(
+                "step {} out of {}",
+                self.state.env_steps, self.state.env_steps_per_sample
+            );
+        }
+
+        let res = self
+            .state
+            .model
+            .run(SmallVec::from_iter([TValue::from(observation.to_tensor())]))
+            .unwrap();
+        assert_eq!(res.len(), 1);
+        let action_tensor = res.first().unwrap();
+        let action = Action::from_tensor(action_tensor);
         self.act(action);
 
         self.episode_mut().actions.push(action);
@@ -192,6 +202,19 @@ impl Learner<'_, '_> {
             ))
             .id();
         self.state.entities.push(entity);
+
+        let target = self
+            .commands
+            .spawn((
+                Transform::from_translation(target.extend(0.)),
+                Sprite {
+                    custom_size: Some(Vec2::splat(pawn::RADIUS * 1.5)),
+                    image: self.assets.close_icon.clone(),
+                    ..default()
+                },
+            ))
+            .id();
+        self.state.entities.push(target);
     }
 
     fn observe(&self) -> Observation {
@@ -236,15 +259,16 @@ impl Learner<'_, '_> {
 
         info!("weights_seq_no: {}", state.weights_seq_no);
         self.state.model = parse_model(&state.onnx_file);
+        self.state.env_steps = 0;
     }
 }
 
 impl Observation {
     const SIZE: usize = 7;
 
-    pub fn to_tensor(self, device: &Device) -> Tensor {
+    pub fn to_tensor(self) -> Tensor {
         let array: [f32; Self::SIZE] = self.into();
-        Tensor::from_slice(array.as_slice(), (1, Self::SIZE), device).unwrap()
+        Tensor::from_shape(&[1, Self::SIZE], array.as_slice()).unwrap()
     }
 }
 
@@ -252,7 +276,7 @@ impl Action {
     const SIZE: usize = 3;
 
     pub fn from_tensor(t: &Tensor) -> Self {
-        let slice = t.to_vec1::<f32>().unwrap();
+        let slice = t.as_slice().unwrap();
         Action {
             force: Vec2::new(slice[0], slice[1]),
             torque: slice[2],
@@ -296,19 +320,28 @@ fn reward(prev: &Observation, curr: &Observation, time: &Time) -> Option<f32> {
     //     return None;
     // }
 
-    let delta = prev.target - curr.target;
+    let movement_reward =
+        (prev.target.length() - curr.target.length()) / (MAX_VELOCITY * time.delta_secs());
 
-    let on_target = delta.project_onto(prev.target);
-    let off_target = delta - on_target;
+    let angular_velocity_penalty = curr.angular_velocity / MAX_ANGULAR_VELOCITY;
 
-    Some((on_target.length() - off_target.length()) / (MAX_VELOCITY * time.delta_secs()))
+    Some(movement_reward - angular_velocity_penalty)
 }
 
-fn parse_model(onnx_file: &str) -> ModelProto {
-    let onnx = STANDARD.decode(onnx_file).unwrap();
+fn parse_model(onnx_file: &str) -> Model {
+    let onnx_bytes = STANDARD.decode(onnx_file).unwrap();
     let mut onnx_buf = Vec::new();
-    GzDecoder::new(onnx.as_slice())
+    GzDecoder::new(onnx_bytes.as_slice())
         .read_to_end(&mut onnx_buf)
         .unwrap();
-    ModelProto::decode(onnx_buf.as_slice()).unwrap()
+    let model = ModelProto::decode(onnx_buf.as_slice()).unwrap();
+
+    onnx()
+        .parse(&model, None)
+        .unwrap()
+        .model
+        .into_optimized()
+        .unwrap()
+        .into_runnable()
+        .unwrap()
 }
