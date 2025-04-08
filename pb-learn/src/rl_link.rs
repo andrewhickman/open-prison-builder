@@ -14,7 +14,11 @@ pub struct RlLinkClient {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "SCREAMING_SNAKE_CASE")]
-enum Message<O = (), A = ()> {
+#[serde(bound(
+    serialize = "Episode<O, A>: Serialize",
+    deserialize = "Episode<O, A>: Deserialize<'de>"
+))]
+enum Message<const O: usize = 0, const A: usize = 0> {
     Ping,
     Pong,
     GetConfig,
@@ -31,7 +35,11 @@ pub struct SetConfig {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct EpisodesAndGetState<O, A> {
+#[serde(bound(
+    serialize = "Episode<O, A>: Serialize",
+    deserialize = "Episode<O, A>: Deserialize<'de>"
+))]
+pub struct EpisodesAndGetState<const O: usize, const A: usize> {
     pub episodes: Vec<Episode<O, A>>,
     pub env_steps: usize,
 }
@@ -43,9 +51,15 @@ pub struct SetState {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Episode<O, A> {
-    pub obs: Vec<O>,
-    pub actions: Vec<A>,
+#[serde(bound(
+    serialize = "[f32; O]: Serialize, [f32; A]: Serialize, [[f32; 2]; A]: Serialize",
+    deserialize = "[f32; O]: Deserialize<'de>, [f32; A]: Deserialize<'de>, [[f32; 2]; A]: Deserialize<'de>",
+))]
+pub struct Episode<const O: usize, const A: usize> {
+    pub obs: Vec<[f32; O]>,
+    pub actions: Vec<[f32; A]>,
+    pub action_dist_inputs: Vec<[[f32; 2]; A]>,
+    pub action_logp: Vec<[f32; A]>,
     pub rewards: Vec<f32>,
     pub is_terminated: bool,
     pub is_truncated: bool,
@@ -53,36 +67,38 @@ pub struct Episode<O, A> {
 
 impl RlLinkClient {
     pub fn new() -> Self {
-        RlLinkClient {
-            stream: TcpStream::connect("localhost:27308").unwrap(),
-        }
+        let stream = TcpStream::connect("localhost:27308").unwrap();
+        // stream.set_read_timeout(Some(Duration::from_secs(30))).unwrap();
+        RlLinkClient { stream }
     }
 
     pub fn ping(&self) {
-        match self.request::<(), ()>(&Message::Ping) {
+        match self.request::<0, 0>(&Message::Ping) {
             Message::Pong => (),
             res => panic!("unexpected response type for PING {res:?}"),
         }
     }
 
     pub fn get_config(&self) -> SetConfig {
-        match self.request::<(), ()>(&Message::GetConfig) {
+        match self.request::<0, 0>(&Message::GetConfig) {
             Message::SetConfig(res) => res,
             res => panic!("unexpected response type for GET_CONFIG {res:?}"),
         }
     }
 
     pub fn get_state(&self) -> SetState {
-        match self.request::<(), ()>(&Message::GetState) {
+        match self.request::<0, 0>(&Message::GetState) {
             Message::SetState(res) => res,
             res => panic!("unexpected response type for GET_CONFIG {res:?}"),
         }
     }
 
-    pub fn episodes_and_get_state<O, A>(&self, request: EpisodesAndGetState<O, A>) -> SetState
+    pub fn episodes_and_get_state<const O: usize, const A: usize>(
+        &self,
+        request: EpisodesAndGetState<O, A>,
+    ) -> SetState
     where
-        O: Serialize,
-        A: Serialize,
+        Episode<O, A>: Serialize,
     {
         match self.request(&Message::EpisodesAndGetState(request)) {
             Message::SetState(res) => res,
@@ -90,10 +106,9 @@ impl RlLinkClient {
         }
     }
 
-    fn request<O, A>(&self, request: &Message<O, A>) -> Message
+    fn request<const O: usize, const A: usize>(&self, request: &Message<O, A>) -> Message
     where
-        O: Serialize,
-        A: Serialize,
+        Episode<O, A>: Serialize,
     {
         let mut buf = Vec::with_capacity(24);
         buf.extend_from_slice(&[0; 8]);
@@ -117,7 +132,7 @@ impl Default for RlLinkClient {
     }
 }
 
-impl<O, A> Default for Episode<O, A> {
+impl<const O: usize, const A: usize> Default for Episode<O, A> {
     fn default() -> Self {
         Self {
             obs: Default::default(),
@@ -125,6 +140,8 @@ impl<O, A> Default for Episode<O, A> {
             rewards: Default::default(),
             is_terminated: Default::default(),
             is_truncated: Default::default(),
+            action_dist_inputs: Default::default(),
+            action_logp: Default::default(),
         }
     }
 }

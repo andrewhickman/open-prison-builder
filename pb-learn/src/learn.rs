@@ -1,4 +1,9 @@
-use std::{f32::consts::PI, io::Read, mem::replace};
+use std::{
+    array,
+    f32::consts::{PI, TAU},
+    io::Read,
+    mem::replace,
+};
 
 use avian2d::{dynamics::integrator::IntegrationSet, prelude::*};
 use base64::{engine::general_purpose::STANDARD, Engine};
@@ -12,6 +17,7 @@ use pb_engine::pawn::{
 use pb_util::callback::{spawn_compute, CallbackSender};
 use prost::Message;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rand_distr::{Distribution, Normal};
 use serde::Serialize;
 use smallvec::SmallVec;
 use tract_onnx::{onnx, pb::ModelProto, prelude::*};
@@ -89,7 +95,7 @@ struct LearnerState {
     env_steps_per_sample: usize,
     model: Option<Model>,
     entities: Vec<Entity>,
-    episodes: Vec<Episode<Observation, Action>>,
+    episodes: Vec<Episode<{ Observation::SIZE }, { Action::SIZE }>>,
     rng: SmallRng,
 }
 
@@ -133,7 +139,7 @@ impl Learner<'_, '_> {
 
     fn update(&mut self) {
         let observation = self.observe();
-        self.episode_mut().obs.push(observation);
+        self.episode_mut().obs.push(observation.into());
 
         let res = self
             .state
@@ -144,54 +150,69 @@ impl Learner<'_, '_> {
             .unwrap();
         assert_eq!(res.len(), 1);
         let action_tensor = res.first().unwrap();
-        let action = Action::from_tensor(action_tensor);
+
+        let action_dist_inputs = Action::dist_inputs(action_tensor);
+        let action = Action::sample(&action_dist_inputs, &mut self.state.rng);
         self.act(action);
 
-        self.episode_mut().actions.push(action);
+        self.episode_mut().actions.push(action.into());
+        self.episode_mut()
+            .action_dist_inputs
+            .push(action_dist_inputs);
+        self.episode_mut()
+            .action_logp
+            .push(action.logp(&action_dist_inputs))
     }
 
     fn post_update(&mut self) {
         let observation = self.observe();
-        let prev_observation = self.episode().obs.last().unwrap();
+        let prev_observation = Observation::from_slice(self.episode().obs.last().unwrap());
 
-        let reward = reward(prev_observation, &observation, &self.time);
+        let reward = reward(&prev_observation, &observation, &self.time);
         match reward {
             Some(reward) if observation.target.abs().max_element() > 10. => {
                 self.episode_mut().rewards.push(reward);
                 self.episode_mut().is_truncated = true;
                 self.finish_episode(observation);
+                self.start_episode();
             }
             Some(reward) => {
-                info!("reward: {reward}");
+                // info!("reward: {reward}");
                 self.episode_mut().rewards.push(reward);
             }
             None => {
                 self.episode_mut().rewards.push(0.);
                 self.episode_mut().is_terminated = true;
                 self.finish_episode(observation);
+                self.start_episode();
             }
         }
 
         if self.state.env_steps == self.state.env_steps_per_sample {
             self.finish_episode(observation);
-            return self.finish_step();
-        }
-        self.state.env_steps += 1;
+            self.finish_step();
+            self.start_episode();
+        } else {
+            self.state.env_steps += 1;
 
-        if self.state.env_steps % 100 == 0 {
-            info!(
-                "step {} out of {}, episode count {}, reward: {reward:?}",
-                self.state.env_steps,
-                self.state.env_steps_per_sample,
-                self.state.episodes.len(),
-            );
+            if self.state.env_steps % 100 == 0 {
+                info!(
+                    "step {} out of {}, episode count {}, reward: {reward:?}",
+                    self.state.env_steps,
+                    self.state.env_steps_per_sample,
+                    self.state.episodes.len(),
+                );
+            }
         }
     }
 
     fn finish_episode(&mut self, observation: Observation) {
-        self.episode_mut().obs.push(observation);
+        self.episode_mut().obs.push(observation.into());
         assert_eq!(self.episode().obs.len(), self.episode().actions.len() + 1);
         assert_eq!(self.episode().actions.len(), self.episode().rewards.len());
+    }
+
+    fn start_episode(&mut self) {
         self.state.episodes.push(Episode::default());
         for entity in self.state.entities.drain(..) {
             self.commands.entity(entity).despawn();
@@ -265,15 +286,19 @@ impl Learner<'_, '_> {
         ));
     }
 
-    fn episode(&self) -> &Episode<Observation, Action> {
+    fn episode(&self) -> &Episode<{ Observation::SIZE }, { Action::SIZE }> {
         self.state.episodes.last().unwrap()
     }
 
-    fn episode_mut(&mut self) -> &mut Episode<Observation, Action> {
+    fn episode_mut(&mut self) -> &mut Episode<{ Observation::SIZE }, { Action::SIZE }> {
         self.state.episodes.last_mut().unwrap()
     }
 
     fn finish_step(&mut self) {
+        info!(
+            "finished step, sending {} episodes to server",
+            self.state.episodes.len()
+        );
         let state = self.client.episodes_and_get_state(EpisodesAndGetState {
             episodes: replace(&mut self.state.episodes, vec![Episode::default()]),
             env_steps: self.state.env_steps,
@@ -308,16 +333,14 @@ impl Observation {
         let array: [f32; Self::SIZE] = self.into();
         Tensor::from_shape(&[1, Self::SIZE], array.as_slice()).unwrap()
     }
-}
 
-impl Action {
-    const SIZE: usize = 3;
-
-    pub fn from_tensor(t: &Tensor) -> Self {
-        let slice = t.as_slice().unwrap();
-        Action {
-            force: Vec2::new(slice[0], slice[1]),
-            torque: slice[2],
+    fn from_slice(slice: &[f32]) -> Observation {
+        assert_eq!(slice.len(), Self::SIZE);
+        Observation {
+            rotation: Vec2::new(slice[0], slice[1]),
+            linear_velocity: Vec2::new(slice[2], slice[3]),
+            angular_velocity: slice[4],
+            target: Vec2::new(slice[5], slice[6]),
         }
     }
 }
@@ -336,10 +359,47 @@ impl From<Observation> for [f32; Observation::SIZE] {
     }
 }
 
+impl Action {
+    const SIZE: usize = 3;
+
+    pub fn dist_inputs(t: &Tensor) -> [[f32; 2]; Self::SIZE] {
+        let slice = t.as_slice().unwrap();
+        assert_eq!(slice.len(), Self::SIZE * 2);
+
+        array::from_fn(|n| [slice[n * 2], slice[n * 2 + 1]])
+    }
+
+    pub fn sample(dist_inputs: &[[f32; 2]; Self::SIZE], rng: &mut impl Rng) -> Self {
+        Action {
+            force: Vec2::new(
+                sample(dist_inputs[0][0], dist_inputs[0][1], rng),
+                sample(dist_inputs[1][0], dist_inputs[1][1], rng),
+            ),
+            torque: sample(dist_inputs[2][0], dist_inputs[2][1], rng),
+        }
+    }
+
+    pub fn logp(self, dist_inputs: &[[f32; 2]; Self::SIZE]) -> [f32; Self::SIZE] {
+        let values: [f32; Self::SIZE] = self.into();
+        array::from_fn(|n| logp(values[n], dist_inputs[n][0], dist_inputs[n][1]))
+    }
+}
+
 impl From<Action> for [f32; Action::SIZE] {
     fn from(val: Action) -> Self {
         [val.force.x, val.force.y, val.torque]
     }
+}
+
+fn sample(mean: f32, std_dev: f32, rng: &mut impl Rng) -> f32 {
+    match Normal::new(mean, std_dev) {
+        Ok(distr) => distr.sample(rng),
+        Err(_) => mean,
+    }
+}
+
+fn logp(value: f32, mean: f32, std_dev: f32) -> f32 {
+    -std_dev.ln() - TAU.sqrt().ln() - (value - mean).powi(2) / (2. * std_dev.powi(2))
 }
 
 fn normalize(f: f32) -> f32 {
