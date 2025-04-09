@@ -36,5 +36,9 @@ fn main() -> AppExit {
         Msaa::Off,
     ));
 
+    app.world_mut()
+        .resource_mut::<Time<Virtual>>()
+        .set_relative_speed(25.);
+
     app.run()
 }

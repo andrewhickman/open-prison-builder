@@ -58,8 +58,8 @@ pub struct SetState {
 pub struct Episode<const O: usize, const A: usize> {
     pub obs: Vec<[f32; O]>,
     pub actions: Vec<[f32; A]>,
-    pub action_dist_inputs: Vec<[[f32; 2]; A]>,
-    pub action_logp: Vec<[f32; A]>,
+    pub action_dist_inputs: Vec<Vec<f32>>,
+    pub action_logp: Vec<f32>,
     pub rewards: Vec<f32>,
     pub is_terminated: bool,
     pub is_truncated: bool,

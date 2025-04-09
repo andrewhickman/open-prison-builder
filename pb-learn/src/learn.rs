@@ -1,8 +1,7 @@
 use std::{
-    array,
     f32::consts::{PI, TAU},
     io::Read,
-    mem::replace,
+    mem::take,
 };
 
 use avian2d::{dynamics::integrator::IntegrationSet, prelude::*};
@@ -158,7 +157,7 @@ impl Learner<'_, '_> {
         self.episode_mut().actions.push(action.into());
         self.episode_mut()
             .action_dist_inputs
-            .push(action_dist_inputs);
+            .push(action_dist_inputs.to_vec());
         self.episode_mut()
             .action_logp
             .push(action.logp(&action_dist_inputs))
@@ -300,7 +299,7 @@ impl Learner<'_, '_> {
             self.state.episodes.len()
         );
         let state = self.client.episodes_and_get_state(EpisodesAndGetState {
-            episodes: replace(&mut self.state.episodes, vec![Episode::default()]),
+            episodes: take(&mut self.state.episodes),
             env_steps: self.state.env_steps,
         });
 
@@ -362,26 +361,28 @@ impl From<Observation> for [f32; Observation::SIZE] {
 impl Action {
     const SIZE: usize = 3;
 
-    pub fn dist_inputs(t: &Tensor) -> [[f32; 2]; Self::SIZE] {
-        let slice = t.as_slice().unwrap();
+    pub fn dist_inputs(t: &Tensor) -> [f32; Self::SIZE * 2] {
+        let slice: &[f32] = t.as_slice().unwrap();
         assert_eq!(slice.len(), Self::SIZE * 2);
 
-        array::from_fn(|n| [slice[n * 2], slice[n * 2 + 1]])
+        slice.try_into().unwrap()
     }
 
-    pub fn sample(dist_inputs: &[[f32; 2]; Self::SIZE], rng: &mut impl Rng) -> Self {
+    pub fn sample(dist_inputs: &[f32; Self::SIZE * 2], rng: &mut impl Rng) -> Self {
         Action {
             force: Vec2::new(
-                sample(dist_inputs[0][0], dist_inputs[0][1], rng),
-                sample(dist_inputs[1][0], dist_inputs[1][1], rng),
+                sample(dist_inputs[0], dist_inputs[1], rng),
+                sample(dist_inputs[2], dist_inputs[3], rng),
             ),
-            torque: sample(dist_inputs[2][0], dist_inputs[2][1], rng),
+            torque: sample(dist_inputs[4], dist_inputs[5], rng),
         }
     }
 
-    pub fn logp(self, dist_inputs: &[[f32; 2]; Self::SIZE]) -> [f32; Self::SIZE] {
+    pub fn logp(self, dist_inputs: &[f32; Self::SIZE * 2]) -> f32 {
         let values: [f32; Self::SIZE] = self.into();
-        array::from_fn(|n| logp(values[n], dist_inputs[n][0], dist_inputs[n][1]))
+        (0..3)
+            .map(|n| logp(values[n], dist_inputs[n * 2], dist_inputs[n * 2 + 1]))
+            .sum()
     }
 }
 

@@ -328,7 +328,7 @@ class TcpClientInferenceEnvRunner(EnvRunner, Checkpointable):
                         np.array(a) for a in episode_data[Columns.ACTION_DIST_INPUTS]
                     ],
                     Columns.ACTION_LOGP: [
-                        np.array(a) for a in episode_data[Columns.ACTION_LOGP]
+                        np.float32(f) for f in episode_data[Columns.ACTION_LOGP]
                     ],
                 },
                 terminated=episode_data["is_terminated"],
