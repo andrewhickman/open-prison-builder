@@ -8,7 +8,10 @@ pub mod root;
 pub mod save;
 pub mod wall;
 
-use avian2d::{dynamics::integrator::IntegrationSet, prelude::*};
+use avian2d::{
+    dynamics::{integrator::IntegrationSet, solver::schedule::SubstepSolverSet},
+    prelude::*,
+};
 use bevy::prelude::*;
 use build::Blueprint;
 use pawn::Pawn;
@@ -49,7 +52,7 @@ impl Plugin for PbEnginePlugin {
             .add_observer(wall::wall_removed)
             .add_observer(map::map_added)
             .add_systems(Update, wall::add_colliders)
-            .add_systems(FixedPostUpdate, pawn::clamp_velocity.after(IntegrationSet::Velocity).before(IntegrationSet::Position))
+            .add_systems(SubstepSchedule, pawn::clamp_velocity.after(SubstepSolverSet::SolveConstraints).before(IntegrationSet::Position))
             /*.add_systems(FixedUpdate, pawn::ai::path::update)*/;
 
         #[cfg(feature = "dev")]

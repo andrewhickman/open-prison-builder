@@ -5,9 +5,6 @@ authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 publish = false
 edition = "2021"
 
-[profile.dev.package."*"]
-opt-level = 3
-
 [dependencies]
 avian2d = "0.2.1"
 base64 = "0.22.1"

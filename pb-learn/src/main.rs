@@ -38,7 +38,7 @@ fn main() -> AppExit {
 
     app.world_mut()
         .resource_mut::<Time<Virtual>>()
-        .set_relative_speed(25.);
+        .set_relative_speed(125.);
 
     app.run()
 }

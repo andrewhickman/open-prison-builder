@@ -4,7 +4,7 @@ use std::{
     mem::take,
 };
 
-use avian2d::{dynamics::integrator::IntegrationSet, prelude::*};
+use avian2d::prelude::*;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use bevy::{ecs::system::SystemParam, prelude::*};
 use blocking::unblock;
@@ -42,7 +42,7 @@ impl Plugin for PbLearnPlugin {
             .add_systems(
                 FixedPostUpdate,
                 (|mut learner: Learner| learner.post_update())
-                    .after(IntegrationSet::Position)
+                    .after(PhysicsSet::StepSimulation)
                     .run_if(have_model),
             );
     }
@@ -193,15 +193,6 @@ impl Learner<'_, '_> {
             self.start_episode();
         } else {
             self.state.env_steps += 1;
-
-            if self.state.env_steps % 100 == 0 {
-                info!(
-                    "step {} out of {}, episode count {}, reward: {reward:?}",
-                    self.state.env_steps,
-                    self.state.env_steps_per_sample,
-                    self.state.episodes.len(),
-                );
-            }
         }
     }
 
@@ -209,6 +200,13 @@ impl Learner<'_, '_> {
         self.episode_mut().obs.push(observation.into());
         assert_eq!(self.episode().obs.len(), self.episode().actions.len() + 1);
         assert_eq!(self.episode().actions.len(), self.episode().rewards.len());
+
+        info!(
+            "finished episode, total reward: {}, terminated {}, truncated: {}",
+            self.episode().rewards.iter().sum::<f32>(),
+            self.episode().is_terminated,
+            self.episode().is_truncated
+        );
     }
 
     fn start_episode(&mut self) {
@@ -220,10 +218,10 @@ impl Learner<'_, '_> {
 
     fn reset(&mut self) {
         let mut position: Vec2 = self.state.rng.random::<[f32; 2]>().into();
-        position *= 5.;
+        position = (position - Vec2::splat(0.5)) * 5.;
         let rotation = self.state.rng.random_range(-PI..PI);
         let mut target: Vec2 = self.state.rng.random::<[f32; 2]>().into();
-        target *= 5.;
+        target = (target - Vec2::splat(0.5)) * 5.;
 
         let linear_velocity_angle = self.state.rng.random_range(-PI..PI);
         let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., linear_velocity_angle.abs() / PI);
@@ -241,8 +239,9 @@ impl Learner<'_, '_> {
 
         let entity = self
             .commands
-            .spawn(PawnBundle::new(Vec2::ZERO))
+            .spawn(PawnBundle::new(position))
             .insert((
+                Position::new(position),
                 Rotation::radians(rotation),
                 LinearVelocity(linear_velocity),
                 AngularVelocity(angular_velocity),
@@ -298,8 +297,11 @@ impl Learner<'_, '_> {
             "finished step, sending {} episodes to server",
             self.state.episodes.len()
         );
+
+        let mut episodes = take(&mut self.state.episodes);
+        episodes.retain(|e| !e.rewards.is_empty());
         let state = self.client.episodes_and_get_state(EpisodesAndGetState {
-            episodes: take(&mut self.state.episodes),
+            episodes,
             env_steps: self.state.env_steps,
         });
 
@@ -422,7 +424,8 @@ fn reward(prev: &Observation, curr: &Observation, time: &Time) -> Option<f32> {
     let movement_reward =
         (prev.target.length() - curr.target.length()) / (MAX_VELOCITY * time.delta_secs());
 
-    let angular_velocity_penalty = curr.angular_velocity.abs() / MAX_ANGULAR_VELOCITY;
+    // let angular_velocity_penalty = curr.angular_velocity.abs() / MAX_ANGULAR_VELOCITY;
+    let angular_velocity_penalty = 0.;
 
     Some(movement_reward - angular_velocity_penalty)
 }
