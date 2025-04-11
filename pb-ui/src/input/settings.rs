@@ -85,6 +85,10 @@ impl Default for Settings {
         settings.bind(KeyCode::KeyE, Input::ZoomOut, vec![]);
         settings.bind(KeyCode::Equal, Input::DecreaseGridSize, vec![]);
         settings.bind(KeyCode::Minus, Input::IncreaseGridSize, vec![]);
+        settings.bind(KeyCode::ArrowLeft, Input::MoveLeft, vec![]);
+        settings.bind(KeyCode::ArrowUp, Input::MoveUp, vec![]);
+        settings.bind(KeyCode::ArrowRight, Input::MoveRight, vec![]);
+        settings.bind(KeyCode::ArrowDown, Input::MoveDown, vec![]);
         settings
     }
 }

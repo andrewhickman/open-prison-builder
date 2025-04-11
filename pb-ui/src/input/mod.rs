@@ -1,5 +1,6 @@
 pub mod camera;
 pub mod cancel;
+pub mod movement;
 pub mod picking;
 pub mod settings;
 
@@ -9,6 +10,7 @@ use bevy::{
     input::{keyboard::KeyboardInput, ButtonState},
     prelude::*,
 };
+use movement::{MovementDirection, MovementInput};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -23,6 +25,10 @@ pub enum Input {
     ZoomOut,
     DecreaseGridSize,
     IncreaseGridSize,
+    MoveLeft,
+    MoveUp,
+    MoveRight,
+    MoveDown,
 }
 
 #[derive(Event, Debug, Clone, Copy)]
@@ -108,6 +114,22 @@ pub fn read(
                         commands.trigger(GridInput::IncreaseSize);
                     }
                 }
+                Input::MoveLeft => commands.trigger(MovementInput {
+                    dir: MovementDirection::Left,
+                    state: event.state,
+                }),
+                Input::MoveUp => commands.trigger(MovementInput {
+                    dir: MovementDirection::Up,
+                    state: event.state,
+                }),
+                Input::MoveRight => commands.trigger(MovementInput {
+                    dir: MovementDirection::Right,
+                    state: event.state,
+                }),
+                Input::MoveDown => commands.trigger(MovementInput {
+                    dir: MovementDirection::Down,
+                    state: event.state,
+                }),
             }
         }
     }

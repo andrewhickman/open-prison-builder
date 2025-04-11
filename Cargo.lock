@@ -4102,6 +4102,7 @@ name = "pb-ui"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "approx",
  "avian2d",
  "bevy",
  "bevy_simple_text_input",
