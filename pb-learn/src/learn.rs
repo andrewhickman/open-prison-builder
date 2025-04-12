@@ -10,10 +10,11 @@ use bevy::{ecs::system::SystemParam, prelude::*};
 use blocking::unblock;
 use flate2::bufread::GzDecoder;
 use pb_assets::AssetHandles;
-use pb_engine::pawn::{
-    self, PawnBundle, MAX_ACCELERATION, MAX_ANGULAR_VELOCITY, MAX_TORQUE, MAX_VELOCITY,
+use pb_engine::pawn::{self, Pawn, PawnBundle, MAX_ANGULAR_VELOCITY, MAX_VELOCITY};
+use pb_util::{
+    callback::{spawn_compute, CallbackSender},
+    modify_component,
 };
-use pb_util::callback::{spawn_compute, CallbackSender};
 use prost::Message;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal};
@@ -278,10 +279,10 @@ impl Learner<'_, '_> {
 
     fn act(&mut self, act: Action) {
         let entity = self.state.entities[0];
-        self.commands.entity(entity).insert((
-            ExternalForce::new(act.force.map(normalize) * MAX_ACCELERATION).with_persistence(false),
-            ExternalTorque::new(normalize(act.torque) * MAX_TORQUE).with_persistence(false),
-        ));
+        self.commands
+            .queue(modify_component(entity, move |mut pawn: Mut<Pawn>| {
+                pawn.movement = act.force.map(normalize);
+            }))
     }
 
     fn episode(&self) -> &Episode<{ Observation::SIZE }, { Action::SIZE }> {
@@ -417,17 +418,11 @@ fn reward(prev: &Observation, curr: &Observation, time: &Time) -> Option<f32> {
     if curr.target.length() < 0.1 {
         return None;
     }
-    // if relative_eq!(curr.target, Vec2::ZERO) {
-    //     return None;
-    // }
 
     let movement_reward =
         (prev.target.length() - curr.target.length()) / (MAX_VELOCITY * time.delta_secs());
 
-    // let angular_velocity_penalty = curr.angular_velocity.abs() / MAX_ANGULAR_VELOCITY;
-    let angular_velocity_penalty = 0.;
-
-    Some(movement_reward - angular_velocity_penalty)
+    Some(movement_reward)
 }
 
 fn parse_model(onnx_file: &str) -> Model {

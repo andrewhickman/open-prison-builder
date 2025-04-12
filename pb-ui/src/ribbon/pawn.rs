@@ -4,7 +4,7 @@ use pb_util::ChildBuildExt;
 
 use crate::{
     action::Action,
-    input::{cancel::Cancellable, movement::MovementState, picking::point::ClickPoint},
+    input::{cancel::Cancellable, picking::point::ClickPoint},
 };
 
 pub fn pawn(_: Trigger<Pointer<Click>>, mut commands: Commands) {
@@ -28,6 +28,6 @@ fn click_point(
     };
 
     commands
-        .spawn((PawnBundle::new(trigger.point), MovementState::default()))
+        .spawn(PawnBundle::new(trigger.point))
         .set_parent(root);
 }

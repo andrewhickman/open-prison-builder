@@ -24,10 +24,12 @@ pub const MAX_ANGULAR_VELOCITY: f32 = PI;
     CollisionLayers(|| CollisionLayers::new(Layer::Pawn, LayerMask::ALL)),
     CollidingEntities,
     TranslationInterpolation,
-    LinearDamping,
-    AngularDamping,
+    LinearDamping(|| LinearDamping(0.5)),
+    AngularDamping(|| AngularDamping(0.5)),
 )]
-pub struct Pawn;
+pub struct Pawn {
+    pub movement: Vec2,
+}
 
 #[derive(Default, Clone, Bundle)]
 pub struct PawnBundle {
@@ -45,6 +47,67 @@ impl PawnBundle {
             position: Position(position),
             rotation: Rotation::default(),
         }
+    }
+}
+
+pub fn movement(
+    mut pawn_q: Query<(
+        &Pawn,
+        &Rotation,
+        &LinearVelocity,
+        &AngularVelocity,
+        &mut ExternalForce,
+        &mut ExternalTorque,
+    )>,
+) {
+    pawn_q.par_iter_mut().for_each(
+        |(pawn, rotation, linear_velocity, angular_velocity, mut force, mut torque)| {
+            force.persistent = false;
+            torque.persistent = false;
+
+            if relative_ne!(angular_velocity.0, 0.) {
+                torque.apply_torque((-angular_velocity.0).signum() * MAX_TORQUE);
+            }
+            if relative_ne!(pawn.movement, Vec2::ZERO) {
+                let movement_dir = rotation * pawn.movement;
+
+                force.set_force(movement_dir.normalize() * MAX_ACCELERATION);
+
+                if relative_ne!(pawn.movement.y, 0.) {
+                    torque.apply_torque(pawn.movement.y.signum() * MAX_TORQUE);
+                }
+            } else if relative_ne!(linear_velocity.0, Vec2::ZERO) {
+                force.set_force((-linear_velocity.0).normalize() * MAX_ACCELERATION);
+            }
+        },
+    );
+}
+
+pub fn apply_movement(
+    rotation: &Rotation,
+    linear_velocity: &LinearVelocity,
+    angular_velocity: &AngularVelocity,
+    force: &mut ExternalForce,
+    torque: &mut ExternalTorque,
+    movement: Vec2,
+) {
+    force.persistent = false;
+    torque.persistent = false;
+
+    if relative_ne!(angular_velocity.0, 0.) {
+        torque.apply_torque((-angular_velocity.0).signum() * MAX_TORQUE);
+    }
+    if relative_ne!(movement, Vec2::ZERO) {
+        let movement_dir = rotation * movement;
+
+        force.set_force(movement_dir.normalize() * MAX_ACCELERATION);
+
+        let angle = Vec2::new(rotation.cos, rotation.sin).angle_to(movement_dir);
+        if relative_ne!(angle, 0.) {
+            torque.apply_torque(angle.signum() * MAX_TORQUE);
+        }
+    } else if relative_ne!(linear_velocity.0, Vec2::ZERO) {
+        force.set_force((-linear_velocity.0).normalize() * MAX_ACCELERATION);
     }
 }
 

@@ -109,10 +109,7 @@ impl Plugin for PbUiPlugin {
             )
             .add_systems(
                 Update,
-                (
-                    input::camera::update.run_if(input::camera::update_condition),
-                    input::movement::update,
-                ),
+                input::camera::update.run_if(input::camera::update_condition),
             )
             .add_observer(input::cancel::input)
             .add_observer(input::camera::input)

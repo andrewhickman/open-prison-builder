@@ -26,9 +26,9 @@ pub enum Input {
     DecreaseGridSize,
     IncreaseGridSize,
     MoveLeft,
-    MoveUp,
+    MoveForward,
     MoveRight,
-    MoveDown,
+    MoveBackward,
 }
 
 #[derive(Event, Debug, Clone, Copy)]
@@ -118,16 +118,16 @@ pub fn read(
                     dir: MovementDirection::Left,
                     state: event.state,
                 }),
-                Input::MoveUp => commands.trigger(MovementInput {
-                    dir: MovementDirection::Up,
+                Input::MoveForward => commands.trigger(MovementInput {
+                    dir: MovementDirection::Forward,
                     state: event.state,
                 }),
                 Input::MoveRight => commands.trigger(MovementInput {
                     dir: MovementDirection::Right,
                     state: event.state,
                 }),
-                Input::MoveDown => commands.trigger(MovementInput {
-                    dir: MovementDirection::Down,
+                Input::MoveBackward => commands.trigger(MovementInput {
+                    dir: MovementDirection::Backward,
                     state: event.state,
                 }),
             }

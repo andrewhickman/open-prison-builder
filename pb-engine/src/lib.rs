@@ -52,8 +52,13 @@ impl Plugin for PbEnginePlugin {
             .add_observer(wall::wall_removed)
             .add_observer(map::map_added)
             .add_systems(Update, wall::add_colliders)
-            .add_systems(SubstepSchedule, pawn::clamp_velocity.after(SubstepSolverSet::SolveConstraints).before(IntegrationSet::Position))
-            /*.add_systems(FixedUpdate, pawn::ai::path::update)*/;
+            .add_systems(
+                SubstepSchedule,
+                pawn::clamp_velocity
+                    .after(SubstepSolverSet::SolveConstraints)
+                    .before(IntegrationSet::Position),
+            )
+            .add_systems(FixedUpdate, pawn::movement);
 
         #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());
