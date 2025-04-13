@@ -28,6 +28,6 @@ fn click_point(
     };
 
     commands
-        .spawn(PawnBundle::new(trigger.point))
+        .spawn(PawnBundle::new(trigger.point, 0.))
         .set_parent(root);
 }

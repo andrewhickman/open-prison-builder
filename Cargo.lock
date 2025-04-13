@@ -3832,6 +3832,7 @@ dependencies = [
 name = "pb-learn"
 version = "0.1.0"
 dependencies = [
+ "avian2d",
  "bevy",
  "pb-engine",
  "pyo3",

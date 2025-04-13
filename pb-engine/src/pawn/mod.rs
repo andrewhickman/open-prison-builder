@@ -40,12 +40,13 @@ pub struct PawnBundle {
 }
 
 impl PawnBundle {
-    pub fn new(position: Vec2) -> Self {
+    pub fn new(position: Vec2, rotation: f32) -> Self {
         Self {
             pawn: default(),
-            transform: Transform::from_translation(position.extend(0.)),
+            transform: Transform::from_translation(position.extend(0.))
+                .with_rotation(Quat::from_axis_angle(Vec3::Z, rotation)),
             position: Position(position),
-            rotation: Rotation::default(),
+            rotation: Rotation::radians(rotation),
         }
     }
 }
@@ -71,7 +72,7 @@ pub fn movement(
             if relative_ne!(pawn.movement, Vec2::ZERO) {
                 let movement_dir = rotation * pawn.movement;
 
-                force.set_force(movement_dir.normalize() * MAX_ACCELERATION);
+                force.set_force(movement_dir.clamp_length_max(1.) * MAX_ACCELERATION);
 
                 if relative_ne!(pawn.movement.y, 0.) {
                     torque.apply_torque(pawn.movement.y.signum() * MAX_TORQUE);

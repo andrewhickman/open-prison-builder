@@ -8,8 +8,8 @@
             "name": "Python Debugger: RLib",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/pb-learn/src/rlib.py",
-            "cwd": "${workspaceFolder}/pb-learn/src",
+            "program": "${workspaceFolder}/pb-learn/python/main.py",
+            "cwd": "${workspaceFolder}/pb-learn/python",
             "console": "integratedTerminal",
             "justMyCode": false
         },
