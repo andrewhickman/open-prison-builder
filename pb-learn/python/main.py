@@ -1,6 +1,6 @@
-import gymnasium as gym
-import numpy as np
 from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.core.rl_module.default_model_config import DefaultModelConfig
+
 import torch
 
 from env import PbEnvironment;
@@ -9,6 +9,11 @@ config = (
     PPOConfig()
     .environment(
         PbEnvironment,
+    )
+    .rl_module(
+        model_config=DefaultModelConfig(
+            fcnet_hiddens=[32],
+        )
     )
 )
 

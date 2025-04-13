@@ -8,7 +8,7 @@ exclude = ["dist", "build", "assets"]
 build = "build.rs"
 
 [workspace]
-members = ["pb-assets", "pb-engine", "pb-learn", "pb-render", "pb-store", "pb-ui", "pb-util"]
+members = ["pb-assets", "pb-engine", "pb-learn", "pb-model", "pb-render", "pb-store", "pb-ui", "pb-util"]
 
 [[bin]]
 name = "pb"
