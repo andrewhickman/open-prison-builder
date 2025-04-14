@@ -1,29 +1,28 @@
-use std::{fs, path::Path};
+mod codegen;
 
-use prost_reflect::{DescriptorPool, DynamicMessage};
+use std::path::Path;
+
+use anyhow::{Context, Result};
+use prost::Message;
+
+use self::codegen::Generator;
 
 pub mod onnx {
     include!(concat!(env!("OUT_DIR"), "/", "onnx.rs"));
 }
 
-pub fn main() {
-    let fd_set = DescriptorPool::decode(
-        include_bytes!(concat!(env!("OUT_DIR"), "/", "file_descriptor_set.pb")).as_slice(),
-    )
-    .unwrap();
+pub fn main() -> Result<()> {
+    let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
 
-    let model_bytes =
-        fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../pb-learn/model.pb")).unwrap();
+    let model_bytes = fs_err::read(manifest_dir.join("../pb-learn/model.pb"))?;
+    let model =
+        onnx::ModelProto::decode(model_bytes.as_slice()).context("failed to decode model proto")?;
 
-    let model_proto = fd_set.get_message_by_name("onnx.ModelProto").unwrap();
+    let file = Generator::new()
+        .generate(&model)
+        .context("failed to generate code")?;
+    let file = prettyplease::unparse(&file);
+    fs_err::write(manifest_dir.join("out.rs"), file)?;
 
-    let model_message = DynamicMessage::decode(model_proto, model_bytes.as_slice()).unwrap();
-
-    let model_json = serde_json::to_string_pretty(&model_message).unwrap();
-
-    fs::write(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../pb-learn/model.json"),
-        model_json,
-    )
-    .unwrap();
+    Ok(())
 }
