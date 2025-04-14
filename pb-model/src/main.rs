@@ -1,4 +1,6 @@
 mod codegen;
+mod op;
+mod tensor;
 
 use std::path::Path;
 
