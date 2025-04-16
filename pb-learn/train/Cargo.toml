@@ -1,17 +1,17 @@
 [package]
-name = "pb-learn"
+name = "pb-learn-env"
 version = "0.1.0"
 authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 publish = false
 edition = "2021"
 
 [lib]
-name = "pb_learn"
+name = "pb_learn_env"
 crate-type = ["cdylib"]
 
 [dependencies]
 avian2d = "0.2.1"
 bevy = { version = "0.15.3", default-features = false }
-pb-engine = { version = "0.1.0", path = "../pb-engine" }
+pb-engine = { version = "0.1.0", path = "../../pb-engine" }
 pyo3 = "0.24.0"
 rand = "0.9.0"

@@ -9,7 +9,7 @@ use pb_engine::{
 use pyo3::prelude::*;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 
-#[pymodule]
+#[pymodule(name = "pb_learn_env")]
 pub fn pb_learn(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Environment>()?;
     Ok(())

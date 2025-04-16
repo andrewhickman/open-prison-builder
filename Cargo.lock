@@ -3922,7 +3922,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pb-learn"
+name = "pb-learn-env"
 version = "0.1.0"
 dependencies = [
  "avian2d",
