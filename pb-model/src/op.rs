@@ -60,6 +60,13 @@ impl Var {
     pub fn rank(&self) -> usize {
         self.ty().rank()
     }
+
+    pub fn unwrap_const(&self) -> &Tensor {
+        match self {
+            Var::Const(tensor) => tensor,
+            Var::Input(_) => panic!("expected var to be const"),
+        }
+    }
 }
 
 impl Operation {
@@ -415,23 +422,21 @@ impl Operation {
 
                 match inputs {
                     [data, Var::Const(starts), Var::Const(ends), Var::Const(axes)] => {
-                        let shape = (0..axes.dim(0).unwrap())
-                            .map(|i| {
-                                let start = starts.index_i64(&[i]);
-                                let end = ends.index_i64(&[i]);
-                                let axis = axes.index_i64(&[i]);
+                        let mut shape = data.shape().to_vec();
 
-                                let dim = data
-                                    .ty()
-                                    .dim(axis)
-                                    .context("invalid axis in Slice operator")?;
-                                let range = wrap_range(start..end, dim)
-                                    .context("invalid index in Slice operator")?;
-                                ensure!(range.start < range.end, "invalid index in Slice operator");
+                        for i in 0..axes.dim(0).unwrap() {
+                            let start = starts.index_i64(&[i]);
+                            let end = ends.index_i64(&[i]);
+                            let axis = axes.index_i64(&[i]);
 
-                                Ok(range.len())
-                            })
-                            .collect::<Result<Vec<_>>>()?;
+                            let axis_index = wrap_index(axis, data.rank())
+                                .context("invalid axis in Slice operator")?;
+                            let range = wrap_range(start..end, data.shape()[axis_index])
+                                .context("invalid index in Slice operator")?;
+                            ensure!(range.start < range.end, "invalid index in Slice operator");
+
+                            shape[axis_index] = range.len();
+                        }
 
                         let output_ty = TensorType::new(data.elem_ty(), shape);
                         Ok(vec![Var::Input(output_ty)])

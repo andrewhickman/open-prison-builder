@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    mem::replace,
+};
 
 use anyhow::{Context, Result, bail, ensure};
 use quote::quote;
@@ -6,7 +9,7 @@ use quote::quote;
 use crate::{
     onnx,
     op::{Operation, Var},
-    tensor::{ElementType, Tensor, TensorType},
+    tensor::{ElementType, Tensor, TensorType, wrap_index},
 };
 
 #[derive(Default)]
@@ -48,22 +51,38 @@ impl Generator {
             self.output_node(node);
         }
 
-        let ident = output_ident(&graph.name);
+        for tensor in &graph.initializer {
+            self.output_constant(tensor);
+        }
+
+        for input in &graph.input {
+            self.outputs.remove(&input.name);
+        }
+        ensure!(
+            self.outputs.is_empty(),
+            "unfulfilled outputs: {:?}",
+            self.outputs
+        );
+
+        let ident = self.output_ident(&graph.name);
         let inputs: Vec<syn::PatType> = graph
             .input
             .iter()
             .map(|i| {
-                let ident = output_ident(&i.name);
-                let ty = output_tensor_type(self.vars[&i.name].ty());
+                let ident = self.output_ident(&i.name);
+                let ty = self.output_tensor_type(self.vars[&i.name].ty());
                 syn::parse2(quote!(#ident: #ty)).unwrap()
             })
             .collect();
-        let output_idents: Vec<syn::Ident> =
-            graph.output.iter().map(|i| output_ident(&i.name)).collect();
+        let output_idents: Vec<syn::Ident> = graph
+            .output
+            .iter()
+            .map(|i| self.output_ident(&i.name))
+            .collect();
         let output_tys: Vec<syn::Type> = graph
             .output
             .iter()
-            .map(|i| output_tensor_type(self.vars[&i.name].ty()))
+            .map(|i| self.output_tensor_type(self.vars[&i.name].ty()))
             .collect();
 
         self.stmts.reverse();
@@ -145,14 +164,8 @@ impl Generator {
         for output in &node.output {
             if let Var::Const(tensor) = &self.vars[output] {
                 if self.outputs.remove(output) {
-                    let ident = output_ident(output);
-                    let ty = output_tensor_type(tensor.ty());
-                    let expr = output_tensor(tensor);
-                    let const_expr: syn::Item =
-                        syn::parse2(quote!(const #ident: #ty = #expr;)).unwrap();
-                    self.stmts.push(syn::Stmt::Item(const_expr));
-
-                    self.outputs.remove(output);
+                    let item = self.output_constant_value(output, tensor);
+                    self.stmts.push(syn::Stmt::Item(item));
                 }
             }
         }
@@ -168,73 +181,195 @@ impl Generator {
         let mut output_bindings = Vec::new();
         for output in &node.output {
             if self.outputs.remove(output) {
-                let ident = output_ident(output);
+                let ident = self.output_ident(output);
                 output_bindings.push(quote!(#ident));
             } else {
                 output_bindings.push(quote!(_));
             };
         }
 
-        let op_expr = output_operation(&self.operations[&node.name], &node.input);
+        let op_expr =
+            self.output_operation(&self.operations[&node.name], &node.input, &node.output);
 
-        let local: syn::Stmt = syn::parse2(quote!(let #(#output_bindings),* = #op_expr;)).unwrap();
+        let local: syn::Stmt =
+            syn::parse2(quote!(let (#(#output_bindings),*) = #op_expr;)).unwrap();
         self.stmts.push(local);
 
         for input in &node.input {
             self.outputs.insert(input.clone());
         }
     }
-}
 
-fn output_operation(_op: &Operation, _inputs: &[String]) -> syn::Expr {
-    syn::parse2(quote!(unimplemented!())).unwrap()
-}
+    fn output_constant(&mut self, tensor: &onnx::TensorProto) {
+        let name = &tensor.name;
+        if self.outputs.remove(name) {
+            let Var::Const(tensor) = &self.vars[name] else {
+                panic!("expected const");
+            };
 
-fn output_tensor(tensor: &Tensor) -> syn::Expr {
-    let mut values: Vec<syn::Expr> = match tensor.elem_ty() {
-        ElementType::F32 => tensor
-            .iter_f32()
-            .map(|f| syn::parse2(quote!(#f)).unwrap())
-            .collect(),
-        ElementType::I64 => tensor
-            .iter_i64()
-            .map(|i| syn::parse2(quote!(#i)).unwrap())
-            .collect(),
-    };
+            let item = self.output_constant_value(name, tensor);
+            self.stmts.push(syn::Stmt::Item(item));
+        }
+    }
 
-    for &dim in tensor.shape().iter().rev() {
-        values = values
-            .chunks(dim)
-            .map(|chunk| syn::parse2(quote!([#(#chunk),*])).unwrap())
+    fn output_index_expr(&self, input: &str, indices: &[usize]) -> syn::Expr {
+        let ty = self.vars[input].ty();
+        let ident = self.output_ident(input);
+        let mut expr: syn::Expr = syn::parse2(quote!(#ident)).unwrap();
+        for (axis, &index) in indices.iter().enumerate() {
+            let broadcast_index = match ty.dim(axis as i64 - indices.len() as i64) {
+                None => continue,
+                Some(1) => 0,
+                Some(_) => index,
+            };
+
+            expr = syn::parse2(quote!(#expr[#broadcast_index])).unwrap();
+        }
+        expr
+    }
+
+    fn output_operation(&self, op: &Operation, inputs: &[String], outputs: &[String]) -> syn::Expr {
+        match *op {
+            // Operation::Gemm { alpha, beta, trans_a, trans_b } => todo!(),
+            Operation::Tanh => self.output_tensor_from_fn(self.vars[&outputs[0]].ty(), |indices| {
+                let input = self.output_index_expr(&inputs[0], indices);
+                syn::parse2(quote!(#input.tanh())).unwrap()
+            }),
+            Operation::Shape { .. } => unreachable!(),
+            Operation::Constant { .. } => unreachable!(),
+            // Operation::Gather { axis } => todo!(),
+            // Operation::Add => todo!(),
+            // Operation::Div => todo!(),
+            // Operation::Mul => todo!(),
+            Operation::Slice => {
+                let data = &self.vars[&inputs[0]];
+                let starts = self.vars[&inputs[1]].unwrap_const();
+                let axes = self.vars[&inputs[3]].unwrap_const();
+
+                let mut start_indices = vec![0; data.rank()];
+
+                for i in 0..axes.dim(0).unwrap() {
+                    let start = starts.index_i64(&[i]);
+                    let axis = axes.index_i64(&[i]);
+
+                    let axis_index = wrap_index(axis, data.rank()).unwrap();
+                    let start = wrap_index(start, data.shape()[axis_index]).unwrap();
+
+                    start_indices[axis_index] = start;
+                }
+
+                self.output_tensor_from_fn(self.vars[&outputs[0]].ty(), |indices| {
+                    let data_indices: Vec<_> = start_indices
+                        .iter()
+                        .zip(indices)
+                        .map(|(&start, &index)| start + index)
+                        .collect();
+                    self.output_index_expr(&inputs[0], &data_indices)
+                })
+            }
+            Operation::Max => self.output_tensor_from_fn(self.vars[&outputs[0]].ty(), |indices| {
+                inputs
+                    .iter()
+                    .map(|input| self.output_index_expr(input, indices))
+                    .reduce(|l, r| syn::parse2(quote!(#l.max(#r))).unwrap())
+                    .unwrap()
+            }),
+            Operation::Min => self.output_tensor_from_fn(self.vars[&outputs[0]].ty(), |indices| {
+                inputs
+                    .iter()
+                    .map(|input| self.output_index_expr(input, indices))
+                    .reduce(|l, r| syn::parse2(quote!(#l.min(#r))).unwrap())
+                    .unwrap()
+            }),
+            Operation::Concat { axis } => {
+                let axis_index = wrap_index(axis, self.vars[&inputs[0]].rank()).unwrap();
+                let axis_dims: Vec<usize> = inputs
+                    .iter()
+                    .map(|input| self.vars[input].ty().dim(axis).unwrap())
+                    .scan(0, |sum, dim| Some(replace(sum, *sum + dim)))
+                    .collect();
+
+                self.output_tensor_from_fn(self.vars[&outputs[0]].ty(), |indices| {
+                    let mut indices = indices.to_vec();
+                    let (input, index) = match axis_dims.binary_search(&indices[axis_index]) {
+                        Ok(i) => (&inputs[i], 0),
+                        Err(i) => (&inputs[i - 1], indices[axis_index] - axis_dims[i - 1]),
+                    };
+                    indices[axis_index] = index;
+
+                    self.output_index_expr(input, &indices)
+                })
+            }
+            _ => syn::parse2(quote!(unimplemented!())).unwrap(),
+        }
+    }
+
+    fn output_constant_value(&self, name: &str, tensor: &Tensor) -> syn::Item {
+        let ident = self.output_ident(name);
+        let ty = self.output_tensor_type(tensor.ty());
+        let expr = self.output_tensor(tensor);
+        syn::parse2(quote!(const #ident: #ty = #expr;)).unwrap()
+    }
+
+    fn output_tensor_from_fn(
+        &self,
+        ty: &TensorType,
+        f: impl Fn(&[usize]) -> syn::Expr,
+    ) -> syn::Expr {
+        let exprs = ty.indices().map(|indices| f(&indices)).collect();
+        self.output_tensor_items(exprs, ty.shape())
+    }
+
+    fn output_tensor_items(&self, mut exprs: Vec<syn::Expr>, shape: &[usize]) -> syn::Expr {
+        for &dim in shape.iter().rev() {
+            exprs = exprs
+                .chunks(dim)
+                .map(|chunk| syn::parse2(quote!([#(#chunk),*])).unwrap())
+                .collect();
+        }
+
+        assert_eq!(exprs.len(), 1);
+        exprs.into_iter().next().unwrap()
+    }
+
+    fn output_tensor(&self, tensor: &Tensor) -> syn::Expr {
+        let values: Vec<syn::Expr> = match tensor.elem_ty() {
+            ElementType::F32 => tensor
+                .iter_f32()
+                .map(|f| syn::parse2(quote!(#f)).unwrap())
+                .collect(),
+            ElementType::I64 => tensor
+                .iter_i64()
+                .map(|i| syn::parse2(quote!(#i)).unwrap())
+                .collect(),
+        };
+
+        self.output_tensor_items(values, tensor.shape())
+    }
+
+    fn output_tensor_type(&self, tensor_ty: &TensorType) -> syn::Type {
+        let mut ty = self.output_element_type(tensor_ty.elem_ty());
+        for &dim in tensor_ty.shape().iter().rev() {
+            ty = syn::parse2(quote!([#ty; #dim])).unwrap();
+        }
+        ty
+    }
+
+    fn output_element_type(&self, elem_ty: ElementType) -> syn::Type {
+        match elem_ty {
+            ElementType::F32 => syn::parse2(quote!(f32)).unwrap(),
+            ElementType::I64 => syn::parse2(quote!(f64)).unwrap(),
+        }
+    }
+
+    fn output_ident(&self, s: &str) -> syn::Ident {
+        let mut s: String = s
+            .chars()
+            .map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' })
             .collect();
+        if s.chars().next().unwrap().is_ascii_digit() {
+            s.insert(0, '_');
+        }
+        syn::parse_str(&s).unwrap()
     }
-
-    assert_eq!(values.len(), 1);
-    values.into_iter().next().unwrap()
-}
-
-fn output_tensor_type(tensor_ty: &TensorType) -> syn::Type {
-    let mut ty = output_element_type(tensor_ty.elem_ty());
-    for &dim in tensor_ty.shape().iter().rev() {
-        ty = syn::parse2(quote!([#ty; #dim])).unwrap();
-    }
-    ty
-}
-
-fn output_element_type(elem_ty: ElementType) -> syn::Type {
-    match elem_ty {
-        ElementType::F32 => syn::parse2(quote!(f32)).unwrap(),
-        ElementType::I64 => syn::parse2(quote!(f64)).unwrap(),
-    }
-}
-
-fn output_ident(s: &str) -> syn::Ident {
-    let mut s: String = s
-        .chars()
-        .map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' })
-        .collect();
-    if s.chars().next().unwrap().is_ascii_digit() {
-        s.insert(0, '_');
-    }
-    syn::parse_str(&s).unwrap()
 }
