@@ -58,7 +58,10 @@ impl Plugin for PbEnginePlugin {
                     .after(SubstepSolverSet::SolveConstraints)
                     .before(IntegrationSet::Position),
             )
-            .add_systems(FixedUpdate, pawn::movement);
+            .add_systems(
+                FixedUpdate,
+                (pawn::ai::path::update, pawn::movement).chain(),
+            );
 
         #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());

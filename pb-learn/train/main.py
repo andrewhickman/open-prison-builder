@@ -34,5 +34,5 @@ torch.onnx.export(
             'obs': torch.randn(1, 5)
         }
     },
-    "model.pb",
+    "models/movement.onnx",
 )

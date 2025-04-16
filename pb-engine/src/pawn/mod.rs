@@ -1,4 +1,4 @@
-// pub mod ai;
+pub mod ai;
 
 use std::f32::consts::{PI, TAU};
 
@@ -82,34 +82,6 @@ pub fn movement(
             }
         },
     );
-}
-
-pub fn apply_movement(
-    rotation: &Rotation,
-    linear_velocity: &LinearVelocity,
-    angular_velocity: &AngularVelocity,
-    force: &mut ExternalForce,
-    torque: &mut ExternalTorque,
-    movement: Vec2,
-) {
-    force.persistent = false;
-    torque.persistent = false;
-
-    if relative_ne!(angular_velocity.0, 0.) {
-        torque.apply_torque((-angular_velocity.0).signum() * MAX_TORQUE);
-    }
-    if relative_ne!(movement, Vec2::ZERO) {
-        let movement_dir = rotation * movement;
-
-        force.set_force(movement_dir.normalize() * MAX_ACCELERATION);
-
-        let angle = Vec2::new(rotation.cos, rotation.sin).angle_to(movement_dir);
-        if relative_ne!(angle, 0.) {
-            torque.apply_torque(angle.signum() * MAX_TORQUE);
-        }
-    } else if relative_ne!(linear_velocity.0, Vec2::ZERO) {
-        force.set_force((-linear_velocity.0).normalize() * MAX_ACCELERATION);
-    }
 }
 
 pub fn clamp_velocity(

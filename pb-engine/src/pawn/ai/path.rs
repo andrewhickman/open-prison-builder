@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use avian2d::prelude::{CollidingEntities, LinearVelocity};
+use avian2d::prelude::*;
 use bevy::prelude::*;
 use pb_util::try_opt;
 use tokio::sync::oneshot;
@@ -13,6 +13,10 @@ use crate::pawn::{
 };
 
 use super::TaskResult;
+
+pub mod movement {
+    include!(concat!(env!("OUT_DIR"), "/", "movement.rs"));
+}
 
 #[derive(Debug, Component)]
 #[require(Task)]
@@ -31,7 +35,17 @@ enum PathTaskResult {
 pub fn update(
     mut commands: Commands,
     mut task_q: Query<(Entity, &mut PathTask)>,
-    mut pawn_q: Query<(&Transform, &mut LinearVelocity, &CollidingEntities), With<Pawn>>,
+    mut pawn_q: Query<
+        (
+            &mut Pawn,
+            &Position,
+            &Rotation,
+            &LinearVelocity,
+            &AngularVelocity,
+            &CollidingEntities,
+        ),
+        With<Pawn>,
+    >,
     time: Res<Time>,
     navmesh_q: Option<Single<&ManagedNavMesh>>,
     navmeshes: Res<Assets<NavMesh>>,
@@ -39,7 +53,9 @@ pub fn update(
     let navmesh = try_opt!(navmeshes.get(try_opt!(navmesh_q).id()));
 
     for (id, mut task) in &mut task_q {
-        let Ok((transform, velocity, collisions)) = &mut pawn_q.get_mut(task.target) else {
+        let Ok((mut pawn, position, rotation, linear_velocity, angular_velocity, collisions)) =
+            pawn_q.get_mut(task.target)
+        else {
             warn!("invalid target for PathTask");
             continue;
         };
@@ -47,29 +63,48 @@ pub fn update(
         if !collisions.is_empty() {
             if let Some(tx) = task.result.take() {
                 let _ = tx.send(PathTaskResult::Collided {
-                    position: transform.translation.xy(),
+                    position: position.0,
                     navmesh: navmesh.clone(),
                 });
             }
             commands.entity(id).despawn_recursive();
         }
 
-        if let Some(next_step) = task.steps.front() {
-            let dir = *next_step - transform.translation.xy();
-            let distance_remaining = dir.length();
-            if distance_remaining <= time.delta_secs() * pawn::MAX_SPEED {
-                velocity.0 = dir / time.delta_secs();
+        if let Some(&next_step) = task.steps.front() {
+            let inv_isometry = Isometry2d::new(position.0, (*rotation).into()).inverse();
+
+            let pawn_space_target = inv_isometry * next_step;
+            let pawn_space_linear_velocity = inv_isometry * linear_velocity.0;
+
+            let distance_remaining = pawn_space_target.length();
+            if distance_remaining <= 0.1 {
                 task.steps.pop_front();
             } else {
-                velocity.0 = dir / distance_remaining * pawn::MAX_SPEED;
+                let [[force_x, force_y, _, _]] = movement::main_graph([[
+                    pawn_space_linear_velocity.x,
+                    pawn_space_linear_velocity.y,
+                    angular_velocity.0,
+                    pawn_space_target.x,
+                    pawn_space_target.y,
+                ]]);
+
+                pawn.movement = Vec2::new(normalize(force_x), normalize(force_y));
             }
         } else {
-            velocity.0 = Vec2::ZERO;
+            pawn.movement = Vec2::ZERO;
             if let Some(tx) = task.result.take() {
                 let _ = tx.send(PathTaskResult::Success);
             }
             commands.entity(id).despawn_recursive();
         }
+    }
+}
+
+fn normalize(f: f32) -> f32 {
+    if f.is_finite() {
+        f
+    } else {
+        0.
     }
 }
 
