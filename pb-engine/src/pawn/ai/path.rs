@@ -7,7 +7,6 @@ use tokio::sync::oneshot;
 use vleue_navigator::prelude::*;
 
 use crate::pawn::{
-    self,
     ai::{PawnActor, Task},
     Pawn,
 };
@@ -46,7 +45,6 @@ pub fn update(
         ),
         With<Pawn>,
     >,
-    time: Res<Time>,
     navmesh_q: Option<Single<&ManagedNavMesh>>,
     navmeshes: Res<Assets<NavMesh>>,
 ) {
