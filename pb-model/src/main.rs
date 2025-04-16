@@ -9,6 +9,7 @@ use prost::Message;
 
 use self::codegen::Generator;
 
+#[allow(clippy::all)]
 pub mod onnx {
     include!(concat!(env!("OUT_DIR"), "/", "onnx.rs"));
 }

@@ -1,4 +1,11 @@
-fn main_graph(onnx__Gemm_0: [[f32; 5usize]; 1usize]) -> [[f32; 4usize]; 1usize] {
+#[allow(
+    unused_parens,
+    non_snake_case,
+    non_upper_case_globals,
+    clippy::let_and_return,
+    clippy::just_underscores_and_digits
+)]
+pub fn main_graph(onnx__Gemm_0: [[f32; 5usize]; 1usize]) -> [[f32; 4usize]; 1usize] {
     const onnx__Min_35: [f32; 1usize] = [20f32];
     const onnx__Max_34: [f32; 1usize] = [-20f32];
     const pi_net_mlp_0_bias: [f32; 4usize] = [
@@ -219,7 +226,394 @@ fn main_graph(onnx__Gemm_0: [[f32; 5usize]; 1usize]) -> [[f32; 4usize]; 1usize] 
         [0.17308408f32, 0.25437626f32, 0.23482595f32, -0.25457194f32, 0.102612875f32],
         [0.15037647f32, -0.5431067f32, -0.025818916f32, 0.4915055f32, 0.3411872f32],
     ];
-    let (_encoder_encoder_net_mlp_mlp_0_Gemm_output_0) = unimplemented!();
+    let (_encoder_encoder_net_mlp_mlp_0_Gemm_output_0) = [
+        [
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[0usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[0usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[0usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[0usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[0usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[0usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[1usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[1usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[1usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[1usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[1usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[1usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[2usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[2usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[2usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[2usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[2usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[2usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[3usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[3usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[3usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[3usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[3usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[3usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[4usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[4usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[4usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[4usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[4usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[4usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[5usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[5usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[5usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[5usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[5usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[5usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[6usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[6usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[6usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[6usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[6usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[6usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[7usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[7usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[7usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[7usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[7usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[7usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[8usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[8usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[8usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[8usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[8usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[8usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[9usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[9usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[9usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[9usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[9usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[9usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[10usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[10usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[10usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[10usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[10usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[10usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[11usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[11usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[11usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[11usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[11usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[11usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[12usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[12usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[12usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[12usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[12usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[12usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[13usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[13usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[13usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[13usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[13usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[13usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[14usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[14usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[14usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[14usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[14usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[14usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[15usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[15usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[15usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[15usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[15usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[15usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[16usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[16usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[16usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[16usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[16usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[16usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[17usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[17usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[17usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[17usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[17usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[17usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[18usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[18usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[18usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[18usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[18usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[18usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[19usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[19usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[19usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[19usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[19usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[19usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[20usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[20usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[20usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[20usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[20usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[20usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[21usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[21usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[21usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[21usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[21usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[21usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[22usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[22usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[22usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[22usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[22usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[22usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[23usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[23usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[23usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[23usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[23usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[23usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[24usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[24usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[24usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[24usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[24usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[24usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[25usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[25usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[25usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[25usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[25usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[25usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[26usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[26usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[26usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[26usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[26usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[26usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[27usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[27usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[27usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[27usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[27usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[27usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[28usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[28usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[28usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[28usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[28usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[28usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[29usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[29usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[29usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[29usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[29usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[29usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[30usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[30usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[30usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[30usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[30usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[30usize],
+            1f32
+                * (onnx__Gemm_0[0usize][0usize]
+                    * encoder_encoder_net_mlp_0_weight[31usize][0usize]
+                    + onnx__Gemm_0[0usize][1usize]
+                        * encoder_encoder_net_mlp_0_weight[31usize][1usize]
+                    + onnx__Gemm_0[0usize][2usize]
+                        * encoder_encoder_net_mlp_0_weight[31usize][2usize]
+                    + onnx__Gemm_0[0usize][3usize]
+                        * encoder_encoder_net_mlp_0_weight[31usize][3usize]
+                    + onnx__Gemm_0[0usize][4usize]
+                        * encoder_encoder_net_mlp_0_weight[31usize][4usize])
+                + 1f32 * encoder_encoder_net_mlp_0_bias[31usize],
+        ],
+    ];
     let (_encoder_encoder_net_mlp_mlp_1_Tanh_output_0) = [
         [
             _encoder_encoder_net_mlp_mlp_0_Gemm_output_0[0usize][0usize].tanh(),
@@ -256,17 +650,284 @@ fn main_graph(onnx__Gemm_0: [[f32; 5usize]; 1usize]) -> [[f32; 4usize]; 1usize] 
             _encoder_encoder_net_mlp_mlp_0_Gemm_output_0[0usize][31usize].tanh(),
         ],
     ];
-    let (_pi_net_mlp_mlp_0_Gemm_output_0) = unimplemented!();
-    const _pi_Constant_output_0: [f64; 1usize] = [-1i64];
-    const _pi_Constant_1_output_0: [f64; 1usize] = [0i64];
-    const _pi_Mul_output_0: [f64; 1usize] = [2i64];
+    let (_pi_net_mlp_mlp_0_Gemm_output_0) = [
+        [
+            1f32
+                * (_encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][0usize]
+                    * pi_net_mlp_0_weight[0usize][0usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][1usize]
+                        * pi_net_mlp_0_weight[0usize][1usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][2usize]
+                        * pi_net_mlp_0_weight[0usize][2usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][3usize]
+                        * pi_net_mlp_0_weight[0usize][3usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][4usize]
+                        * pi_net_mlp_0_weight[0usize][4usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][5usize]
+                        * pi_net_mlp_0_weight[0usize][5usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][6usize]
+                        * pi_net_mlp_0_weight[0usize][6usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][7usize]
+                        * pi_net_mlp_0_weight[0usize][7usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][8usize]
+                        * pi_net_mlp_0_weight[0usize][8usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][9usize]
+                        * pi_net_mlp_0_weight[0usize][9usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][10usize]
+                        * pi_net_mlp_0_weight[0usize][10usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][11usize]
+                        * pi_net_mlp_0_weight[0usize][11usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][12usize]
+                        * pi_net_mlp_0_weight[0usize][12usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][13usize]
+                        * pi_net_mlp_0_weight[0usize][13usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][14usize]
+                        * pi_net_mlp_0_weight[0usize][14usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][15usize]
+                        * pi_net_mlp_0_weight[0usize][15usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][16usize]
+                        * pi_net_mlp_0_weight[0usize][16usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][17usize]
+                        * pi_net_mlp_0_weight[0usize][17usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][18usize]
+                        * pi_net_mlp_0_weight[0usize][18usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][19usize]
+                        * pi_net_mlp_0_weight[0usize][19usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][20usize]
+                        * pi_net_mlp_0_weight[0usize][20usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][21usize]
+                        * pi_net_mlp_0_weight[0usize][21usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][22usize]
+                        * pi_net_mlp_0_weight[0usize][22usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][23usize]
+                        * pi_net_mlp_0_weight[0usize][23usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][24usize]
+                        * pi_net_mlp_0_weight[0usize][24usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][25usize]
+                        * pi_net_mlp_0_weight[0usize][25usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][26usize]
+                        * pi_net_mlp_0_weight[0usize][26usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][27usize]
+                        * pi_net_mlp_0_weight[0usize][27usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][28usize]
+                        * pi_net_mlp_0_weight[0usize][28usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][29usize]
+                        * pi_net_mlp_0_weight[0usize][29usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][30usize]
+                        * pi_net_mlp_0_weight[0usize][30usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][31usize]
+                        * pi_net_mlp_0_weight[0usize][31usize])
+                + 1f32 * pi_net_mlp_0_bias[0usize],
+            1f32
+                * (_encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][0usize]
+                    * pi_net_mlp_0_weight[1usize][0usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][1usize]
+                        * pi_net_mlp_0_weight[1usize][1usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][2usize]
+                        * pi_net_mlp_0_weight[1usize][2usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][3usize]
+                        * pi_net_mlp_0_weight[1usize][3usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][4usize]
+                        * pi_net_mlp_0_weight[1usize][4usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][5usize]
+                        * pi_net_mlp_0_weight[1usize][5usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][6usize]
+                        * pi_net_mlp_0_weight[1usize][6usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][7usize]
+                        * pi_net_mlp_0_weight[1usize][7usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][8usize]
+                        * pi_net_mlp_0_weight[1usize][8usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][9usize]
+                        * pi_net_mlp_0_weight[1usize][9usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][10usize]
+                        * pi_net_mlp_0_weight[1usize][10usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][11usize]
+                        * pi_net_mlp_0_weight[1usize][11usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][12usize]
+                        * pi_net_mlp_0_weight[1usize][12usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][13usize]
+                        * pi_net_mlp_0_weight[1usize][13usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][14usize]
+                        * pi_net_mlp_0_weight[1usize][14usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][15usize]
+                        * pi_net_mlp_0_weight[1usize][15usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][16usize]
+                        * pi_net_mlp_0_weight[1usize][16usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][17usize]
+                        * pi_net_mlp_0_weight[1usize][17usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][18usize]
+                        * pi_net_mlp_0_weight[1usize][18usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][19usize]
+                        * pi_net_mlp_0_weight[1usize][19usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][20usize]
+                        * pi_net_mlp_0_weight[1usize][20usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][21usize]
+                        * pi_net_mlp_0_weight[1usize][21usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][22usize]
+                        * pi_net_mlp_0_weight[1usize][22usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][23usize]
+                        * pi_net_mlp_0_weight[1usize][23usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][24usize]
+                        * pi_net_mlp_0_weight[1usize][24usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][25usize]
+                        * pi_net_mlp_0_weight[1usize][25usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][26usize]
+                        * pi_net_mlp_0_weight[1usize][26usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][27usize]
+                        * pi_net_mlp_0_weight[1usize][27usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][28usize]
+                        * pi_net_mlp_0_weight[1usize][28usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][29usize]
+                        * pi_net_mlp_0_weight[1usize][29usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][30usize]
+                        * pi_net_mlp_0_weight[1usize][30usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][31usize]
+                        * pi_net_mlp_0_weight[1usize][31usize])
+                + 1f32 * pi_net_mlp_0_bias[1usize],
+            1f32
+                * (_encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][0usize]
+                    * pi_net_mlp_0_weight[2usize][0usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][1usize]
+                        * pi_net_mlp_0_weight[2usize][1usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][2usize]
+                        * pi_net_mlp_0_weight[2usize][2usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][3usize]
+                        * pi_net_mlp_0_weight[2usize][3usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][4usize]
+                        * pi_net_mlp_0_weight[2usize][4usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][5usize]
+                        * pi_net_mlp_0_weight[2usize][5usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][6usize]
+                        * pi_net_mlp_0_weight[2usize][6usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][7usize]
+                        * pi_net_mlp_0_weight[2usize][7usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][8usize]
+                        * pi_net_mlp_0_weight[2usize][8usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][9usize]
+                        * pi_net_mlp_0_weight[2usize][9usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][10usize]
+                        * pi_net_mlp_0_weight[2usize][10usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][11usize]
+                        * pi_net_mlp_0_weight[2usize][11usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][12usize]
+                        * pi_net_mlp_0_weight[2usize][12usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][13usize]
+                        * pi_net_mlp_0_weight[2usize][13usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][14usize]
+                        * pi_net_mlp_0_weight[2usize][14usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][15usize]
+                        * pi_net_mlp_0_weight[2usize][15usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][16usize]
+                        * pi_net_mlp_0_weight[2usize][16usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][17usize]
+                        * pi_net_mlp_0_weight[2usize][17usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][18usize]
+                        * pi_net_mlp_0_weight[2usize][18usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][19usize]
+                        * pi_net_mlp_0_weight[2usize][19usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][20usize]
+                        * pi_net_mlp_0_weight[2usize][20usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][21usize]
+                        * pi_net_mlp_0_weight[2usize][21usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][22usize]
+                        * pi_net_mlp_0_weight[2usize][22usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][23usize]
+                        * pi_net_mlp_0_weight[2usize][23usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][24usize]
+                        * pi_net_mlp_0_weight[2usize][24usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][25usize]
+                        * pi_net_mlp_0_weight[2usize][25usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][26usize]
+                        * pi_net_mlp_0_weight[2usize][26usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][27usize]
+                        * pi_net_mlp_0_weight[2usize][27usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][28usize]
+                        * pi_net_mlp_0_weight[2usize][28usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][29usize]
+                        * pi_net_mlp_0_weight[2usize][29usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][30usize]
+                        * pi_net_mlp_0_weight[2usize][30usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][31usize]
+                        * pi_net_mlp_0_weight[2usize][31usize])
+                + 1f32 * pi_net_mlp_0_bias[2usize],
+            1f32
+                * (_encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][0usize]
+                    * pi_net_mlp_0_weight[3usize][0usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][1usize]
+                        * pi_net_mlp_0_weight[3usize][1usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][2usize]
+                        * pi_net_mlp_0_weight[3usize][2usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][3usize]
+                        * pi_net_mlp_0_weight[3usize][3usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][4usize]
+                        * pi_net_mlp_0_weight[3usize][4usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][5usize]
+                        * pi_net_mlp_0_weight[3usize][5usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][6usize]
+                        * pi_net_mlp_0_weight[3usize][6usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][7usize]
+                        * pi_net_mlp_0_weight[3usize][7usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][8usize]
+                        * pi_net_mlp_0_weight[3usize][8usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][9usize]
+                        * pi_net_mlp_0_weight[3usize][9usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][10usize]
+                        * pi_net_mlp_0_weight[3usize][10usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][11usize]
+                        * pi_net_mlp_0_weight[3usize][11usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][12usize]
+                        * pi_net_mlp_0_weight[3usize][12usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][13usize]
+                        * pi_net_mlp_0_weight[3usize][13usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][14usize]
+                        * pi_net_mlp_0_weight[3usize][14usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][15usize]
+                        * pi_net_mlp_0_weight[3usize][15usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][16usize]
+                        * pi_net_mlp_0_weight[3usize][16usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][17usize]
+                        * pi_net_mlp_0_weight[3usize][17usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][18usize]
+                        * pi_net_mlp_0_weight[3usize][18usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][19usize]
+                        * pi_net_mlp_0_weight[3usize][19usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][20usize]
+                        * pi_net_mlp_0_weight[3usize][20usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][21usize]
+                        * pi_net_mlp_0_weight[3usize][21usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][22usize]
+                        * pi_net_mlp_0_weight[3usize][22usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][23usize]
+                        * pi_net_mlp_0_weight[3usize][23usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][24usize]
+                        * pi_net_mlp_0_weight[3usize][24usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][25usize]
+                        * pi_net_mlp_0_weight[3usize][25usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][26usize]
+                        * pi_net_mlp_0_weight[3usize][26usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][27usize]
+                        * pi_net_mlp_0_weight[3usize][27usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][28usize]
+                        * pi_net_mlp_0_weight[3usize][28usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][29usize]
+                        * pi_net_mlp_0_weight[3usize][29usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][30usize]
+                        * pi_net_mlp_0_weight[3usize][30usize]
+                    + _encoder_encoder_net_mlp_mlp_1_Tanh_output_0[0usize][31usize]
+                        * pi_net_mlp_0_weight[3usize][31usize])
+                + 1f32 * pi_net_mlp_0_bias[3usize],
+        ],
+    ];
+    const _pi_Constant_output_0: [i64; 1usize] = [-1i64];
+    const _pi_Constant_1_output_0: [i64; 1usize] = [0i64];
+    const _pi_Mul_output_0: [i64; 1usize] = [2i64];
     let (_pi_Slice_output_0) = [
         [
             _pi_net_mlp_mlp_0_Gemm_output_0[0usize][0usize],
             _pi_net_mlp_mlp_0_Gemm_output_0[0usize][1usize],
         ],
     ];
-    const _pi_Mul_1_output_0: [f64; 1usize] = [4i64];
+    const _pi_Mul_1_output_0: [i64; 1usize] = [4i64];
     let (_pi_Slice_1_output_0) = [
         [
             _pi_net_mlp_mlp_0_Gemm_output_0[0usize][2usize],

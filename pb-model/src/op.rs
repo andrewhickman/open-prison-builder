@@ -290,16 +290,23 @@ impl Operation {
                 );
 
                 let elem_ty = inputs[0].elem_ty();
-                let m = if trans_a {
-                    inputs[0].shape()[1]
+                let (m, k) = if trans_a {
+                    (inputs[0].shape()[1], inputs[0].shape()[0])
                 } else {
-                    inputs[0].shape()[0]
+                    (inputs[0].shape()[0], inputs[0].shape()[1])
                 };
-                let n = if trans_b {
-                    inputs[1].shape()[0]
+                let (k2, n) = if trans_b {
+                    (inputs[1].shape()[1], inputs[1].shape()[0])
                 } else {
-                    inputs[1].shape()[1]
+                    (inputs[1].shape()[0], inputs[1].shape()[1])
                 };
+
+                ensure!(
+                    k == k2,
+                    "dimension mismatch for Gemm operation: {:?} and {:?}",
+                    inputs[0].shape(),
+                    inputs[1].shape()
+                );
 
                 let output_ty = TensorType::new(elem_ty, vec![m, n]);
 

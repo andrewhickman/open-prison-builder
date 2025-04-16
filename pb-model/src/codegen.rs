@@ -89,8 +89,14 @@ impl Generator {
         let stmts = self.stmts;
 
         Ok(syn::parse2(quote!(
-
-            fn #ident(#(#inputs),*) -> #(#output_tys),* {
+            #[allow(
+                unused_parens,
+                non_snake_case,
+                non_upper_case_globals,
+                clippy::let_and_return,
+                clippy::just_underscores_and_digits
+            )]
+            pub fn #ident(#(#inputs),*) -> #(#output_tys),* {
                 #(#stmts)*
 
                 #(#output_idents),*
@@ -230,17 +236,54 @@ impl Generator {
 
     fn output_operation(&self, op: &Operation, inputs: &[String], outputs: &[String]) -> syn::Expr {
         match *op {
-            // Operation::Gemm { alpha, beta, trans_a, trans_b } => todo!(),
+            // TODO: consider using SIMD instructions here
+            Operation::Gemm {
+                alpha,
+                beta,
+                trans_a,
+                trans_b,
+            } => {
+                let k = if trans_a {
+                    self.vars[&inputs[0]].shape()[0]
+                } else {
+                    self.vars[&inputs[0]].shape()[1]
+                };
+
+                self.output_tensor_from_fn(self.vars[&outputs[0]].ty(), |indices| {
+                    let (m, n) = (indices[0], indices[1]);
+
+                    let terms: Vec<syn::Expr> = (0..k)
+                        .map(|k| {
+                            let a_term = if trans_a {
+                                self.output_index_expr(&inputs[0], &[k, m])
+                            } else {
+                                self.output_index_expr(&inputs[0], &[m, k])
+                            };
+                            let b_term = if trans_b {
+                                self.output_index_expr(&inputs[1], &[n, k])
+                            } else {
+                                self.output_index_expr(&inputs[1], &[k, n])
+                            };
+
+                            syn::parse2(quote!(#a_term * #b_term)).unwrap()
+                        })
+                        .collect();
+
+                    let c_term = self.output_index_expr(&inputs[2], indices);
+
+                    syn::parse2(quote!(#alpha * (#(#terms)+*) + #beta * #c_term)).unwrap()
+                })
+            }
             Operation::Tanh => self.output_tensor_from_fn(self.vars[&outputs[0]].ty(), |indices| {
                 let input = self.output_index_expr(&inputs[0], indices);
                 syn::parse2(quote!(#input.tanh())).unwrap()
             }),
             Operation::Shape { .. } => unreachable!(),
             Operation::Constant { .. } => unreachable!(),
-            // Operation::Gather { axis } => todo!(),
-            // Operation::Add => todo!(),
-            // Operation::Div => todo!(),
-            // Operation::Mul => todo!(),
+            Operation::Gather { .. } => unimplemented!(),
+            Operation::Add => unimplemented!(),
+            Operation::Div => unimplemented!(),
+            Operation::Mul => unimplemented!(),
             Operation::Slice => {
                 let data = &self.vars[&inputs[0]];
                 let starts = self.vars[&inputs[1]].unwrap_const();
@@ -300,7 +343,6 @@ impl Generator {
                     self.output_index_expr(input, &indices)
                 })
             }
-            _ => syn::parse2(quote!(unimplemented!())).unwrap(),
         }
     }
 
@@ -358,7 +400,7 @@ impl Generator {
     fn output_element_type(&self, elem_ty: ElementType) -> syn::Type {
         match elem_ty {
             ElementType::F32 => syn::parse2(quote!(f32)).unwrap(),
-            ElementType::I64 => syn::parse2(quote!(f64)).unwrap(),
+            ElementType::I64 => syn::parse2(quote!(i64)).unwrap(),
         }
     }
 
