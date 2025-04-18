@@ -5,6 +5,7 @@ use std::f32::consts::{PI, TAU};
 use approx::relative_ne;
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use pb_util::math::to_finite_f32_lossy;
 use serde::{Deserialize, Serialize};
 
 use crate::picking::Layer;
@@ -38,6 +39,13 @@ pub struct PawnBundle {
     transform: Transform,
     position: Position,
     rotation: Rotation,
+}
+
+impl Pawn {
+    pub fn update_movement(&mut self, angle: f32, torque: f32) {
+        self.movement = Vec2::from_angle(to_finite_f32_lossy(angle) * PI);
+        self.torque = to_finite_f32_lossy(torque);
+    }
 }
 
 impl PawnBundle {

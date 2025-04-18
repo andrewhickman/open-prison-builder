@@ -31,15 +31,17 @@ pub struct Environment {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Action {
-    pub force: Vec2,
+    pub angle: f32,
     pub torque: f32,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Observation {
-    pub linear_velocity: Vec2,
+    pub linear_velocity_t: f32,
+    pub linear_velocity_r: f32,
     pub angular_velocity: f32,
-    pub target: Vec2,
+    pub target_t: f32,
+    pub target_r: f32,
 }
 
 #[derive(Copy, Clone, Debug, Component)]
@@ -95,8 +97,13 @@ impl Environment {
         let mut position: Vec2 = self.rng.random::<[f32; 2]>().into();
         position = (position - Vec2::splat(0.5)) * 5.;
         let rotation = self.rng.random_range(-PI..PI);
-        let mut target: Vec2 = self.rng.random::<[f32; 2]>().into();
-        target = (target - Vec2::splat(0.5)) * 5.;
+
+        let target: Vec2 = self.rng.random::<[f32; 2]>().into();
+        let target = if self.rng.random_bool(0.5) {
+            (target - Vec2::splat(0.5)) * 5.
+        } else {
+            position + (target - Vec2::splat(0.5))
+        };
 
         let linear_velocity_angle = self.rng.random_range(-PI..PI);
         let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., linear_velocity_angle.abs() / PI);
@@ -135,17 +142,18 @@ impl Environment {
 
         let observation = self.observe();
 
-        let terminated = observation.target.length() < (MAX_VELOCITY * TIMESTEP.as_secs_f32());
-        let truncated = observation.target.x.abs() > 10. || observation.target.y.abs() > 10.;
+        let terminated = observation.target_r < (MAX_VELOCITY * TIMESTEP.as_secs_f32());
+        let truncated = observation.target_r > 10.;
 
         let reward = if terminated {
-            self.rng.random_range(1.0..1.5)
+            self.rng.random_range(2.0..5.0)
         } else {
-            let dist_reward = (prev_observation.target.length() - observation.target.length())
+            let dist_reward = (prev_observation.target_r - observation.target_r)
                 / (MAX_VELOCITY * TIMESTEP.as_secs_f32());
-            let rotation_penalty = observation.target.to_angle().abs() / PI;
+            let velocity_reward = observation.linear_velocity_t.cos() * observation.linear_velocity_r;
+            let rotation_penalty = observation.target_t.abs() / PI;
 
-            dist_reward - rotation_penalty
+            dist_reward + velocity_reward - rotation_penalty
         };
 
         (observation.into(), reward, terminated, truncated)
@@ -154,10 +162,12 @@ impl Environment {
 
 impl Environment {
     fn act(&mut self, action: Action) {
-        let mut entity = self.app.world_mut().entity_mut(self.entity);
-        let mut pawn = entity.get_mut::<Pawn>().unwrap();
-        pawn.movement = Vec2::new(normalize(action.force.x), normalize(action.torque));
-        pawn.torque = normalize(action.torque);
+        self.app
+            .world_mut()
+            .entity_mut(self.entity)
+            .get_mut::<Pawn>()
+            .unwrap()
+            .update_movement(action.angle, action.torque);
 
         self.app.update();
     }
@@ -171,21 +181,24 @@ impl Environment {
         let pawn_space_linear_velocity = inv_isometry * linear_velocity.0;
 
         Observation {
-            linear_velocity: pawn_space_linear_velocity,
-            angular_velocity: angular_velocity.0,
-            target: pawn_space_target,
+            linear_velocity_t: pawn_space_linear_velocity.to_angle(),
+            linear_velocity_r: pawn_space_linear_velocity.length_squared()
+                / (MAX_VELOCITY * MAX_VELOCITY),
+            angular_velocity: angular_velocity.0 / MAX_ANGULAR_VELOCITY,
+            target_t: pawn_space_target.to_angle(),
+            target_r: pawn_space_target.length(),
         }
     }
 }
 
 impl Action {
-    pub const SIZE: usize = 3;
+    pub const SIZE: usize = 2;
 }
 
 impl From<[f32; Self::SIZE]> for Action {
-    fn from([x, y, t]: [f32; Self::SIZE]) -> Self {
+    fn from([a, t]: [f32; Self::SIZE]) -> Self {
         Action {
-            force: Vec2::new(x, y),
+            angle: a,
             torque: t,
         }
     }
@@ -198,11 +211,11 @@ impl Observation {
 impl From<Observation> for [f32; Observation::SIZE] {
     fn from(obs: Observation) -> [f32; Observation::SIZE] {
         [
-            obs.linear_velocity.x,
-            obs.linear_velocity.y,
+            obs.linear_velocity_t,
+            obs.linear_velocity_r,
             obs.angular_velocity,
-            obs.target.x,
-            obs.target.y,
+            obs.target_t,
+            obs.target_r,
         ]
     }
 }
@@ -210,14 +223,6 @@ impl From<Observation> for [f32; Observation::SIZE] {
 impl Default for Environment {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-fn normalize(f: f32) -> f32 {
-    if f.is_finite() {
-        f
-    } else {
-        0.
     }
 }
 

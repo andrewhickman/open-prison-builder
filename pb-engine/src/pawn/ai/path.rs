@@ -8,7 +8,7 @@ use vleue_navigator::prelude::*;
 
 use crate::pawn::{
     ai::{PawnActor, Task},
-    Pawn,
+    Pawn, MAX_VELOCITY,
 };
 
 use super::TaskResult;
@@ -75,20 +75,18 @@ pub fn update(
             let pawn_space_linear_velocity = inv_isometry * linear_velocity.0;
 
             let distance_remaining = pawn_space_target.length();
-            if dbg!(distance_remaining) <= 0.1 {
+            if distance_remaining <= 0.1 {
                 task.steps.pop_front();
             } else {
-                let [[force_x, force_y, torque, _, _, _]] = movement::main_graph([[
-                    pawn_space_linear_velocity.x,
-                    pawn_space_linear_velocity.y,
+                let [[force_angle, torque, _, _]] = movement::main_graph([[
+                    pawn_space_linear_velocity.to_angle(),
+                    pawn_space_linear_velocity.length_squared() / (MAX_VELOCITY * MAX_VELOCITY),
                     angular_velocity.0,
-                    pawn_space_target.x,
-                    pawn_space_target.y,
+                    pawn_space_target.to_angle(),
+                    pawn_space_target.length(),
                 ]]);
 
-                pawn.movement = Vec2::new(normalize(force_x), normalize(force_y));
-                pawn.torque = normalize(torque);
-                dbg!(&pawn);
+                pawn.update_movement(force_angle, torque);
             }
         } else {
             pawn.movement = Vec2::ZERO;
@@ -97,14 +95,6 @@ pub fn update(
             }
             commands.entity(id).despawn_recursive();
         }
-    }
-}
-
-fn normalize(f: f32) -> f32 {
-    if f.is_finite() {
-        f
-    } else {
-        0.
     }
 }
 

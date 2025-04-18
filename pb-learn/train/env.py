@@ -6,7 +6,7 @@ import gymnasium as gym
 
 class PbEnvironment(gym.Env):
     def __init__(self, config: Optional[dict] = None):
-        self.action_space = gym.spaces.Box(-1., 1., shape=(3,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(-1., 1., shape=(2,), dtype=np.float32)
         self.observation_space = gym.spaces.Box(-10., 10., shape=(5,), dtype=np.float32)
         self.env = pb_learn_env.Environment()
 
