@@ -1,9 +1,6 @@
 use bevy::prelude::*;
-use pb_engine::pawn::{ai::PawnActor, Pawn};
-use pb_util::{
-    callback::{spawn_compute, CallbackSender},
-    try_opt, try_res_s, ChildBuildExt,
-};
+use pb_engine::pawn::{ai::path::PathTaskBundle, Pawn};
+use pb_util::{try_opt, try_res_s, ChildBuildExt};
 use vleue_navigator::{prelude::ManagedNavMesh, NavMesh};
 
 use crate::{
@@ -46,15 +43,15 @@ fn click_pawn(trigger: Trigger<ClickPawn>, mut action: Single<&mut DefaultAction
 
 fn click_point(
     trigger: Trigger<ClickPoint>,
+    mut commands: Commands,
     mut action: Single<&mut DefaultAction>,
     transform_q: Query<&Transform, With<Pawn>>,
-    sender: Res<CallbackSender>,
     navmesh_q: Option<Single<&ManagedNavMesh>>,
     navmeshes: Res<Assets<NavMesh>>,
 ) {
     let navmesh = try_opt!(navmeshes.get(try_opt!(navmesh_q).id()));
 
-    action.click_point(trigger.point, &transform_q, &sender, navmesh);
+    action.click_point(&mut commands, trigger.point, &transform_q, navmesh);
 }
 
 impl DefaultAction {
@@ -64,9 +61,9 @@ impl DefaultAction {
 
     fn click_point(
         &mut self,
+        commands: &mut Commands,
         to: Vec2,
         transform_q: &Query<&Transform, With<Pawn>>,
-        sender: &CallbackSender,
         navmesh: &NavMesh,
     ) {
         match *self {
@@ -74,16 +71,7 @@ impl DefaultAction {
             DefaultAction::SelectedPawn { pawn } => {
                 info!("move {pawn} to {to}");
                 let from = try_res_s!(transform_q.get(pawn)).translation.xy();
-
-                let sender = sender.clone();
-                let navmesh = navmesh.clone();
-
-                spawn_compute(async move {
-                    let res = PawnActor::new(pawn, sender)
-                        .move_to(navmesh, from, to)
-                        .await;
-                    info!("move result: {res:?}");
-                });
+                commands.spawn(PathTaskBundle::path_to(pawn, navmesh.clone(), from, to));
             }
         }
     }

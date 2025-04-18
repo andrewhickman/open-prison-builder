@@ -3929,6 +3929,7 @@ dependencies = [
  "avian2d",
  "bevy",
  "pb-engine",
+ "pb-util",
  "pyo3",
  "rand 0.9.0",
 ]

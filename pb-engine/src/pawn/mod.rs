@@ -2,6 +2,7 @@ pub mod ai;
 
 use std::f32::consts::{PI, TAU};
 
+use ai::Actor;
 use approx::relative_ne;
 use avian2d::prelude::*;
 use bevy::prelude::*;
@@ -20,6 +21,7 @@ pub const MAX_ANGULAR_VELOCITY: f32 = PI;
 #[derive(Debug, Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
 #[require(
+    Actor,
     RigidBody(|| RigidBody::Dynamic),
     Collider(|| Collider::circle(RADIUS)),
     CollisionLayers(|| CollisionLayers::new(Layer::Pawn, LayerMask::ALL)),
@@ -29,7 +31,8 @@ pub const MAX_ANGULAR_VELOCITY: f32 = PI;
     AngularDamping(|| AngularDamping(0.5)),
 )]
 pub struct Pawn {
-    pub movement: Vec2,
+    pub dir: Vec2,
+    pub accel: f32,
     pub torque: f32,
 }
 
@@ -42,9 +45,10 @@ pub struct PawnBundle {
 }
 
 impl Pawn {
-    pub fn update_movement(&mut self, angle: f32, torque: f32) {
-        self.movement = Vec2::from_angle(to_finite_f32_lossy(angle) * PI);
-        self.torque = to_finite_f32_lossy(torque);
+    pub fn update_movement(&mut self, angle: f32, accel: f32, torque: f32) {
+        self.dir = Vec2::from_angle(to_finite_f32_lossy(angle).clamp(0., 1.) * PI);
+        self.accel = to_finite_f32_lossy(accel).clamp(0., 1.);
+        self.torque = to_finite_f32_lossy(torque).clamp(0., 1.);
     }
 }
 
@@ -75,9 +79,9 @@ pub fn movement(
             force.persistent = false;
             torque.persistent = false;
 
-            if relative_ne!(pawn.movement, Vec2::ZERO) {
-                let movement_dir = rotation * pawn.movement;
-                force.set_force(movement_dir.clamp_length_max(1.) * MAX_ACCELERATION);
+            if relative_ne!(pawn.dir, Vec2::ZERO) {
+                let movement_dir = rotation * pawn.dir;
+                force.set_force(movement_dir.normalize() * pawn.accel * MAX_ACCELERATION);
             } else if relative_ne!(linear_velocity.0, Vec2::ZERO) {
                 force.set_force((-linear_velocity.0).normalize() * MAX_ACCELERATION);
             }

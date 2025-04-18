@@ -13,9 +13,10 @@ config = (
     )
     .env_runners(
         num_env_runners=31
+        # num_env_runners=0
     )
     .training(
-        kl_coeff=1.2,
+        kl_coeff=0.5,
         gamma=0.95,
         lambda_=0.97,
         clip_param=0.192,
@@ -34,9 +35,9 @@ config = (
 ppo = config.build_algo()
 ppo.restore_from_path(f"{__file__}/../models/movement")
 
-for _ in range(400):
+for i in range(500):
     res = ppo.train()
-    print(f"training iteration {res['training_iteration']}")
+    print(f"training iteration {i}")
     print(f"episode reward mean {res['env_runners'].get('episode_return_mean')}")
 
     if res['done']:

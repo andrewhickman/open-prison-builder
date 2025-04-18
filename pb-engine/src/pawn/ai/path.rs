@@ -2,38 +2,61 @@ use std::collections::VecDeque;
 
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use pb_util::try_opt;
+use pb_util::callback::spawn_compute;
 use tokio::sync::oneshot;
 use vleue_navigator::prelude::*;
 
-use crate::pawn::{
-    ai::{PawnActor, Task},
-    Pawn, MAX_VELOCITY,
-};
-
-use super::TaskResult;
+use crate::pawn::{ai::Task, Pawn, MAX_VELOCITY};
 
 pub mod movement {
     include!(concat!(env!("OUT_DIR"), "/", "movement.rs"));
 }
 
-#[derive(Debug, Component)]
-#[require(Task)]
-pub struct PathTask {
-    target: Entity,
-    steps: VecDeque<Vec2>,
-    result: Option<oneshot::Sender<PathTaskResult>>,
+#[derive(Bundle)]
+pub struct PathTaskBundle {
+    task: Task,
+    path: PathTask,
 }
 
-#[derive(Debug)]
-enum PathTaskResult {
-    Success,
-    Collided { position: Vec2, navmesh: NavMesh },
+#[derive(Debug, Component)]
+pub enum PathTask {
+    Pending(oneshot::Receiver<Option<VecDeque<Vec2>>>),
+    Running(VecDeque<Vec2>),
+}
+
+impl PathTaskBundle {
+    pub fn path_to(actor: Entity, mesh: NavMesh, from: Vec2, to: Vec2) -> Self {
+        let (tx, rx) = oneshot::channel();
+        spawn_compute(async move {
+            let res = if let Some(path) = mesh
+                .get_transformed_path(from.extend(0.), to.extend(0.))
+                .await
+            {
+                Some(path.path.into_iter().map(|step| step.xy()).collect())
+            } else {
+                None
+            };
+
+            let _ = tx.send(res);
+        });
+
+        PathTaskBundle {
+            task: Task::new(actor),
+            path: PathTask::Pending(rx),
+        }
+    }
+
+    pub fn move_to(actor: Entity, to: Vec2) -> Self {
+        PathTaskBundle {
+            task: Task::new(actor),
+            path: PathTask::Running(VecDeque::from_iter([to])),
+        }
+    }
 }
 
 pub fn update(
     mut commands: Commands,
-    mut task_q: Query<(Entity, &mut PathTask)>,
+    mut task_q: Query<(Entity, &Task, &mut PathTask)>,
     mut pawn_q: Query<
         (
             &mut Pawn,
@@ -45,85 +68,65 @@ pub fn update(
         ),
         With<Pawn>,
     >,
-    navmesh_q: Option<Single<&ManagedNavMesh>>,
-    navmeshes: Res<Assets<NavMesh>>,
 ) {
-    let navmesh = try_opt!(navmeshes.get(try_opt!(navmesh_q).id()));
-
-    for (id, mut task) in &mut task_q {
+    for (id, task, mut path) in &mut task_q {
         let Ok((mut pawn, position, rotation, linear_velocity, angular_velocity, collisions)) =
-            pawn_q.get_mut(task.target)
+            pawn_q.get_mut(task.actor)
         else {
             warn!("invalid target for PathTask");
-            continue;
+            return;
         };
 
         if !collisions.is_empty() {
-            if let Some(tx) = task.result.take() {
-                let _ = tx.send(PathTaskResult::Collided {
-                    position: position.0,
-                    navmesh: navmesh.clone(),
-                });
-            }
-            commands.entity(id).despawn_recursive();
+            info!("collided :(")
         }
 
-        if let Some(&next_step) = task.steps.front() {
+        let Some(steps) = path.poll() else {
+            return;
+        };
+
+        if let Some(&next_step) = steps.front() {
             let inv_isometry = Isometry2d::new(position.0, (*rotation).into()).inverse();
 
             let pawn_space_target = inv_isometry * next_step;
-            let pawn_space_linear_velocity = inv_isometry * linear_velocity.0;
+            let pawn_space_linear_velocity = inv_isometry.rotation * linear_velocity.0;
 
             let distance_remaining = pawn_space_target.length();
             if distance_remaining <= 0.1 {
-                task.steps.pop_front();
+                steps.pop_front();
             } else {
                 let [[force_angle, torque, _, _]] = movement::main_graph([[
                     pawn_space_linear_velocity.to_angle(),
                     pawn_space_linear_velocity.length_squared() / (MAX_VELOCITY * MAX_VELOCITY),
                     angular_velocity.0,
                     pawn_space_target.to_angle(),
-                    pawn_space_target.length(),
+                    pawn_space_target.length().min(10.),
                 ]]);
 
-                pawn.update_movement(force_angle, torque);
+                pawn.update_movement(force_angle, 1., torque);
             }
         } else {
-            pawn.movement = Vec2::ZERO;
-            if let Some(tx) = task.result.take() {
-                let _ = tx.send(PathTaskResult::Success);
-            }
+            pawn.dir = Vec2::ZERO;
+            pawn.torque = 0.;
             commands.entity(id).despawn_recursive();
         }
     }
 }
 
-impl PawnActor {
-    pub async fn move_to(&self, mut mesh: NavMesh, mut from: Vec2, to: Vec2) -> TaskResult<()> {
-        loop {
-            if let Some(path) = mesh
-                .get_transformed_path(from.extend(0.), to.extend(0.))
-                .await
-            {
-                let (tx, rx) = oneshot::channel();
-                self.spawn_task(PathTask {
-                    target: self.target,
-                    steps: path.path.into_iter().map(|step| step.xy()).collect(),
-                    result: Some(tx),
-                });
-
-                match rx.await {
-                    Ok(PathTaskResult::Success) => return TaskResult::Ok(()),
-                    Ok(PathTaskResult::Collided { position, navmesh }) => {
-                        warn!("collided, recalculating path");
-                        from = position;
-                        mesh = navmesh;
-                        continue;
+impl PathTask {
+    fn poll(&mut self) -> Option<&mut VecDeque<Vec2>> {
+        match self {
+            PathTask::Running(steps) => Some(steps),
+            PathTask::Pending(receiver) => {
+                if let Ok(Some(steps)) = receiver.try_recv() {
+                    *self = PathTask::Running(steps);
+                    match self {
+                        PathTask::Pending(_) => unreachable!(),
+                        PathTask::Running(steps) => Some(steps),
                     }
-                    Err(_) => return TaskResult::Cancelled,
+                } else {
+                    None
                 }
-            } else {
-                return TaskResult::Err(format!("no path found from {from} to {to}").into());
             }
         }
     }

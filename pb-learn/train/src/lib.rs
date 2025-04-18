@@ -6,6 +6,7 @@ use pb_engine::{
     pawn::{Pawn, PawnBundle, MAX_ANGULAR_VELOCITY, MAX_VELOCITY},
     PbEnginePlugin,
 };
+use pb_util::math::normalize_angle;
 use pyo3::prelude::*;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 
@@ -95,12 +96,12 @@ impl Environment {
         }
 
         let mut position: Vec2 = self.rng.random::<[f32; 2]>().into();
-        position = (position - Vec2::splat(0.5)) * 5.;
+        position = (position - Vec2::splat(0.5)) * 10.;
         let rotation = self.rng.random_range(-PI..PI);
 
         let target: Vec2 = self.rng.random::<[f32; 2]>().into();
         let target = if self.rng.random_bool(0.5) {
-            (target - Vec2::splat(0.5)) * 5.
+            (target - Vec2::splat(0.5)) * 10.
         } else {
             position + (target - Vec2::splat(0.5))
         };
@@ -143,17 +144,22 @@ impl Environment {
         let observation = self.observe();
 
         let terminated = observation.target_r < (MAX_VELOCITY * TIMESTEP.as_secs_f32());
-        let truncated = observation.target_r > 10.;
+        let truncated = observation.target_r > 150.;
 
         let reward = if terminated {
             self.rng.random_range(2.0..5.0)
         } else {
             let dist_reward = (prev_observation.target_r - observation.target_r)
                 / (MAX_VELOCITY * TIMESTEP.as_secs_f32());
-            let velocity_reward = observation.linear_velocity_t.cos() * observation.linear_velocity_r;
+            let velocity_reward =
+                normalize_angle(observation.linear_velocity_t - observation.target_t).cos()
+                    * (observation.linear_velocity_r / MAX_VELOCITY);
             let rotation_penalty = observation.target_t.abs() / PI;
+            let angular_velocity_penalty = observation.angular_velocity / MAX_ANGULAR_VELOCITY;
 
-            dist_reward + velocity_reward - rotation_penalty
+            dist_reward + velocity_reward * 0.7
+                - rotation_penalty * 0.5
+                - angular_velocity_penalty * 0.5
         };
 
         (observation.into(), reward, terminated, truncated)
@@ -167,7 +173,7 @@ impl Environment {
             .entity_mut(self.entity)
             .get_mut::<Pawn>()
             .unwrap()
-            .update_movement(action.angle, action.torque);
+            .update_movement(action.angle, 1., action.torque);
 
         self.app.update();
     }
@@ -178,7 +184,7 @@ impl Environment {
         let inv_isometry = Isometry2d::new(position.0, (*rotation).into()).inverse();
 
         let pawn_space_target = inv_isometry * target.0;
-        let pawn_space_linear_velocity = inv_isometry * linear_velocity.0;
+        let pawn_space_linear_velocity = inv_isometry.rotation * linear_velocity.0;
 
         Observation {
             linear_velocity_t: pawn_space_linear_velocity.to_angle(),
@@ -215,7 +221,7 @@ impl From<Observation> for [f32; Observation::SIZE] {
             obs.linear_velocity_r,
             obs.angular_velocity,
             obs.target_t,
-            obs.target_r,
+            obs.target_r.min(10.),
         ]
     }
 }

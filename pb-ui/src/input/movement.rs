@@ -17,11 +17,12 @@ pub enum MovementDirection {
 
 pub fn input(trigger: Trigger<MovementInput>, mut pawn_q: Query<&mut Pawn>) {
     for mut pawn in &mut pawn_q {
+        pawn.accel = 1.;
         match trigger.dir {
-            MovementDirection::Left => pawn.movement.y += delta(trigger.state),
-            MovementDirection::Forward => pawn.movement.x += delta(trigger.state),
-            MovementDirection::Right => pawn.movement.y -= delta(trigger.state),
-            MovementDirection::Backward => pawn.movement.x -= delta(trigger.state),
+            MovementDirection::Left => pawn.dir.y += delta(trigger.state),
+            MovementDirection::Forward => pawn.dir.x += delta(trigger.state),
+            MovementDirection::Right => pawn.dir.y -= delta(trigger.state),
+            MovementDirection::Backward => pawn.dir.x -= delta(trigger.state),
         }
     }
 }

@@ -13,5 +13,6 @@ crate-type = ["cdylib"]
 avian2d = "0.2.1"
 bevy = { version = "0.15.3", default-features = false }
 pb-engine = { version = "0.1.0", path = "../../pb-engine" }
+pb-util = { version = "0.1.0", path = "../../pb-util" }
 pyo3 = "0.24.0"
 rand = "0.9.0"
