@@ -75,10 +75,10 @@ pub fn update(
             let pawn_space_linear_velocity = inv_isometry * linear_velocity.0;
 
             let distance_remaining = pawn_space_target.length();
-            if distance_remaining <= 0.1 {
+            if dbg!(distance_remaining) <= 0.1 {
                 task.steps.pop_front();
             } else {
-                let [[force_x, force_y, _, _]] = movement::main_graph([[
+                let [[force_x, force_y, torque, _, _, _]] = movement::main_graph([[
                     pawn_space_linear_velocity.x,
                     pawn_space_linear_velocity.y,
                     angular_velocity.0,
@@ -87,6 +87,8 @@ pub fn update(
                 ]]);
 
                 pawn.movement = Vec2::new(normalize(force_x), normalize(force_y));
+                pawn.torque = normalize(torque);
+                dbg!(&pawn);
             }
         } else {
             pawn.movement = Vec2::ZERO;

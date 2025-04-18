@@ -32,6 +32,7 @@ pub struct Environment {
 #[derive(Copy, Clone, Debug)]
 pub struct Action {
     pub force: Vec2,
+    pub torque: f32,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -134,14 +135,17 @@ impl Environment {
 
         let observation = self.observe();
 
-        let terminated = observation.target.length() < 0.1;
+        let terminated = observation.target.length() < (MAX_VELOCITY * TIMESTEP.as_secs_f32());
         let truncated = observation.target.x.abs() > 10. || observation.target.y.abs() > 10.;
 
         let reward = if terminated {
             self.rng.random_range(1.0..1.5)
         } else {
-            (prev_observation.target.length() - observation.target.length())
-                / (MAX_VELOCITY * TIMESTEP.as_secs_f32())
+            let dist_reward = (prev_observation.target.length() - observation.target.length())
+                / (MAX_VELOCITY * TIMESTEP.as_secs_f32());
+            let rotation_penalty = observation.target.to_angle().abs() / PI;
+
+            dist_reward - rotation_penalty
         };
 
         (observation.into(), reward, terminated, truncated)
@@ -150,12 +154,10 @@ impl Environment {
 
 impl Environment {
     fn act(&mut self, action: Action) {
-        self.app
-            .world_mut()
-            .entity_mut(self.entity)
-            .get_mut::<Pawn>()
-            .unwrap()
-            .movement = Vec2::new(normalize(action.force.x), normalize(action.force.y));
+        let mut entity = self.app.world_mut().entity_mut(self.entity);
+        let mut pawn = entity.get_mut::<Pawn>().unwrap();
+        pawn.movement = Vec2::new(normalize(action.force.x), normalize(action.torque));
+        pawn.torque = normalize(action.torque);
 
         self.app.update();
     }
@@ -177,13 +179,14 @@ impl Environment {
 }
 
 impl Action {
-    pub const SIZE: usize = 2;
+    pub const SIZE: usize = 3;
 }
 
 impl From<[f32; Self::SIZE]> for Action {
-    fn from([x, y]: [f32; Self::SIZE]) -> Self {
+    fn from([x, y, t]: [f32; Self::SIZE]) -> Self {
         Action {
             force: Vec2::new(x, y),
+            torque: t,
         }
     }
 }
