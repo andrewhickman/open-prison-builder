@@ -17,6 +17,7 @@ pub const MAX_VELOCITY: f32 = 1.5;
 pub const REVERSE_VELOCITY: f32 = 0.7;
 pub const MAX_TORQUE: f32 = TAU;
 pub const MAX_ANGULAR_VELOCITY: f32 = PI;
+pub const VISION_RADIUS: f32 = 10.;
 
 #[derive(Debug, Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
@@ -42,6 +43,7 @@ pub struct PawnBundle {
     transform: Transform,
     position: Position,
     rotation: Rotation,
+    shape_caster: ShapeCaster,
 }
 
 impl Pawn {
@@ -60,6 +62,8 @@ impl PawnBundle {
                 .with_rotation(Quat::from_axis_angle(Vec3::Z, rotation)),
             position: Position(position),
             rotation: Rotation::radians(rotation),
+            shape_caster: ShapeCaster::new(Collider::circle(RADIUS), Vec2::ZERO, 0., Dir2::X)
+                .with_max_distance(VISION_RADIUS),
         }
     }
 }
@@ -72,10 +76,19 @@ pub fn movement(
         &AngularVelocity,
         &mut ExternalForce,
         &mut ExternalTorque,
+        &mut ShapeCaster,
     )>,
 ) {
     pawn_q.par_iter_mut().for_each(
-        |(pawn, rotation, linear_velocity, angular_velocity, mut force, mut torque)| {
+        |(
+            pawn,
+            rotation,
+            linear_velocity,
+            angular_velocity,
+            mut force,
+            mut torque,
+            mut shape_caster,
+        )| {
             force.persistent = false;
             torque.persistent = false;
 
@@ -89,6 +102,19 @@ pub fn movement(
                 torque.apply_torque(pawn.torque * MAX_TORQUE);
             } else if relative_ne!(angular_velocity.0, 0.) {
                 torque.apply_torque((-angular_velocity.0).signum() * MAX_TORQUE);
+            }
+
+            if relative_ne!(linear_velocity.0, Vec2::ZERO) {
+                shape_caster.enabled = true;
+                shape_caster.direction = match Dir2::new(rotation.inverse() * linear_velocity.0) {
+                    Ok(dir) => dir,
+                    Err(err) => {
+                        warn!("invalid linear velocity: {err}");
+                        return;
+                    }
+                }
+            } else {
+                shape_caster.enabled = false;
             }
         },
     );

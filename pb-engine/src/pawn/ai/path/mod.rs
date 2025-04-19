@@ -9,7 +9,7 @@ use pb_util::callback::spawn_compute;
 use tokio::sync::oneshot;
 use vleue_navigator::prelude::*;
 
-use crate::pawn::{ai::Task, Pawn, MAX_VELOCITY};
+use crate::pawn::{ai::Task, Pawn, MAX_VELOCITY, VISION_RADIUS};
 
 #[derive(Bundle)]
 pub struct PathTaskBundle {
@@ -63,18 +63,30 @@ pub fn update(
             &Rotation,
             &LinearVelocity,
             &AngularVelocity,
+            &ShapeHits,
             &CollidingEntities,
         ),
         With<Pawn>,
     >,
 ) {
     for (id, task, mut path) in &mut task_q {
-        let Ok((mut pawn, position, rotation, linear_velocity, angular_velocity, collisions)) =
-            pawn_q.get_mut(task.actor)
+        let Ok((
+            mut pawn,
+            position,
+            rotation,
+            linear_velocity,
+            angular_velocity,
+            pending_collisions,
+            collisions,
+        )) = pawn_q.get_mut(task.actor)
         else {
             warn!("invalid target for PathTask");
             return;
         };
+
+        if !pending_collisions.is_empty() {
+            debug!("pending collision :o")
+        }
 
         if !collisions.is_empty() {
             debug!("collided :(")
@@ -99,7 +111,7 @@ pub fn update(
                     pawn_space_linear_velocity.length_squared() / (MAX_VELOCITY * MAX_VELOCITY),
                     angular_velocity.0,
                     pawn_space_target.to_angle(),
-                    pawn_space_target.length().min(10.),
+                    pawn_space_target.length().min(VISION_RADIUS),
                 ]]);
 
                 pawn.update_movement(force_angle, 1., torque);
