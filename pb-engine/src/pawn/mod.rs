@@ -46,9 +46,9 @@ pub struct PawnBundle {
 
 impl Pawn {
     pub fn update_movement(&mut self, angle: f32, accel: f32, torque: f32) {
-        self.dir = Vec2::from_angle(to_finite_f32_lossy(angle).clamp(0., 1.) * PI);
+        self.dir = Vec2::from_angle(to_finite_f32_lossy(angle).clamp(-1., 1.) * PI);
         self.accel = to_finite_f32_lossy(accel).clamp(0., 1.);
-        self.torque = to_finite_f32_lossy(torque).clamp(0., 1.);
+        self.torque = to_finite_f32_lossy(torque).clamp(-1., 1.);
     }
 }
 

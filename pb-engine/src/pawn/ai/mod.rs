@@ -45,7 +45,7 @@ pub fn task_removed(
 }
 
 pub fn actor_removed(
-    trigger: Trigger<OnReplace, Task>,
+    trigger: Trigger<OnReplace, Actor>,
     mut commands: Commands,
     actor_q: Query<&Actor>,
 ) {
