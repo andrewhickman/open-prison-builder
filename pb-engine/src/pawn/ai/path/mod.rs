@@ -1,3 +1,6 @@
+#[rustfmt::skip]
+mod movement;
+
 use std::collections::VecDeque;
 
 use avian2d::prelude::*;
@@ -7,10 +10,6 @@ use tokio::sync::oneshot;
 use vleue_navigator::prelude::*;
 
 use crate::pawn::{ai::Task, Pawn, MAX_VELOCITY};
-
-pub mod movement {
-    include!(concat!(env!("OUT_DIR"), "/", "movement.rs"));
-}
 
 #[derive(Bundle)]
 pub struct PathTaskBundle {

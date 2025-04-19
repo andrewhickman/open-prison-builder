@@ -13,7 +13,6 @@ config = (
     )
     .env_runners(
         num_env_runners=31
-        # num_env_runners=0
     )
     .training(
         kl_coeff=0.5,
@@ -31,7 +30,6 @@ config = (
     )
 )
 
-# ppo = Algorithm.from_checkpoint('C:/Users/andre/ray_results/PPO_2025-04-18_14-35-29/PPO_PbEnvironment_043fc_00001_1_train_batch_size_per_learner=40000_2025-04-18_14-35-39/checkpoint_000005')
 ppo = config.build_algo()
 ppo.restore_from_path(f"{__file__}/../models/movement")
 
