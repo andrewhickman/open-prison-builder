@@ -87,8 +87,15 @@ pub fn vertex_inserted(
         VertexGeometry::new(try_res_s!(transform_q.get(trigger.entity())), iter::empty());
 
     let mesh = vertex_info.mesh();
-    let aabb = mesh.compute_aabb().unwrap_or_default();
-    let mesh = meshes.add(vertex_info.mesh());
+    let aabb = mesh
+        .as_ref()
+        .and_then(|m| m.compute_aabb())
+        .unwrap_or_default();
+    let mesh = if let Some(mesh) = mesh {
+        meshes.add(mesh)
+    } else {
+        default()
+    };
 
     commands.entity(trigger.entity()).insert((
         vertex_info,
@@ -181,22 +188,34 @@ pub fn hidden_removed(
 }
 
 pub fn update_wall(
-    mut assets: ResMut<Assets<Mesh>>,
+    mut meshes: ResMut<Assets<Mesh>>,
     wall_map: Res<WallMap>,
     transform_q: Query<&Transform, With<Vertex>>,
     hidden_q: Query<Entity, With<Hidden>>,
     mut vertex_q: Query<
-        (Entity, &Transform, &mut VertexGeometry, &Mesh2d, &mut Aabb),
+        (
+            Entity,
+            &Transform,
+            &mut VertexGeometry,
+            &mut Mesh2d,
+            &mut Aabb,
+        ),
         With<Vertex>,
     >,
     mut wall_mesh_q: Query<
-        (&Wall, &mut WallGeometry, &Mesh2d, &mut Aabb, Has<Hidden>),
+        (
+            &Wall,
+            &mut WallGeometry,
+            &mut Mesh2d,
+            &mut Aabb,
+            Has<Hidden>,
+        ),
         Without<Vertex>,
     >,
 ) {
     let mut updated_walls = HashSet::new();
 
-    for (id, transform, mut info, mesh, mut aabb) in vertex_q.iter_mut() {
+    for (id, transform, mut info, mut mesh, mut aabb) in vertex_q.iter_mut() {
         let new_info = VertexGeometry::new(
             transform,
             wall_map
@@ -207,15 +226,23 @@ pub fn update_wall(
 
         if info.set_if_neq(new_info) {
             let new_mesh = info.mesh();
-            *aabb = new_mesh.compute_aabb().unwrap_or_default();
-            assets.insert(mesh.id(), new_mesh);
+            *aabb = new_mesh
+                .as_ref()
+                .and_then(|m| m.compute_aabb())
+                .unwrap_or_default();
+
+            mesh.0 = if let Some(new_mesh) = new_mesh {
+                meshes.add(new_mesh)
+            } else {
+                default()
+            };
 
             updated_walls.extend(wall_map.get(id).map(|entry| entry.wall));
         }
     }
 
     for id in updated_walls {
-        let (wall, mut info, mesh, mut aabb, hidden) = try_res_s!(wall_mesh_q.get_mut(id));
+        let (wall, mut info, mut mesh, mut aabb, hidden) = try_res_s!(wall_mesh_q.get_mut(id));
         if hidden {
             continue;
         }
@@ -226,7 +253,7 @@ pub fn update_wall(
         if info.set_if_neq(new_info) {
             let new_mesh = info.mesh();
             *aabb = new_mesh.compute_aabb().unwrap_or_default();
-            assets.insert(mesh.id(), new_mesh);
+            mesh.0 = meshes.add(new_mesh);
         }
     }
 }
@@ -285,7 +312,7 @@ impl VertexGeometry {
         Some((i1 + offset, i2 + offset, i3 + offset))
     }
 
-    fn mesh(&self) -> Mesh {
+    fn mesh(&self) -> Option<Mesh> {
         let mut vertices = Vec::new();
         let mut uvs = Vec::new();
         for (i, i1) in self.points.iter().enumerate() {
@@ -308,12 +335,18 @@ impl VertexGeometry {
             ]);
         }
 
-        Mesh::new(
-            PrimitiveTopology::TriangleList,
-            RenderAssetUsages::RENDER_WORLD,
-        )
-        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
+        if vertices.is_empty() {
+            None
+        } else {
+            Some(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::RENDER_WORLD,
+                )
+                .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
+                .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs),
+            )
+        }
     }
 }
 

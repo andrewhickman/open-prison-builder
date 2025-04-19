@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
+mod action;
 mod assets;
 mod autosave;
 mod input;
@@ -108,15 +109,18 @@ impl Plugin for PbUiPlugin {
             )
             .add_systems(
                 Update,
-                (input::camera::update.run_if(input::camera::update_condition),),
+                input::camera::update.run_if(input::camera::update_condition),
             )
             .add_observer(input::cancel::input)
             .add_observer(input::camera::input)
-            .add_observer(input::action::action_added)
+            .add_observer(input::movement::input)
             .add_observer(input::picking::point::grid::input)
             .add_observer(input::picking::point::root_added)
             .add_observer(input::picking::point::grid::on_add)
+            .add_observer(input::picking::physics::pawn::pawn_added)
             .add_observer(input::picking::physics::wall::wall_added)
+            .add_observer(action::action_added)
+            .add_observer(action::action_removed)
             .add_observer(ribbon::wall::cancel);
     }
 }

@@ -3,7 +3,7 @@ use pb_store::Store;
 use pb_util::{callback::CallbackSender, spawn_io, AsDynError};
 use serde::{Deserialize, Serialize};
 
-use crate::input::Action;
+use crate::input::Input;
 
 pub const KEY: &str = "settings";
 
@@ -34,13 +34,13 @@ pub struct Settings {
 }
 
 pub struct Binding {
-    pub action: Action,
+    pub action: Input,
     pub modifiers: Vec<KeyCode>,
 }
 
 #[derive(Serialize, Deserialize, TypePath)]
 pub struct SettingsModel {
-    binds: HashMap<Action, BindingModel>,
+    binds: HashMap<Input, BindingModel>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -58,7 +58,7 @@ impl Settings {
         }
     }
 
-    pub fn bind(&mut self, key: KeyCode, action: Action, modifiers: Vec<KeyCode>) {
+    pub fn bind(&mut self, key: KeyCode, action: Input, modifiers: Vec<KeyCode>) {
         self.binds
             .entry(key)
             .or_default()
@@ -76,15 +76,19 @@ impl Settings {
 impl Default for Settings {
     fn default() -> Self {
         let mut settings = Self::empty();
-        settings.bind(KeyCode::Escape, Action::Cancel, vec![]);
-        settings.bind(KeyCode::KeyW, Action::PanUp, vec![]);
-        settings.bind(KeyCode::KeyA, Action::PanLeft, vec![]);
-        settings.bind(KeyCode::KeyS, Action::PanDown, vec![]);
-        settings.bind(KeyCode::KeyD, Action::PanRight, vec![]);
-        settings.bind(KeyCode::KeyQ, Action::ZoomIn, vec![]);
-        settings.bind(KeyCode::KeyE, Action::ZoomOut, vec![]);
-        settings.bind(KeyCode::Equal, Action::DecreaseGridSize, vec![]);
-        settings.bind(KeyCode::Minus, Action::IncreaseGridSize, vec![]);
+        settings.bind(KeyCode::Escape, Input::Cancel, vec![]);
+        settings.bind(KeyCode::KeyW, Input::PanUp, vec![]);
+        settings.bind(KeyCode::KeyA, Input::PanLeft, vec![]);
+        settings.bind(KeyCode::KeyS, Input::PanDown, vec![]);
+        settings.bind(KeyCode::KeyD, Input::PanRight, vec![]);
+        settings.bind(KeyCode::KeyQ, Input::ZoomIn, vec![]);
+        settings.bind(KeyCode::KeyE, Input::ZoomOut, vec![]);
+        settings.bind(KeyCode::Equal, Input::DecreaseGridSize, vec![]);
+        settings.bind(KeyCode::Minus, Input::IncreaseGridSize, vec![]);
+        settings.bind(KeyCode::ArrowLeft, Input::MoveLeft, vec![]);
+        settings.bind(KeyCode::ArrowUp, Input::MoveForward, vec![]);
+        settings.bind(KeyCode::ArrowRight, Input::MoveRight, vec![]);
+        settings.bind(KeyCode::ArrowDown, Input::MoveBackward, vec![]);
         settings
     }
 }

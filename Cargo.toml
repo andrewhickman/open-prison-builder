@@ -8,7 +8,7 @@ exclude = ["dist", "build", "assets"]
 build = "build.rs"
 
 [workspace]
-members = ["pb-assets", "pb-engine", "pb-render", "pb-store", "pb-ui", "pb-util"]
+members = ["pb-assets", "pb-engine", "pb-learn/model", "pb-learn/train", "pb-render", "pb-store", "pb-ui", "pb-util"]
 
 [[bin]]
 name = "pb"
@@ -57,9 +57,8 @@ bevy = { version = "0.15.0", default-features = false, features = [
     "x11",
     "zstd",
 ] }
-image = { version = "0.25", default-features = false, features = ["png"] }
-webbrowser = { version = "1.0", features = ["hardened"] }
-winit = { version = "0.30", default-features = false }
+image = { version = "0.25.0", default-features = false, features = ["png"] }
+winit = { version = "0.30.0", default-features = false }
 pb-assets = { version = "0.1.0", path = "pb-assets" }
 pb-store = { version = "0.1.0", path = "pb-store" }
 pb-util = { version = "0.1.0", path = "pb-util" }

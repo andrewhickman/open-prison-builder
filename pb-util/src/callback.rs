@@ -6,7 +6,7 @@ use bevy::{
         world::{Command, CommandQueue},
     },
     prelude::*,
-    tasks::IoTaskPool,
+    tasks::{AsyncComputeTaskPool, IoTaskPool},
 };
 use crossbeam_channel::{Receiver, Sender};
 
@@ -18,6 +18,16 @@ pub fn spawn_io(f: impl Future<Output = ()> + Send + 'static) {
 #[cfg(target_arch = "wasm32")]
 pub fn spawn_io(f: impl Future<Output = ()> + 'static) {
     IoTaskPool::get().spawn(f).detach();
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn spawn_compute(f: impl Future<Output = ()> + Send + 'static) {
+    AsyncComputeTaskPool::get().spawn(f).detach();
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn spawn_compute(f: impl Future<Output = ()> + 'static) {
+    AsyncComputeTaskPool::get().spawn(f).detach();
 }
 
 pub struct CallbackPlugin;

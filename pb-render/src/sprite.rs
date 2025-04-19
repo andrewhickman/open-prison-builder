@@ -17,12 +17,9 @@ pub fn pawn_added(
     mut commands: Commands,
     assets: Res<AssetHandles>,
 ) {
-    commands.entity(trigger.entity()).insert((
-        Sprite {
-            custom_size: Some(Vec2::splat(pawn::RADIUS * 2.5)),
-            image: assets.pawn_image.clone(),
-            ..default()
-        },
-        Visibility::default(),
-    ));
+    commands.entity(trigger.entity()).insert((Sprite {
+        custom_size: Some(Vec2::splat(pawn::RADIUS * 2.5)),
+        image: assets.pawn_image.clone(),
+        ..default()
+    },));
 }

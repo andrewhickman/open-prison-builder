@@ -7,20 +7,23 @@ use pb_engine::{
 use pb_render::wall::Hidden;
 use pb_util::{try_modify_component, ChildBuildExt};
 
-use crate::input::{
-    action::InputAction,
-    picking::{
-        physics::{
-            wall::{CancelWall, ClickWall, SelectWall, WallPickKind},
-            PhysicsPickingState,
+use crate::{
+    action::Action,
+    input::{
+        cancel::Cancellable,
+        picking::{
+            physics::{
+                wall::{CancelWall, ClickWall, SelectWall, WallPickKind},
+                PhysicsPickingState,
+            },
+            point::{grid::Grid, CancelPoint, ClickPoint, SelectPoint},
         },
-        point::{grid::Grid, CancelPoint, ClickPoint, SelectPoint},
     },
 };
 
 pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
     commands
-        .spawn((WallAction::default(), Name::new(WallAction::type_path())))
+        .spawn(WallAction::default())
         .with_children(|builder| {
             builder.spawn(Grid::default());
 
@@ -35,7 +38,7 @@ pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
 }
 
 #[derive(Default, Debug, Component, TypePath)]
-#[require(InputAction, PhysicsPickingState(|| PhysicsPickingState::Wall), Transform, Visibility)]
+#[require(Action, Cancellable, PhysicsPickingState(|| PhysicsPickingState::Wall), Transform, Visibility, Name(|| Name::new(WallAction::type_path())))]
 pub enum WallAction {
     #[default]
     SelectStart,
@@ -79,7 +82,7 @@ fn select_point(
     mut action: Single<(Entity, &mut WallAction)>,
 ) {
     let (id, ref mut action) = *action;
-    action.select_point(id, &mut commands, &mut wall_map, trigger.event().point);
+    action.select_point(id, &mut commands, &mut wall_map, trigger.point);
 }
 
 fn cancel_point(
@@ -99,7 +102,7 @@ fn click_point(
     engine_state: Res<State<EngineState>>,
 ) {
     let (id, ref mut action) = *action;
-    action.select_point(id, &mut commands, &mut wall_map, trigger.event().point);
+    action.select_point(id, &mut commands, &mut wall_map, trigger.point);
     action.click(&mut commands, &engine_state)
 }
 
@@ -110,7 +113,7 @@ fn select_wall(
     mut action: Single<(Entity, &mut WallAction)>,
 ) {
     let (id, ref mut action) = *action;
-    match trigger.event().kind {
+    match trigger.kind {
         WallPickKind::Vertex { vertex, position } => {
             action.select_vertex(id, &mut commands, &mut wall_map, vertex, position)
         }
@@ -152,7 +155,7 @@ fn click_wall(
     engine_state: Res<State<EngineState>>,
 ) {
     let (id, ref mut action) = *action;
-    match trigger.event().kind {
+    match trigger.kind {
         WallPickKind::Vertex { vertex, position } => {
             action.select_vertex(id, &mut commands, &mut wall_map, vertex, position);
             action.click(&mut commands, &engine_state)

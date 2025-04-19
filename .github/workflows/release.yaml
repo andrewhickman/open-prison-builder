@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -70,6 +72,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -120,6 +124,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:

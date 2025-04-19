@@ -3,7 +3,7 @@ use pb_engine::EngineState;
 
 use crate::{input::CancelInput, widget::UiBuilder, UiState};
 
-#[derive(Default, Resource)]
+#[derive(Debug, Default, Resource)]
 pub struct CancelStack {
     entities: Vec<Entity>,
 }

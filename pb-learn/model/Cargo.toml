@@ -1,0 +1,18 @@
+[package]
+name = "pb-learn-model"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+anyhow = "1.0.97"
+fs-err = "3.1.0"
+itertools = "0.14.0"
+prettyplease = "0.2.32"
+prost = "0.13.5"
+quote = "1.0.40"
+syn = { version = "2.0.100", features = ["extra-traits"] }
+
+[build-dependencies]
+prost-build = "0.13.5"
+protox = "0.8.0"

@@ -1,6 +1,6 @@
-pub mod action;
 pub mod camera;
 pub mod cancel;
+pub mod movement;
 pub mod picking;
 pub mod settings;
 
@@ -10,11 +10,12 @@ use bevy::{
     input::{keyboard::KeyboardInput, ButtonState},
     prelude::*,
 };
+use movement::{MovementDirection, MovementInput};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
-pub enum Action {
+pub enum Input {
     Cancel,
     PanLeft,
     PanUp,
@@ -24,6 +25,10 @@ pub enum Action {
     ZoomOut,
     DecreaseGridSize,
     IncreaseGridSize,
+    MoveLeft,
+    MoveForward,
+    MoveRight,
+    MoveBackward,
 }
 
 #[derive(Event, Debug, Clone, Copy)]
@@ -70,45 +75,61 @@ pub fn read(
             }
 
             match binding.action {
-                Action::Cancel => {
+                Input::Cancel => {
                     if event.state == ButtonState::Released {
                         commands.trigger(CancelInput);
                     }
                 }
-                Action::PanLeft => commands.trigger(CameraInput {
+                Input::PanLeft => commands.trigger(CameraInput {
                     kind: CameraInputKind::PanLeft,
                     state: event.state,
                 }),
-                Action::PanUp => commands.trigger(CameraInput {
+                Input::PanUp => commands.trigger(CameraInput {
                     kind: CameraInputKind::PanUp,
                     state: event.state,
                 }),
-                Action::PanRight => commands.trigger(CameraInput {
+                Input::PanRight => commands.trigger(CameraInput {
                     kind: CameraInputKind::PanRight,
                     state: event.state,
                 }),
-                Action::PanDown => commands.trigger(CameraInput {
+                Input::PanDown => commands.trigger(CameraInput {
                     kind: CameraInputKind::PanDown,
                     state: event.state,
                 }),
-                Action::ZoomIn => commands.trigger(CameraInput {
+                Input::ZoomIn => commands.trigger(CameraInput {
                     kind: CameraInputKind::ZoomIn,
                     state: event.state,
                 }),
-                Action::ZoomOut => commands.trigger(CameraInput {
+                Input::ZoomOut => commands.trigger(CameraInput {
                     kind: CameraInputKind::ZoomOut,
                     state: event.state,
                 }),
-                Action::DecreaseGridSize => {
+                Input::DecreaseGridSize => {
                     if event.state == ButtonState::Released {
                         commands.trigger(GridInput::DecreaseSize);
                     }
                 }
-                Action::IncreaseGridSize => {
+                Input::IncreaseGridSize => {
                     if event.state == ButtonState::Released {
                         commands.trigger(GridInput::IncreaseSize);
                     }
                 }
+                Input::MoveLeft => commands.trigger(MovementInput {
+                    dir: MovementDirection::Left,
+                    state: event.state,
+                }),
+                Input::MoveForward => commands.trigger(MovementInput {
+                    dir: MovementDirection::Forward,
+                    state: event.state,
+                }),
+                Input::MoveRight => commands.trigger(MovementInput {
+                    dir: MovementDirection::Right,
+                    state: event.state,
+                }),
+                Input::MoveBackward => commands.trigger(MovementInput {
+                    dir: MovementDirection::Backward,
+                    state: event.state,
+                }),
             }
         }
     }
