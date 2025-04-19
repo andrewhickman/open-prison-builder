@@ -177,8 +177,11 @@ impl<'w> UiBuilder<'w, '_> {
         });
 
         icon_grid
-            .tile_button(theme, "Pathing Stress Test", assets.pawn_image.clone())
-            .on_click(dev_tools::path_stress_test::start);
+            .tile_button(theme, "Spawn 1000 Pawns", assets.pawn_image.clone())
+            .on_click(dev_tools::path_stress_test::spawn_1000_pawns);
+        icon_grid
+            .tile_button(theme, "Create path tasks", assets.pawn_image.clone())
+            .on_click(dev_tools::path_stress_test::create_path_tasks);
 
         icon_grid
     }

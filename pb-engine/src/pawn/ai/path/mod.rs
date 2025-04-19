@@ -77,7 +77,7 @@ pub fn update(
         };
 
         if !collisions.is_empty() {
-            info!("collided :(")
+            debug!("collided :(")
         }
 
         let Some(steps) = path.poll() else {
