@@ -121,6 +121,6 @@ impl Plugin for PbUiPlugin {
             .add_observer(input::picking::physics::wall::wall_added)
             .add_observer(action::action_added)
             .add_observer(action::action_removed)
-            .add_observer(ribbon::wall::cancel);
+            .add_observer(ribbon::architect::wall::cancel);
     }
 }
