@@ -76,19 +76,10 @@ pub fn movement(
         &AngularVelocity,
         &mut ExternalForce,
         &mut ExternalTorque,
-        &mut ShapeCaster,
     )>,
 ) {
     pawn_q.par_iter_mut().for_each(
-        |(
-            pawn,
-            rotation,
-            linear_velocity,
-            angular_velocity,
-            mut force,
-            mut torque,
-            mut shape_caster,
-        )| {
+        |(pawn, rotation, linear_velocity, angular_velocity, mut force, mut torque)| {
             force.persistent = false;
             torque.persistent = false;
 
@@ -102,19 +93,6 @@ pub fn movement(
                 torque.apply_torque(pawn.torque * MAX_TORQUE);
             } else if relative_ne!(angular_velocity.0, 0.) {
                 torque.apply_torque((-angular_velocity.0).signum() * MAX_TORQUE);
-            }
-
-            if relative_ne!(linear_velocity.0, Vec2::ZERO) {
-                shape_caster.enabled = true;
-                shape_caster.direction = match Dir2::new(rotation.inverse() * linear_velocity.0) {
-                    Ok(dir) => dir,
-                    Err(err) => {
-                        warn!("invalid linear velocity: {err}");
-                        return;
-                    }
-                }
-            } else {
-                shape_caster.enabled = false;
             }
         },
     );
