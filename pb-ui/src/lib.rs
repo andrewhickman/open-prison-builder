@@ -56,7 +56,7 @@ impl Plugin for PbUiPlugin {
                 theme::init.after(pb_assets::load),
                 layout::init.after(theme::init),
                 input::camera::init.after(theme::init),
-                input::settings::init.after(pb_store::init),
+                input::settings::init,
             ),
         );
 

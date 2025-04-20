@@ -14,6 +14,7 @@ use avian2d::{
 };
 use bevy::prelude::*;
 use build::Blueprint;
+use map::{Map, MapLayer};
 use pawn::Pawn;
 use root::Root;
 use vleue_navigator::prelude::*;
@@ -33,6 +34,8 @@ impl Plugin for PbEnginePlugin {
         app.init_resource::<WallMap>();
 
         app.register_type::<Root>()
+            .register_type::<Map>()
+            .register_type::<MapLayer>()
             .register_type::<Blueprint>()
             .register_type::<Pawn>()
             .register_type::<Wall>()

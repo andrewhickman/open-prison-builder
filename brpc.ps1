@@ -19,3 +19,7 @@ function Get-BevyEntity($id) {
     $components = Get-BevyEntityComponents $id | Select-Object -ExpandProperty result
     Invoke-BevyApi 'bevy/get' @{ entity = $id; components = $components }
 }
+
+function Remove-BevyEntity($id) {
+    Invoke-BevyApi 'bevy/destroy' @{ entity = $id }
+}

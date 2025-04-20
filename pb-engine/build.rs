@@ -8,6 +8,6 @@ fn main() -> anyhow::Result<()> {
     println!("cargo::rerun-if-changed={}", movement_model.display());
     pb_learn_model::generate_model(
         &movement_model,
-        &manifest_dir.join("src/pawn/ai/path/movement.rs"),
+        &manifest_dir.join("src/pawn/ai/path/model.rs"),
     )
 }

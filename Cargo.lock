@@ -3966,12 +3966,16 @@ dependencies = [
 name = "pb-learn-env"
 version = "0.1.0"
 dependencies = [
+ "approx",
  "avian2d",
  "bevy",
  "pb-engine",
  "pb-util",
  "pyo3",
  "rand 0.9.1",
+ "serde",
+ "serde_json",
+ "vleue_navigator",
 ]
 
 [[package]]

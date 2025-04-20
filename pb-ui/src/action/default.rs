@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use pb_engine::pawn::{ai::path::PathTaskBundle, Pawn};
 use pb_util::{try_opt, try_res_s, ChildBuildExt};
-use vleue_navigator::{prelude::ManagedNavMesh, NavMesh};
+use vleue_navigator::{
+    prelude::{ManagedNavMesh, NavMeshStatus},
+    NavMesh,
+};
 
 use crate::{
     action::Action,
@@ -46,10 +49,14 @@ fn click_point(
     mut commands: Commands,
     mut action: Single<&mut DefaultAction>,
     transform_q: Query<&Transform, With<Pawn>>,
-    navmesh_q: Option<Single<&ManagedNavMesh>>,
+    navmesh_q: Option<Single<(&ManagedNavMesh, &NavMeshStatus)>>,
     navmeshes: Res<Assets<NavMesh>>,
 ) {
-    let navmesh = try_opt!(navmeshes.get(try_opt!(navmesh_q).id()));
+    let (navmesh_id, navmesh_status) = *try_opt!(navmesh_q);
+    if *navmesh_status != NavMeshStatus::Built {
+        return;
+    }
+    let navmesh = try_opt!(navmeshes.get(navmesh_id));
 
     action.click_point(&mut commands, trigger.point, &transform_q, navmesh);
 }
