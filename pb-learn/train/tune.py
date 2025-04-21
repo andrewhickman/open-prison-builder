@@ -40,7 +40,7 @@ pb2_scheduler = PB2(
     require_attrs=False
 )
 
-stopping_criteria = {"training_iteration": 500, "env_runners/episode_return_mean": 100}
+stopping_criteria = {"training_iteration": 500, "env_runners/episode_return_mean": 200}
 
 config = (
     PPOConfig()
@@ -62,7 +62,7 @@ config = (
         num_epochs=tune.randint(6, 32),
         vf_share_layers=tune.choice([True, False]),
         use_kl_loss=tune.choice([True, False]),
-        kl_coeff=tune.uniform(0.1, 0.4),
+        kl_coeff=tune.uniform(0.1, 1.0),
         vf_clip_param=tune.choice([10.0, 40.0, float("inf")]),
         grad_clip=tune.choice([None, 40, 100, 200]),
         train_batch_size=tune.sample_from(

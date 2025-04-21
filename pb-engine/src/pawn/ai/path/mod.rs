@@ -4,7 +4,10 @@ mod model;
 use std::{collections::VecDeque, f32::consts::PI};
 
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{
+    ecs::{query::QueryEntityError, system::SystemParam},
+    prelude::*,
+};
 use pb_util::callback::spawn_compute;
 use tokio::sync::oneshot;
 use vleue_navigator::prelude::*;
@@ -26,6 +29,49 @@ pub enum PathTask {
     Running(VecDeque<Vec2>),
 }
 
+#[derive(Default, Clone, Copy, Debug, Component)]
+pub struct PathTarget {
+    pub position: Option<Vec2>,
+}
+
+#[derive(SystemParam)]
+pub struct PathQuery<'w, 's> {
+    spatial_query: SpatialQuery<'w, 's>,
+    pawn_q: Query<
+        'w,
+        's,
+        (
+            &'static mut Pawn,
+            &'static Position,
+            &'static Rotation,
+            &'static Collider,
+            &'static LinearVelocity,
+            &'static AngularVelocity,
+            &'static mut PathTarget,
+        ),
+        With<Pawn>,
+    >,
+    collider_q: Query<
+        'w,
+        's,
+        (
+            &'static Position,
+            &'static Rotation,
+            &'static Collider,
+            &'static LinearVelocity,
+            Has<Wall>,
+            Has<Pawn>,
+        ),
+    >,
+    config: Res<'w, PathQueryConfig>,
+}
+
+#[derive(Resource)]
+pub struct PathQueryConfig {
+    collider: Collider,
+    filter: SpatialQueryFilter,
+}
+
 #[derive(Debug)]
 pub struct PathObservation {
     pub linear_velocity_t: f32,
@@ -38,6 +84,8 @@ pub struct PathObservation {
     pub collision_normal_t: f32,
     pub collision_is_wall: f32,
     pub collision_is_pawn: f32,
+    pub collision_velocity_t: f32,
+    pub collision_velocity_r: f32,
 }
 
 impl PathTaskBundle {
@@ -75,116 +123,258 @@ impl PathTaskBundle {
 pub fn update(
     mut commands: Commands,
     mut task_q: Query<(Entity, &Task, &mut PathTask)>,
-    mut pawn_q: Query<
-        (
-            &mut Pawn,
-            &Position,
-            &Rotation,
-            &LinearVelocity,
-            &AngularVelocity,
-            &ShapeHits,
-        ),
-        With<Pawn>,
-    >,
-    has_pawn_q: Query<(), With<Pawn>>,
-    has_wall_q: Query<(), With<Wall>>,
+    mut path_q: PathQuery,
     time: Res<Time>,
 ) {
     for (id, task, mut path) in &mut task_q {
-        let Ok((mut pawn, position, rotation, linear_velocity, angular_velocity, collisions)) =
-            pawn_q.get_mut(task.actor)
-        else {
-            warn!("invalid target for PathTask");
-            return;
-        };
-
         let Some(steps) = path.poll() else {
             return;
         };
 
-        if let Some(&next_step) = steps.front() {
-            let obs = PathObservation::new(
-                position,
-                rotation,
-                linear_velocity,
-                angular_velocity,
-                collisions,
-                next_step,
-                |id| has_pawn_q.contains(id),
-                |id| has_wall_q.contains(id),
+        loop {
+            let obs = path_q.observe(task.actor).expect("invalid entity");
+
+            info!("obs: {:#?}", obs);
+            info!("velocity_reward: {}", obs.velocity_reward());
+            info!(
+                "angular_velocity_penalty: {}",
+                obs.angular_velocity_penalty()
             );
+            info!("rotation_penalty: {}", obs.rotation_penalty());
+            info!("collision_penalty: {}", obs.collision_penalty());
 
             if obs.done(time.delta_secs()) {
-                steps.pop_front();
+                match steps.pop_front() {
+                    Some(target) => {
+                        path_q
+                            .set_target(task.actor, Some(target))
+                            .expect("invalid entity");
+                    }
+                    None => {
+                        info!("completed path");
+                        path_q.act(task.actor, 0., 0., 0.).expect("invalid entity");
+                        path_q.set_target(task.actor, None).expect("invalid entity");
+                        commands.entity(id).despawn_recursive();
+                        break;
+                    }
+                }
             } else {
                 let [[angle, force, torque, _, _, _]] = model::main_graph([obs.into()]);
 
-                pawn.update_movement(angle, force, torque);
+                path_q
+                    .act(task.actor, angle, force, torque)
+                    .expect("invalid entity");
+                break;
             }
-        } else {
-            pawn.dir = Vec2::ZERO;
-            pawn.torque = 0.;
-            commands.entity(id).despawn_recursive();
+        }
+    }
+}
+
+// TODO onremove clear target
+
+impl PathQuery<'_, '_> {
+    pub fn observe(&self, entity: Entity) -> Result<PathObservation, QueryEntityError> {
+        let (_, position, rotation, collider, linear_velocity, angular_velocity, target) =
+            self.pawn_q.get(entity)?;
+
+        let collision = self.collision(entity, *position, *rotation, collider);
+
+        Ok(PathObservation::new(
+            position,
+            rotation,
+            linear_velocity,
+            angular_velocity,
+            collision,
+            target.position.unwrap_or(position.0),
+        ))
+    }
+
+    pub fn set_target(
+        &mut self,
+        entity: Entity,
+        position: Option<Vec2>,
+    ) -> Result<(), QueryEntityError> {
+        let (_, _, _, _, _, _, mut target) = self.pawn_q.get_mut(entity)?;
+        target.position = position;
+        Ok(())
+    }
+
+    pub fn act(
+        &mut self,
+        entity: Entity,
+        angle: f32,
+        force: f32,
+        torque: f32,
+    ) -> Result<(), QueryEntityError> {
+        let (mut pawn, _, _, _, _, _, _) = self.pawn_q.get_mut(entity)?;
+        pawn.update_movement(angle, force, torque);
+        Ok(())
+    }
+
+    fn collision(
+        &self,
+        entity: Entity,
+        pawn_position: Position,
+        pawn_rotation: Rotation,
+        pawn_collider: &Collider,
+    ) -> Option<PathCollision> {
+        let inv_isometry = Isometry2d::new(pawn_position.0, pawn_rotation.into()).inverse();
+
+        let mut result = None;
+        self.spatial_query.shape_intersections_callback(
+            &self.config.collider,
+            pawn_position.0,
+            pawn_rotation.as_radians(),
+            &self.config.filter,
+            |collider_entity| {
+                if collider_entity == entity {
+                    return true;
+                }
+
+                let Ok((
+                    collider_position,
+                    collider_rotation,
+                    collider_shape,
+                    collider_velocity,
+                    collider_is_wall,
+                    collider_is_pawn,
+                )) = self.collider_q.get(collider_entity)
+                else {
+                    warn!("invalid collision entity");
+                    return true;
+                };
+
+                if let Some(contact) = contact_query::contact(
+                    pawn_collider,
+                    pawn_position,
+                    pawn_rotation,
+                    collider_shape,
+                    *collider_position,
+                    *collider_rotation,
+                    VISION_RADIUS,
+                )
+                .unwrap()
+                {
+                    let point2 = collider_rotation * contact.point2 - pawn_position.0;
+                    let normal = inv_isometry.rotation * contact.global_normal2(collider_rotation);
+
+                    let pawn_space_velocity = inv_isometry.rotation * collider_velocity.0;
+
+                    let contact = PathCollision {
+                        angle: point2.to_angle(),
+                        distance: -contact.penetration,
+                        normal: normal.to_angle(),
+                        velocity_t: pawn_space_velocity.to_angle(),
+                        velocity_r: pawn_space_velocity.length_squared()
+                            / (MAX_VELOCITY * MAX_VELOCITY),
+                        is_pawn: collider_is_pawn,
+                        is_wall: collider_is_wall,
+                    };
+
+                    match &result {
+                        None => result = Some(contact),
+                        Some(closest_contact) if contact.distance < closest_contact.distance => {
+                            result = Some(contact)
+                        }
+                        _ => (),
+                    }
+                }
+
+                true
+            },
+        );
+
+        result
+    }
+}
+
+impl Default for PathQueryConfig {
+    fn default() -> Self {
+        Self {
+            collider: Collider::circle(VISION_RADIUS),
+            filter: SpatialQueryFilter::DEFAULT,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct PathCollision {
+    angle: f32,
+    distance: f32,
+    normal: f32,
+    velocity_t: f32,
+    velocity_r: f32,
+    is_pawn: bool,
+    is_wall: bool,
+}
+
+impl Default for PathCollision {
+    fn default() -> Self {
+        Self {
+            angle: 1.,
+            distance: VISION_RADIUS,
+            normal: 0.,
+            velocity_t: 0.,
+            velocity_r: 0.,
+            is_pawn: false,
+            is_wall: false,
         }
     }
 }
 
 impl PathObservation {
-    pub const SIZE: usize = 10;
+    pub const SIZE: usize = 12;
 
     pub fn new(
         position: &Position,
         rotation: &Rotation,
         linear_velocity: &LinearVelocity,
         angular_velocity: &AngularVelocity,
-        collisions: &ShapeHits,
+        collision: Option<PathCollision>,
         target: Vec2,
-        mut is_pawn_fn: impl FnMut(Entity) -> bool,
-        mut is_wall_fn: impl FnMut(Entity) -> bool,
     ) -> Self {
         let inv_isometry = Isometry2d::new(position.0, (*rotation).into()).inverse();
 
         let pawn_space_target = inv_isometry * target;
         let pawn_space_linear_velocity = inv_isometry.rotation * linear_velocity.0;
 
-        let (collision_t, collision_r, collision_normal_t, collision_is_wall, collision_is_pawn) =
-            if collisions.is_empty() {
-                (PI, VISION_RADIUS, 0., 0., 0.)
-            } else {
-                let collision = &collisions.as_slice()[0];
-
-                let pawn_space_point = inv_isometry * collision.point1;
-                let pawn_space_normal = inv_isometry.rotation * collision.normal1;
-
-                let is_pawn = is_pawn_fn(collision.entity);
-                let is_wall = is_wall_fn(collision.entity);
-
-                (
-                    pawn_space_point.to_angle(),
-                    collision.distance,
-                    pawn_space_normal.to_angle(),
-                    is_pawn as u32 as f32,
-                    is_wall as u32 as f32,
-                )
-            };
+        let collision = collision.unwrap_or_default();
 
         PathObservation {
-            linear_velocity_t: pawn_space_linear_velocity.to_angle(),
+            linear_velocity_t: pawn_space_linear_velocity.to_angle() / PI,
             linear_velocity_r: pawn_space_linear_velocity.length_squared()
                 / (MAX_VELOCITY * MAX_VELOCITY),
             angular_velocity: angular_velocity.0 / MAX_ANGULAR_VELOCITY,
-            target_t: pawn_space_target.to_angle(),
+            target_t: pawn_space_target.to_angle() / PI,
             target_r: pawn_space_target.length().min(VISION_RADIUS),
-            collision_t,
-            collision_r,
-            collision_normal_t,
-            collision_is_wall,
-            collision_is_pawn,
+            collision_t: collision.angle / PI,
+            collision_r: collision.distance,
+            collision_normal_t: collision.normal / PI,
+            collision_velocity_t: collision.velocity_t / PI,
+            collision_velocity_r: collision.velocity_r,
+            collision_is_wall: collision.is_wall as u32 as f32,
+            collision_is_pawn: collision.is_pawn as u32 as f32,
         }
     }
 
     pub fn done(&self, delta_secs: f32) -> bool {
         self.target_r < (MAX_VELOCITY * delta_secs)
+    }
+
+    pub fn velocity_reward(&self) -> f32 {
+        ((self.linear_velocity_t - self.target_t) * PI).cos() * self.linear_velocity_r
+    }
+
+    pub fn rotation_penalty(&self) -> f32 {
+        -self.target_t.abs()
+    }
+
+    pub fn angular_velocity_penalty(&self) -> f32 {
+        -self.angular_velocity.abs()
+    }
+
+    pub fn collision_penalty(&self) -> f32 {
+        -(-self.collision_r * 16.).exp2()
     }
 }
 
@@ -199,6 +389,8 @@ impl From<PathObservation> for [f32; PathObservation::SIZE] {
             obs.collision_t,
             obs.collision_r,
             obs.collision_normal_t,
+            obs.collision_velocity_t,
+            obs.collision_velocity_r,
             obs.collision_is_wall,
             obs.collision_is_pawn,
         ]

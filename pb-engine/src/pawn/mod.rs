@@ -2,7 +2,7 @@ pub mod ai;
 
 use std::f32::consts::{PI, TAU};
 
-use ai::Actor;
+use ai::{path::PathTarget, Actor};
 use approx::relative_ne;
 use avian2d::prelude::*;
 use bevy::prelude::*;
@@ -30,6 +30,7 @@ pub const VISION_RADIUS: f32 = 10.;
     TranslationInterpolation,
     LinearDamping(|| LinearDamping(0.5)),
     AngularDamping(|| AngularDamping(0.5)),
+    PathTarget,
 )]
 pub struct Pawn {
     pub dir: Vec2,
@@ -43,7 +44,6 @@ pub struct PawnBundle {
     transform: Transform,
     position: Position,
     rotation: Rotation,
-    shape_caster: ShapeCaster,
 }
 
 impl Pawn {
@@ -62,8 +62,6 @@ impl PawnBundle {
                 .with_rotation(Quat::from_axis_angle(Vec3::Z, rotation)),
             position: Position(position),
             rotation: Rotation::radians(rotation),
-            shape_caster: ShapeCaster::new(Collider::circle(RADIUS), Vec2::ZERO, 0., Dir2::X)
-                .with_max_distance(VISION_RADIUS),
         }
     }
 }

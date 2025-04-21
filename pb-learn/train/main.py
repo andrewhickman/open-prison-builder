@@ -39,7 +39,7 @@ config = (
 ppo = config.build_algo()
 ppo.restore_from_path(f"{__file__}/../models/movement")
 
-for i in range(200):
+for i in range(400):
     res = ppo.train()
     print(f"training iteration {i}")
     print(f"episode reward mean {res['env_runners'].get('episode_return_mean')}")
@@ -47,13 +47,17 @@ for i in range(200):
     if res['done']:
         break
 
+    # if i % 100 == 99:
+    #     ppo.save_to_path(f"{__file__}/../models/movement")
+
+
 ppo.save_to_path(f"{__file__}/../models/movement")
 
 torch.onnx.export(
     ppo.get_module(),
     {
         'batch': {
-            'obs': torch.randn(1, 10)
+            'obs': torch.randn(1, 12)
         }
     },
     "models/movement.onnx",

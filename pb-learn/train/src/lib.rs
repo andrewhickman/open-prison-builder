@@ -8,12 +8,13 @@ use bevy::{
     time::TimeUpdateStrategy,
 };
 use pb_engine::{
-    pawn::{ai::path::PathObservation, Pawn, PawnBundle, MAX_ANGULAR_VELOCITY, MAX_VELOCITY},
+    pawn::{
+        ai::path::{PathObservation, PathQuery, PathTarget},
+        PawnBundle, MAX_ANGULAR_VELOCITY, MAX_VELOCITY,
+    },
     save::{load, LoadSeed, Save},
-    wall::Wall,
     PbEnginePlugin,
 };
-use pb_util::math::normalize_angle;
 use pyo3::prelude::*;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use serde::de::DeserializeSeed;
@@ -29,24 +30,11 @@ pub fn pb_learn(m: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 
 #[pyclass]
-#[derive(Debug)]
 pub struct Environment {
     app: App,
     rng: SmallRng,
     entity: Entity,
-    pawn_q: QueryState<
-        (
-            &'static Position,
-            &'static Rotation,
-            &'static LinearVelocity,
-            &'static AngularVelocity,
-            &'static TargetPosition,
-            &'static ShapeHits,
-        ),
-        With<Pawn>,
-    >,
-    has_pawn_q: QueryState<(), With<Wall>>,
-    has_wall_q: QueryState<(), With<Wall>>,
+    path_q: SystemState<PathQuery<'static, 'static>>,
     navmesh_q: QueryState<(&'static ManagedNavMesh, &'static NavMeshStatus)>,
     step_count: usize,
     path: Vec<Vec2>,
@@ -72,9 +60,6 @@ pub struct Observation {
     pub collision_is_wall: f32,
     pub collision_is_pawn: f32,
 }
-
-#[derive(Copy, Clone, Debug, Component)]
-pub struct TargetPosition(pub Vec2);
 
 const TIMESTEP: Duration = Duration::from_micros(15625);
 
@@ -111,9 +96,7 @@ impl Environment {
         let mut load_state = SystemState::new(app.world_mut());
         load(app.world_mut(), &mut load_state, &saved_walls).unwrap();
 
-        let pawn_q = app.world_mut().query_filtered();
-        let has_pawn_q = app.world_mut().query_filtered();
-        let has_wall_q = app.world_mut().query_filtered();
+        let path_q = SystemState::new(app.world_mut());
         let navmesh_q = app.world_mut().query();
 
         app.update();
@@ -122,9 +105,7 @@ impl Environment {
             app,
             rng: SmallRng::from_os_rng(),
             entity: Entity::PLACEHOLDER,
-            pawn_q,
-            has_pawn_q,
-            has_wall_q,
+            path_q,
             navmesh_q,
             step_count: 0,
             path: Vec::new(),
@@ -186,7 +167,9 @@ impl Environment {
                 PawnBundle::new(position, rotation),
                 LinearVelocity(linear_velocity),
                 AngularVelocity(angular_velocity),
-                TargetPosition(target),
+                PathTarget {
+                    position: Some(target),
+                },
             ))
             .id();
         self.step_count = 0;
@@ -207,29 +190,23 @@ impl Environment {
 
         let mut observation = self.observe();
 
-        let step_terminated = observation.target_r < (MAX_VELOCITY * TIMESTEP.as_secs_f32());
+        let step_terminated = observation.done(TIMESTEP.as_secs_f32());
         let terminated = step_terminated && self.path.is_empty();
 
         let truncated = self.step_count > 2000;
 
         let dist_reward = if step_terminated {
-            self.rng.random_range(2.0..5.0)
+            self.rng.random_range(3.0..6.0)
         } else {
             (prev_observation.target_r - observation.target_r)
                 / (MAX_VELOCITY * TIMESTEP.as_secs_f32())
         };
-        let velocity_reward = normalize_angle(observation.linear_velocity_t - observation.target_t)
-            .cos()
-            * (observation.linear_velocity_r / MAX_VELOCITY);
-        let rotation_penalty = observation.target_t.abs() / PI;
-        let angular_velocity_penalty = observation.angular_velocity / MAX_ANGULAR_VELOCITY;
 
-        let collision_penality = (-observation.collision_r * 16.).exp2();
-
-        let reward = dist_reward * 1.2 + velocity_reward * 0.7
-            - rotation_penalty * 0.5
-            - angular_velocity_penalty * 0.5
-            - collision_penality * 2.;
+        let reward = dist_reward
+            + observation.velocity_reward() * 0.5
+            + observation.rotation_penalty() * 0.5
+            // + observation.angular_velocity_penalty() * 0.25
+            + observation.collision_penalty() * 0.5;
 
         if step_terminated && !terminated {
             self.step_count = 0;
@@ -243,30 +220,19 @@ impl Environment {
 
 impl Environment {
     fn act(&mut self, action: Action) {
-        self.app
-            .world_mut()
-            .entity_mut(self.entity)
-            .get_mut::<Pawn>()
-            .unwrap()
-            .update_movement(action.angle, action.force, action.torque);
+        self.path_q
+            .get_mut(self.app.world_mut())
+            .act(self.entity, action.angle, action.force, action.torque)
+            .unwrap();
 
         self.app.update();
     }
 
     fn observe(&mut self) -> PathObservation {
-        let (position, rotation, linear_velocity, angular_velocity, target, collisions) =
-            self.pawn_q.get(self.app.world(), self.entity).unwrap();
-
-        PathObservation::new(
-            position,
-            rotation,
-            linear_velocity,
-            angular_velocity,
-            collisions,
-            target.0,
-            |id| self.has_pawn_q.get(self.app.world(), id).is_ok(),
-            |id| self.has_wall_q.get(self.app.world(), id).is_ok(),
-        )
+        self.path_q
+            .get_mut(self.app.world_mut())
+            .observe(self.entity)
+            .unwrap()
     }
 
     fn path(&mut self, from: Vec2, to: Vec2) -> Option<Vec<Vec2>> {
@@ -291,12 +257,11 @@ impl Environment {
 
     fn pop_path(&mut self) {
         let next_target = self.path.remove(0);
-        self.app
-            .world_mut()
-            .entity_mut(self.entity)
-            .get_mut::<TargetPosition>()
-            .unwrap()
-            .0 = next_target;
+
+        self.path_q
+            .get_mut(self.app.world_mut())
+            .set_target(self.entity, Some(next_target))
+            .unwrap();
     }
 }
 
@@ -340,6 +305,9 @@ fn test() {
     println!("{:?}", obs);
     let obs = env.step([0.0, 1.0, 0.0]);
     println!("{:?}", obs);
+    let obs = env.step([0.0, 1.0, 0.0]);
+    println!("{:?}", obs);
 
     assert!(env.path.is_empty());
+    panic!()
 }

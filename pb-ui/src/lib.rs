@@ -114,6 +114,7 @@ impl Plugin for PbUiPlugin {
             .add_observer(input::cancel::input)
             .add_observer(input::camera::input)
             .add_observer(input::movement::input)
+            .add_observer(input::pause::input)
             .add_observer(input::picking::point::grid::input)
             .add_observer(input::picking::point::root_added)
             .add_observer(input::picking::point::grid::on_add)

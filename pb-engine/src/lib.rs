@@ -15,7 +15,7 @@ use avian2d::{
 use bevy::prelude::*;
 use build::Blueprint;
 use map::{Map, MapLayer};
-use pawn::Pawn;
+use pawn::{ai::path::PathQueryConfig, Pawn};
 use root::Root;
 use vleue_navigator::prelude::*;
 use wall::{Vertex, Wall, WallMap};
@@ -50,6 +50,8 @@ impl Plugin for PbEnginePlugin {
         ));
 
         app.insert_resource(Gravity::ZERO);
+
+        app.init_resource::<PathQueryConfig>();
 
         app.add_observer(wall::wall_added)
             .add_observer(wall::wall_removed)
