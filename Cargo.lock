@@ -3955,6 +3955,7 @@ dependencies = [
  "approx",
  "avian2d",
  "bevy",
+ "matrixmultiply",
  "pb-learn-model",
  "pb-util",
  "serde",
