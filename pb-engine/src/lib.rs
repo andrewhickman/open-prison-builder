@@ -72,6 +72,9 @@ impl Plugin for PbEnginePlugin {
             );
 
         #[cfg(feature = "dev")]
+        app.add_systems(Update, pawn::ai::path::debug_draw_path);
+
+        #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());
 
         #[cfg(feature = "dev")]

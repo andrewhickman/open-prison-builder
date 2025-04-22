@@ -56,6 +56,7 @@ pub fn save(world: &World, param: &SaveParam, root: Entity) -> Save {
         .allow_component::<LinearVelocity>()
         .allow_component::<Parent>()
         .allow_component::<Children>()
+        .allow_component::<Children>()
         .extract_entities(once(root).chain(param.children.iter_descendants(root)))
         .remove_empty_entities()
         .build();

@@ -134,14 +134,14 @@ pub fn update(
         loop {
             let obs = path_q.observe(task.actor).expect("invalid entity");
 
-            info!("obs: {:#?}", obs);
-            info!("velocity_reward: {}", obs.velocity_reward());
-            info!(
-                "angular_velocity_penalty: {}",
-                obs.angular_velocity_penalty()
-            );
-            info!("rotation_penalty: {}", obs.rotation_penalty());
-            info!("collision_penalty: {}", obs.collision_penalty());
+            // info!("obs: {:#?}", obs);
+            // info!("velocity_reward: {}", obs.velocity_reward());
+            // info!(
+            //     "angular_velocity_penalty: {}",
+            //     obs.angular_velocity_penalty()
+            // );
+            // info!("rotation_penalty: {}", obs.rotation_penalty());
+            // info!("collision_penalty: {}", obs.collision_penalty());
 
             if obs.done(time.delta_secs()) {
                 match steps.pop_front() {
@@ -410,6 +410,42 @@ impl PathTask {
                     }
                 } else {
                     None
+                }
+            }
+        }
+    }
+
+    #[cfg(feature = "dev")]
+    fn steps(&self) -> Option<&VecDeque<Vec2>> {
+        match self {
+            PathTask::Pending(_) => None,
+            PathTask::Running(steps) => Some(steps),
+        }
+    }
+}
+
+#[cfg(feature = "dev")]
+pub fn debug_draw_path(
+    task_q: Query<(&Task, &PathTask)>,
+    pos_q: Query<&Position>,
+    mut gizmos: Gizmos,
+) {
+    for (task, path) in &task_q {
+        if let Some(steps) = path.steps() {
+            if !steps.is_empty() {
+                if let Ok(start) = pos_q.get(task.actor) {
+                    gizmos.line_2d(
+                        start.0,
+                        steps[0],
+                        bevy::color::palettes::tailwind::INDIGO_800,
+                    );
+                    for i in 0..(steps.len() - 1) {
+                        gizmos.line_2d(
+                            steps[i],
+                            steps[i + 1],
+                            bevy::color::palettes::tailwind::INDIGO_800,
+                        );
+                    }
                 }
             }
         }

@@ -14,20 +14,20 @@ config = (
         num_env_runners=31
     )
     .training(
-        clip_param=0.18136109057935812,
-        entropy_coeff=0.0,
-        gamma=0.9714908573540817,
+        clip_param=0.13635534897407453,
+        entropy_coeff=0.01,
+        gamma=0.6179520528893198,
         grad_clip=40,
-        kl_coeff=0.3998538748809515,
-        kl_target=0.028076881805112107,
-        lambda_=0.9912937250361135,
-        lr=0.000623028408669572,
-        minibatch_size=1024,
-        num_epochs=13,
-        train_batch_size=31744,
-        use_kl_loss=True,
-        vf_clip_param=40.0,
-        vf_loss_coeff=0.5390734273333284,
+        kl_coeff=0.3199837970510152,
+        kl_target=0.007275780799800806,
+        lambda_=0.6215037224883218,
+        lr=0.0004407381097165218,
+        minibatch_size=982,
+        num_epochs=14,
+        train_batch_size=15728,
+        use_kl_loss=False,
+        vf_clip_param=25.6,
+        vf_loss_coeff=0.12592186144165154,
     )
     .rl_module(
         model_config=DefaultModelConfig(
@@ -37,9 +37,9 @@ config = (
 )
 
 ppo = config.build_algo()
-ppo.restore_from_path(f"{__file__}/../models/movement")
+# ppo.restore_from_path(f"{__file__}/../models/movement")
 
-for i in range(400):
+for i in range(200):
     res = ppo.train()
     print(f"training iteration {i}")
     print(f"episode reward mean {res['env_runners'].get('episode_return_mean')}")
