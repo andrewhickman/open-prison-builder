@@ -8,7 +8,7 @@ use bevy::{
     ecs::{query::QueryEntityError, system::SystemParam},
     prelude::*,
 };
-use pb_util::callback::spawn_compute;
+use pb_util::{callback::spawn_compute, try_res_s};
 use tokio::sync::oneshot;
 use vleue_navigator::prelude::*;
 
@@ -170,7 +170,16 @@ pub fn update(
     }
 }
 
-// TODO onremove clear target
+pub fn task_removed(
+    trigger: Trigger<OnReplace, PathTask>,
+    task_q: Query<&Task>,
+    mut target_q: Query<&mut PathTarget>,
+) {
+    let task = try_res_s!(task_q.get(trigger.entity()));
+    if let Ok(mut target) = target_q.get_mut(task.actor) {
+        target.position = None;
+    }
+}
 
 impl PathQuery<'_, '_> {
     pub fn observe(&self, entity: Entity) -> Result<PathObservation, QueryEntityError> {

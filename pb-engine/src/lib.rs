@@ -59,6 +59,7 @@ impl Plugin for PbEnginePlugin {
             .add_observer(pawn::ai::task_added)
             .add_observer(pawn::ai::task_removed)
             .add_observer(pawn::ai::actor_removed)
+            .add_observer(pawn::ai::path::task_removed)
             .add_systems(Update, wall::add_colliders)
             .add_systems(
                 SubstepSchedule,
