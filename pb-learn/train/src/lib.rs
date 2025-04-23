@@ -1,14 +1,27 @@
-use std::{f32::consts::PI, time::Duration};
+#![allow(clippy::type_complexity, clippy::too_many_arguments)]
+
+use std::{collections::VecDeque, f32::consts::PI, time::Duration};
 
 use avian2d::prelude::*;
-use bevy::{prelude::*, scene::ScenePlugin, state::app::StatesPlugin, time::TimeUpdateStrategy};
+use bevy::{
+    ecs::system::SystemState, prelude::*, scene::ScenePlugin, state::app::StatesPlugin,
+    time::TimeUpdateStrategy,
+};
 use pb_engine::{
-    pawn::{Pawn, PawnBundle, MAX_ANGULAR_VELOCITY, MAX_VELOCITY},
+    pawn::{
+        ai::path::{PathObservation, PathQuery},
+        PawnBundle, MAX_ANGULAR_VELOCITY, MAX_VELOCITY,
+    },
+    save::{load, LoadSeed, Save},
     PbEnginePlugin,
 };
-use pb_util::math::normalize_angle;
 use pyo3::prelude::*;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
+use serde::de::DeserializeSeed;
+use vleue_navigator::{
+    prelude::{ManagedNavMesh, NavMeshStatus},
+    NavMesh,
+};
 
 #[pymodule(name = "pb_learn_env")]
 pub fn pb_learn(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -21,18 +34,16 @@ pub struct Environment {
     app: App,
     rng: SmallRng,
     entity: Entity,
-    query: QueryState<(
-        &'static Position,
-        &'static Rotation,
-        &'static LinearVelocity,
-        &'static AngularVelocity,
-        &'static TargetPosition,
-    )>,
+    path_q: SystemState<PathQuery<'static, 'static>>,
+    navmesh_q: QueryState<(&'static ManagedNavMesh, &'static NavMeshStatus)>,
+    step_count: usize,
+    path: VecDeque<Vec2>,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Action {
     pub angle: f32,
+    pub force: f32,
     pub torque: f32,
 }
 
@@ -43,10 +54,12 @@ pub struct Observation {
     pub angular_velocity: f32,
     pub target_t: f32,
     pub target_r: f32,
+    pub collision_t: f32,
+    pub collision_r: f32,
+    pub collision_normal_t: f32,
+    pub collision_is_wall: f32,
+    pub collision_is_pawn: f32,
 }
-
-#[derive(Copy, Clone, Debug, Component)]
-pub struct TargetPosition(pub Vec2);
 
 const TIMESTEP: Duration = Duration::from_micros(15625);
 
@@ -76,17 +89,30 @@ impl Environment {
         app.cleanup();
         app.update();
 
-        let query = app.world_mut().query();
+        let type_registry = app.world().get_resource::<AppTypeRegistry>().unwrap();
+        let seed = LoadSeed::new(type_registry.0.clone());
+        let saved_walls = save_from_json(seed, include_str!("walls.json")).unwrap();
+
+        let mut load_state = SystemState::new(app.world_mut());
+        load(app.world_mut(), &mut load_state, &saved_walls).unwrap();
+
+        let path_q = SystemState::new(app.world_mut());
+        let navmesh_q = app.world_mut().query();
+
+        app.update();
 
         Environment {
             app,
             rng: SmallRng::from_os_rng(),
             entity: Entity::PLACEHOLDER,
-            query,
+            path_q,
+            navmesh_q,
+            step_count: 0,
+            path: VecDeque::new(),
         }
     }
 
-    pub fn reset(&mut self, seed: Option<u64>) -> [f32; Observation::SIZE] {
+    pub fn reset(&mut self, seed: Option<u64>) -> [f32; PathObservation::SIZE] {
         if let Some(seed) = seed {
             self.rng = SmallRng::seed_from_u64(seed);
         }
@@ -95,16 +121,29 @@ impl Environment {
             self.app.world_mut().entity_mut(self.entity).despawn();
         }
 
-        let mut position: Vec2 = self.rng.random::<[f32; 2]>().into();
-        position = (position - Vec2::splat(0.5)) * 10.;
-        let rotation = self.rng.random_range(-PI..PI);
+        let (position, path) = loop {
+            let mut position: Vec2 = self.rng.random::<[f32; 2]>().into();
+            position = (position - Vec2::splat(0.5)) * 10.;
 
-        let target: Vec2 = self.rng.random::<[f32; 2]>().into();
-        let target = if self.rng.random_bool(0.5) {
-            (target - Vec2::splat(0.5)) * 10.
-        } else {
-            position + (target - Vec2::splat(0.5))
+            let mut target: Vec2 = self.rng.random::<[f32; 2]>().into();
+            if self.rng.random_bool(0.3) {
+                target = position + (target - Vec2::splat(0.5)) * 1.;
+            } else {
+                target = (target - Vec2::splat(0.5)) * 10.;
+            }
+
+            let mut offset: Vec2 = self.rng.random::<[f32; 2]>().into();
+            offset = (offset - Vec2::splat(0.5)) * 5.;
+
+            position += offset;
+            target += offset;
+
+            if let Some(steps) = self.path(position, target) {
+                break (position, steps);
+            }
         };
+
+        let rotation = self.rng.random_range(-PI..PI);
 
         let linear_velocity_angle = self.rng.random_range(-PI..PI);
         let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., linear_velocity_angle.abs() / PI);
@@ -126,41 +165,42 @@ impl Environment {
                 PawnBundle::new(position, rotation),
                 LinearVelocity(linear_velocity),
                 AngularVelocity(angular_velocity),
-                TargetPosition(target),
             ))
             .id();
+        self.step_count = 0;
+        self.path = VecDeque::from_iter(path);
         self.observe().into()
     }
 
     pub fn step(
         &mut self,
         action: [f32; Action::SIZE],
-    ) -> ([f32; Observation::SIZE], f32, bool, bool) {
+    ) -> ([f32; PathObservation::SIZE], f32, bool, bool) {
+        self.step_count += 1;
+
         let action = Action::from(action);
         let prev_observation = self.observe();
+        let prev_steps_remaining = self.path.len();
 
         self.act(action);
 
         let observation = self.observe();
+        let steps_completed = prev_steps_remaining - self.path.len();
 
-        let terminated = observation.target_r < (MAX_VELOCITY * TIMESTEP.as_secs_f32());
-        let truncated = observation.target_r > 150.;
+        let terminated = self.path.is_empty();
+        let truncated = self.step_count > 2000;
 
-        let reward = if terminated {
-            self.rng.random_range(2.0..5.0)
+        let dist_reward = if steps_completed > 0 {
+            self.rng.random_range(3.0..6.0) * steps_completed as f32
         } else {
-            let dist_reward = (prev_observation.target_r - observation.target_r)
-                / (MAX_VELOCITY * TIMESTEP.as_secs_f32());
-            let velocity_reward =
-                normalize_angle(observation.linear_velocity_t - observation.target_t).cos()
-                    * (observation.linear_velocity_r / MAX_VELOCITY);
-            let rotation_penalty = observation.target_t.abs() / PI;
-            let angular_velocity_penalty = observation.angular_velocity / MAX_ANGULAR_VELOCITY;
-
-            dist_reward + velocity_reward * 0.7
-                - rotation_penalty * 0.5
-                - angular_velocity_penalty * 0.5
+            (prev_observation.target_r - observation.target_r)
+                / (MAX_VELOCITY * TIMESTEP.as_secs_f32())
         };
+
+        let reward = dist_reward
+            + observation.velocity_reward()
+            + observation.rotation_penalty()
+            + observation.collision_penalty();
 
         (observation.into(), reward, terminated, truncated)
     }
@@ -168,61 +208,53 @@ impl Environment {
 
 impl Environment {
     fn act(&mut self, action: Action) {
-        self.app
-            .world_mut()
-            .entity_mut(self.entity)
-            .get_mut::<Pawn>()
-            .unwrap()
-            .update_movement(action.angle, 1., action.torque);
+        self.path_q
+            .get_mut(self.app.world_mut())
+            .act(self.entity, action.angle, action.force, action.torque)
+            .unwrap();
 
         self.app.update();
     }
 
-    fn observe(&mut self) -> Observation {
-        let (position, rotation, linear_velocity, angular_velocity, target) =
-            self.query.get(self.app.world(), self.entity).unwrap();
-        let inv_isometry = Isometry2d::new(position.0, (*rotation).into()).inverse();
+    fn observe(&mut self) -> PathObservation {
+        self.path_q
+            .get_mut(self.app.world_mut())
+            .observe(self.entity, &mut self.path)
+            .unwrap()
+    }
 
-        let pawn_space_target = inv_isometry * target.0;
-        let pawn_space_linear_velocity = inv_isometry.rotation * linear_velocity.0;
+    fn path(&mut self, from: Vec2, to: Vec2) -> Option<Vec<Vec2>> {
+        loop {
+            let (navmesh_id, status) = self.navmesh_q.single(self.app.world());
+            match status {
+                NavMeshStatus::Building => (),
+                status @ (NavMeshStatus::Failed
+                | NavMeshStatus::Invalid
+                | NavMeshStatus::Cancelled) => panic!("unexpected navmesh status {status:?}"),
+                NavMeshStatus::Built => {
+                    let navmesh_assets = self.app.world().resource::<Assets<NavMesh>>();
+                    let navmesh = navmesh_assets.get(navmesh_id).unwrap();
 
-        Observation {
-            linear_velocity_t: pawn_space_linear_velocity.to_angle(),
-            linear_velocity_r: pawn_space_linear_velocity.length_squared()
-                / (MAX_VELOCITY * MAX_VELOCITY),
-            angular_velocity: angular_velocity.0 / MAX_ANGULAR_VELOCITY,
-            target_t: pawn_space_target.to_angle(),
-            target_r: pawn_space_target.length(),
+                    return navmesh.path(from, to).map(|p| p.path);
+                }
+            }
+
+            self.app.update();
         }
     }
 }
 
 impl Action {
-    pub const SIZE: usize = 2;
+    pub const SIZE: usize = 3;
 }
 
 impl From<[f32; Self::SIZE]> for Action {
-    fn from([a, t]: [f32; Self::SIZE]) -> Self {
+    fn from([angle, force, torque]: [f32; Self::SIZE]) -> Self {
         Action {
-            angle: a,
-            torque: t,
+            angle,
+            force,
+            torque,
         }
-    }
-}
-
-impl Observation {
-    pub const SIZE: usize = 5;
-}
-
-impl From<Observation> for [f32; Observation::SIZE] {
-    fn from(obs: Observation) -> [f32; Observation::SIZE] {
-        [
-            obs.linear_velocity_t,
-            obs.linear_velocity_r,
-            obs.angular_velocity,
-            obs.target_t,
-            obs.target_r.min(10.),
-        ]
     }
 }
 
@@ -232,7 +264,29 @@ impl Default for Environment {
     }
 }
 
+fn save_from_json(seed: LoadSeed, json: &str) -> Result<Save, serde_json::Error> {
+    let mut de = serde_json::Deserializer::from_str(json);
+    let value = seed.deserialize(&mut de)?;
+    de.end()?;
+    Ok(value)
+}
+
 // HACK
 unsafe impl Send for Environment {}
 
 unsafe impl Sync for Environment {}
+
+#[test]
+fn test() {
+    let mut env = Environment::new();
+
+    let obs = env.reset(None);
+    println!("{:?}", obs);
+    let obs = env.step([0.0, 1.0, 0.0]);
+    println!("{:?}", obs);
+    let obs = env.step([0.0, 1.0, 0.0]);
+    println!("{:?}", obs);
+
+    assert!(env.path.is_empty());
+    panic!()
+}

@@ -7,13 +7,14 @@ edition = "2021"
 build = "build.rs"
 
 [features]
-dev = ["avian2d/debug-plugin", "vleue_navigator/debug-with-gizmos"]
+dev = ["avian2d/debug-plugin", "vleue_navigator/debug-with-gizmos", "bevy/bevy_gizmos"]
 
 [dependencies]
 anyhow = "1.0.86"
 approx = "0.5.1"
 avian2d = { version = "0.2.1", default-features = false, features = ["2d", "f32", "parry-f32", "parallel", "bevy_scene"] }
 bevy = { version = "0.15.0", default-features = false, features = ["bevy_state", "bevy_scene", "bevy_render"] }
+matrixmultiply = "0.3.9"
 pb-util = { version = "0.1.0", path = "../pb-util" }
 serde = { version = "1.0.203", features = ["derive"] }
 tokio = { version = "1.44.1", features = ["sync"] }

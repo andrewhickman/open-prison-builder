@@ -89,6 +89,7 @@ impl Default for Settings {
         settings.bind(KeyCode::ArrowUp, Input::MoveForward, vec![]);
         settings.bind(KeyCode::ArrowRight, Input::MoveRight, vec![]);
         settings.bind(KeyCode::ArrowDown, Input::MoveBackward, vec![]);
+        settings.bind(KeyCode::KeyP, Input::TogglePause, vec![]);
         settings
     }
 }

@@ -1,5 +1,5 @@
-pub mod pawn;
-pub mod wall;
+pub mod architect;
+pub mod dev_tools;
 
 use bevy::prelude::*;
 
@@ -19,6 +19,7 @@ pub enum RibbonButton {
     Staff,
     Schedule,
     Manage,
+    DevTools,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Component)]
@@ -27,6 +28,7 @@ pub enum RibbonPanel {
     Staff,
     Schedule,
     Manage,
+    DevTools,
 }
 
 pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>, assets: Res<AssetHandles>) {
@@ -74,6 +76,7 @@ impl<'w> UiBuilder<'w, '_> {
         container.ribbon_button(theme, assets, RibbonButton::Staff);
         container.ribbon_button(theme, assets, RibbonButton::Schedule);
         container.ribbon_button(theme, assets, RibbonButton::Manage);
+        container.ribbon_button(theme, assets, RibbonButton::DevTools);
     }
 
     fn ribbon_button(&mut self, theme: &Theme, assets: &AssetHandles, button: RibbonButton) {
@@ -107,6 +110,7 @@ impl<'w> UiBuilder<'w, '_> {
             RibbonPanel::Staff => self.ribbon_staff_panel(theme, assets),
             RibbonPanel::Schedule => self.ribbon_schedule_panel(theme, assets),
             RibbonPanel::Manage => self.ribbon_manage_panel(theme, assets),
+            RibbonPanel::DevTools => self.ribbon_dev_tools_panel(theme, assets),
         };
 
         panel.cancellable().insert(kind);
@@ -131,10 +135,10 @@ impl<'w> UiBuilder<'w, '_> {
 
         icon_grid
             .tile_button(theme, "Wall", assets.ribbon_button_wall_image.clone())
-            .on_click(wall::wall);
+            .on_click(architect::wall::wall);
         icon_grid
             .tile_button(theme, "Pawn", assets.pawn_image.clone())
-            .on_click(pawn::pawn);
+            .on_click(architect::pawn::pawn);
 
         icon_grid
     }
@@ -154,6 +158,33 @@ impl<'w> UiBuilder<'w, '_> {
     fn ribbon_manage_panel(&mut self, theme: &Theme, _assets: &AssetHandles) -> UiBuilder<'w, '_> {
         self.panel(theme, default())
     }
+
+    fn ribbon_dev_tools_panel(
+        &mut self,
+        theme: &Theme,
+        assets: &AssetHandles,
+    ) -> UiBuilder<'w, '_> {
+        let mut icon_grid = self.container(Node {
+            padding: UiRect::new(theme.gutter, theme.gutter, Val::ZERO, theme.gutter),
+            display: Display::Grid,
+            grid_auto_flow: GridAutoFlow::Column,
+            grid_auto_columns: vec![GridTrack::max_content()],
+            grid_auto_rows: vec![GridTrack::max_content()],
+            row_gap: theme.gutter,
+            column_gap: theme.gutter,
+            align_items: AlignItems::Center,
+            ..default()
+        });
+
+        icon_grid
+            .tile_button(theme, "Spawn 1000 Pawns", assets.pawn_image.clone())
+            .on_click(dev_tools::path_stress_test::spawn_1000_pawns);
+        icon_grid
+            .tile_button(theme, "Create path tasks", assets.pawn_image.clone())
+            .on_click(dev_tools::path_stress_test::create_path_tasks);
+
+        icon_grid
+    }
 }
 
 impl RibbonButton {
@@ -163,6 +194,7 @@ impl RibbonButton {
             RibbonButton::Staff => "Staff",
             RibbonButton::Schedule => "Schedule",
             RibbonButton::Manage => "Manage",
+            RibbonButton::DevTools => "Dev Tools",
         }
     }
 
@@ -172,6 +204,7 @@ impl RibbonButton {
             RibbonButton::Staff => RibbonPanel::Staff,
             RibbonButton::Schedule => RibbonPanel::Schedule,
             RibbonButton::Manage => RibbonPanel::Manage,
+            RibbonButton::DevTools => RibbonPanel::DevTools,
         }
     }
 

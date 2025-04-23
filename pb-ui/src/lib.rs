@@ -56,7 +56,7 @@ impl Plugin for PbUiPlugin {
                 theme::init.after(pb_assets::load),
                 layout::init.after(theme::init),
                 input::camera::init.after(theme::init),
-                input::settings::init.after(pb_store::init),
+                input::settings::init,
             ),
         );
 
@@ -114,6 +114,7 @@ impl Plugin for PbUiPlugin {
             .add_observer(input::cancel::input)
             .add_observer(input::camera::input)
             .add_observer(input::movement::input)
+            .add_observer(input::pause::input)
             .add_observer(input::picking::point::grid::input)
             .add_observer(input::picking::point::root_added)
             .add_observer(input::picking::point::grid::on_add)
@@ -121,6 +122,6 @@ impl Plugin for PbUiPlugin {
             .add_observer(input::picking::physics::wall::wall_added)
             .add_observer(action::action_added)
             .add_observer(action::action_removed)
-            .add_observer(ribbon::wall::cancel);
+            .add_observer(ribbon::architect::wall::cancel);
     }
 }

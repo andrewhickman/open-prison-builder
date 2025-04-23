@@ -1,6 +1,7 @@
 pub mod camera;
 pub mod cancel;
 pub mod movement;
+pub mod pause;
 pub mod picking;
 pub mod settings;
 
@@ -29,6 +30,7 @@ pub enum Input {
     MoveForward,
     MoveRight,
     MoveBackward,
+    TogglePause,
 }
 
 #[derive(Event, Debug, Clone, Copy)]
@@ -55,6 +57,9 @@ pub enum GridInput {
     DecreaseSize,
     IncreaseSize,
 }
+
+#[derive(Event, Debug, Clone, Copy)]
+pub struct TogglePauseInput;
 
 pub fn read(
     mut commands: Commands,
@@ -130,6 +135,11 @@ pub fn read(
                     dir: MovementDirection::Backward,
                     state: event.state,
                 }),
+                Input::TogglePause => {
+                    if event.state == ButtonState::Released {
+                        commands.trigger(TogglePauseInput);
+                    }
+                }
             }
         }
     }

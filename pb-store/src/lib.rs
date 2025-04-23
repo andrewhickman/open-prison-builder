@@ -24,19 +24,19 @@ pub struct Metadata {
     pub modified: DateTime<Utc>,
 }
 
-pub fn init(mut commands: Commands) {
-    commands.insert_resource(Store(Arc::new(
-        sys::Store::new().expect("failed to initialize storage"),
-    )));
-}
-
 impl Plugin for PbStorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
+        app.init_resource::<Store>();
     }
 }
 
 impl Store {
+    pub fn new() -> Self {
+        Store(Arc::new(
+            sys::Store::new().expect("failed to initialize storage"),
+        ))
+    }
+
     pub async fn try_get<T>(&self, key: &str) -> Result<Option<T>>
     where
         T: TypePath + DeserializeOwned + Send,
@@ -72,6 +72,12 @@ impl Store {
 
     pub async fn iter(&self, key: &str) -> Result<Vec<Metadata>> {
         self.0.iter(key).await
+    }
+}
+
+impl Default for Store {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

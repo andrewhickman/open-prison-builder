@@ -14,7 +14,8 @@ use avian2d::{
 };
 use bevy::prelude::*;
 use build::Blueprint;
-use pawn::Pawn;
+use map::{Map, MapLayer};
+use pawn::{ai::path::PathQueryConfig, Pawn};
 use root::Root;
 use vleue_navigator::prelude::*;
 use wall::{Vertex, Wall, WallMap};
@@ -33,6 +34,8 @@ impl Plugin for PbEnginePlugin {
         app.init_resource::<WallMap>();
 
         app.register_type::<Root>()
+            .register_type::<Map>()
+            .register_type::<MapLayer>()
             .register_type::<Blueprint>()
             .register_type::<Pawn>()
             .register_type::<Wall>()
@@ -47,6 +50,8 @@ impl Plugin for PbEnginePlugin {
         ));
 
         app.insert_resource(Gravity::ZERO);
+
+        app.init_resource::<PathQueryConfig>();
 
         app.add_observer(wall::wall_added)
             .add_observer(wall::wall_removed)
@@ -65,6 +70,9 @@ impl Plugin for PbEnginePlugin {
                 FixedUpdate,
                 (pawn::ai::path::update, pawn::movement).chain(),
             );
+
+        #[cfg(feature = "dev")]
+        app.add_systems(Update, pawn::ai::path::debug_draw_path);
 
         #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());

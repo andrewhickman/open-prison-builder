@@ -51,7 +51,7 @@ impl Generator {
             self.output_node(node);
         }
 
-        for tensor in &graph.initializer {
+        for tensor in graph.initializer.iter().rev() {
             self.output_constant(tensor);
         }
 
@@ -236,43 +236,64 @@ impl Generator {
 
     fn output_operation(&self, op: &Operation, inputs: &[String], outputs: &[String]) -> syn::Expr {
         match *op {
-            // TODO: consider using SIMD instructions here
             Operation::Gemm {
                 alpha,
                 beta,
                 trans_a,
                 trans_b,
             } => {
-                let k = if trans_a {
-                    self.vars[&inputs[0]].shape()[0]
+                let a = &self.vars[&inputs[0]];
+                let b = &self.vars[&inputs[1]];
+                let y = &self.vars[&outputs[0]];
+
+                let (m, k) = if trans_a {
+                    (a.shape()[1], a.shape()[0])
                 } else {
-                    self.vars[&inputs[0]].shape()[1]
+                    (a.shape()[0], a.shape()[1])
                 };
 
-                self.output_tensor_from_fn(self.vars[&outputs[0]].ty(), |indices| {
-                    let (m, n) = (indices[0], indices[1]);
+                let n = if trans_b { b.shape()[0] } else { b.shape()[1] };
 
-                    let terms: Vec<syn::Expr> = (0..k)
-                        .map(|k| {
-                            let a_term = if trans_a {
-                                self.output_index_expr(&inputs[0], &[k, m])
-                            } else {
-                                self.output_index_expr(&inputs[0], &[m, k])
-                            };
-                            let b_term = if trans_b {
-                                self.output_index_expr(&inputs[1], &[n, k])
-                            } else {
-                                self.output_index_expr(&inputs[1], &[k, n])
-                            };
+                let a_expr = self.output_ident(&inputs[0]);
+                let b_expr = self.output_ident(&inputs[1]);
+                let c_expr = self.output_tensor_from_fn(y.ty(), |indices| {
+                    self.output_index_expr(&inputs[2], indices)
+                });
 
-                            syn::parse2(quote!(#a_term * #b_term)).unwrap()
-                        })
-                        .collect();
+                let (rsa, csa) = if trans_a {
+                    (1, m as isize)
+                } else {
+                    (k as isize, 1)
+                };
+                let (rsb, csb) = if trans_b {
+                    (1, k as isize)
+                } else {
+                    (n as isize, 1)
+                };
+                let (rsc, csc) = (1isize, m as isize);
 
-                    let c_term = self.output_index_expr(&inputs[2], indices);
-
-                    syn::parse2(quote!(#alpha * (#(#terms)+*) + #beta * #c_term)).unwrap()
-                })
+                syn::parse2(quote!({
+                    let mut c = #c_expr;
+                    unsafe {
+                        ::matrixmultiply::sgemm(
+                            #m,
+                            #k,
+                            #n,
+                            #alpha,
+                            #a_expr.as_flattened().as_ptr(),
+                            #rsa,
+                            #csa,
+                            #b_expr.as_flattened().as_ptr(),
+                            #rsb,
+                            #csb,
+                            #beta,
+                            c.as_flattened_mut().as_mut_ptr(),
+                            #rsc,
+                            #csc);
+                    }
+                    c
+                }))
+                .unwrap()
             }
             Operation::Tanh => self.output_tensor_from_fn(self.vars[&outputs[0]].ty(), |indices| {
                 let input = self.output_index_expr(&inputs[0], indices);
@@ -350,7 +371,12 @@ impl Generator {
         let ident = self.output_ident(name);
         let ty = self.output_tensor_type(tensor.ty());
         let expr = self.output_tensor(tensor);
-        syn::parse2(quote!(const #ident: #ty = #expr;)).unwrap()
+
+        if tensor.ty().len() > 8 {
+            syn::parse2(quote!(static #ident: #ty = #expr;)).unwrap()
+        } else {
+            syn::parse2(quote!(const #ident: #ty = #expr;)).unwrap()
+        }
     }
 
     fn output_tensor_from_fn(

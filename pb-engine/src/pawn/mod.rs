@@ -17,6 +17,7 @@ pub const MAX_VELOCITY: f32 = 1.5;
 pub const REVERSE_VELOCITY: f32 = 0.7;
 pub const MAX_TORQUE: f32 = TAU;
 pub const MAX_ANGULAR_VELOCITY: f32 = PI;
+pub const VISION_RADIUS: f32 = 10.;
 
 #[derive(Debug, Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]

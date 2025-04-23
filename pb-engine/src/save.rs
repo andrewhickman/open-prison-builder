@@ -14,7 +14,7 @@ use bevy::{
 use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
 
 use crate::{
-    map::Map,
+    map::{Map, MapLayer},
     pawn::Pawn,
     root::Root,
     wall::{Vertex, Wall},
@@ -49,10 +49,13 @@ pub fn save(world: &World, param: &SaveParam, root: Entity) -> Save {
         .allow_component::<Wall>()
         .allow_component::<Vertex>()
         .allow_component::<Root>()
+        .allow_component::<Name>()
         .allow_component::<Map>()
+        .allow_component::<MapLayer>()
         .allow_component::<Transform>()
         .allow_component::<LinearVelocity>()
         .allow_component::<Parent>()
+        .allow_component::<Children>()
         .allow_component::<Children>()
         .extract_entities(once(root).chain(param.children.iter_descendants(root)))
         .remove_empty_entities()

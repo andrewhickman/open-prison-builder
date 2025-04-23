@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use pb_util::uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use vleue_navigator::prelude::*;
 
@@ -25,7 +26,9 @@ impl Default for Map {
 pub fn map_added(trigger: Trigger<OnAdd, Map>, mut commands: Commands) {
     commands
         .spawn((
+            Name::new("MapLayer"),
             MapLayer,
+            ManagedNavMesh::from_id(Uuid::new_v4().as_u128()),
             NavMeshSettings {
                 fixed: Triangulation::from_outer_edges(&[
                     Vec2::new(-500.0, -500.0),
