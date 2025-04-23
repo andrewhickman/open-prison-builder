@@ -136,11 +136,6 @@ pub fn update(
 
         let obs = path_q.observe(task.actor, steps).expect("invalid entity");
 
-        // info!("obs: {:#?}", obs.collision_r);
-        // info!("velocity_reward: {}", obs.velocity_reward());
-        // info!("rotation_penalty: {}", obs.rotation_penalty());
-        info!("collision_penalty: {}", obs.collision_penalty());
-
         let [[angle, force, torque, _, _, _]] = model::main_graph([obs.into()]);
         path_q
             .act(task.actor, angle, force, torque)
