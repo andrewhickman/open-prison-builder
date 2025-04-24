@@ -288,5 +288,4 @@ fn test() {
     println!("{:?}", obs);
 
     assert!(env.path.is_empty());
-    panic!()
 }
