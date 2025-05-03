@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{platform::collections::HashMap, prelude::*};
 use pb_store::Store;
 use pb_util::{callback::CallbackSender, spawn_io, AsDynError};
 use serde::{Deserialize, Serialize};

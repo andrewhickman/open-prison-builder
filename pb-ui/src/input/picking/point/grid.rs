@@ -10,8 +10,8 @@ use crate::{
 #[derive(Default, Clone, Copy, Debug, Component)]
 #[require(
     Visibility,
-    Mesh2d(|| Mesh2d(GRID_MESH_HANDLE)),
-    PickingBehavior(|| PickingBehavior::IGNORE),
+    Mesh2d = Mesh2d(GRID_MESH_HANDLE),
+    Pickable = Pickable::IGNORE,
     NoFrustumCulling,
 )]
 pub struct Grid {
@@ -27,7 +27,7 @@ pub fn on_add(
     let grid = grids.add(GridMaterial::new(theme.panel.with_alpha(0.38).into()));
 
     commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .insert(MeshMaterial2d(grid));
 }
 

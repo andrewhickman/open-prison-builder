@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use pb_engine::wall::{self, Wall};
+use pb_render::projection::ProjectionExt;
 use pb_util::{try_opt, try_res_s};
 
 use crate::input::picking::point::grid::Grid;
@@ -35,7 +36,7 @@ pub enum WallPickKind {
 
 pub fn wall_added(trigger: Trigger<OnAdd, Wall>, mut commands: Commands) {
     commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .observe(over)
         .observe(moved)
         .observe(out)
@@ -48,24 +49,24 @@ fn over(
     wall_q: Query<&Wall>,
     vertex_q: Query<&Transform>,
     grid_q: Query<&Grid>,
-    projection_q: Query<&OrthographicProjection>,
+    projection_q: Query<&Projection>,
 ) {
     trigger.propagate(false);
 
     let pos = try_opt!(trigger.event().hit.position).xy();
-    let wall = try_res_s!(wall_q.get(trigger.entity()));
-    let [start, end] = vertex_q.many(wall.vertices());
+    let wall = try_res_s!(wall_q.get(trigger.target()));
+    let [start, end] = vertex_q.get_many(wall.vertices()).unwrap();
 
     commands.trigger(SelectWall {
         kind: WallPickKind::new(
             pos,
-            trigger.entity(),
+            trigger.target(),
             wall.start(),
             start.translation.xy(),
             wall.end(),
             end.translation.xy(),
             &grid_q,
-            try_res_s!(projection_q.get(trigger.event().hit.camera)).scale,
+            try_res_s!(projection_q.get(trigger.event().hit.camera)).scale(),
         ),
     });
 }
@@ -76,24 +77,24 @@ fn moved(
     wall_q: Query<&Wall>,
     vertex_q: Query<&Transform>,
     grid_q: Query<&Grid>,
-    projection_q: Query<&OrthographicProjection>,
+    projection_q: Query<&Projection>,
 ) {
     trigger.propagate(false);
 
     let pos = try_opt!(trigger.event().hit.position).xy();
-    let wall = try_res_s!(wall_q.get(trigger.entity()));
-    let [start, end] = vertex_q.many(wall.vertices());
+    let wall = try_res_s!(wall_q.get(trigger.target()));
+    let [start, end] = vertex_q.get_many(wall.vertices()).unwrap();
 
     commands.trigger(SelectWall {
         kind: WallPickKind::new(
             pos,
-            trigger.entity(),
+            trigger.target(),
             wall.start(),
             start.translation.xy(),
             wall.end(),
             end.translation.xy(),
             &grid_q,
-            try_res_s!(projection_q.get(trigger.event().hit.camera)).scale,
+            try_res_s!(projection_q.get(trigger.event().hit.camera)).scale(),
         ),
     });
 }
@@ -110,24 +111,24 @@ fn click(
     wall_q: Query<&Wall>,
     vertex_q: Query<&Transform>,
     grid_q: Query<&Grid>,
-    projection_q: Query<&OrthographicProjection>,
+    projection_q: Query<&Projection>,
 ) {
     trigger.propagate(false);
 
     let pos = try_opt!(trigger.event().hit.position).xy();
-    let wall = try_res_s!(wall_q.get(trigger.entity()));
-    let [start, end] = vertex_q.many(wall.vertices());
+    let wall = try_res_s!(wall_q.get(trigger.target()));
+    let [start, end] = vertex_q.get_many(wall.vertices()).unwrap();
 
     commands.trigger(ClickWall {
         kind: WallPickKind::new(
             pos,
-            trigger.entity(),
+            trigger.target(),
             wall.start(),
             start.translation.xy(),
             wall.end(),
             end.translation.xy(),
             &grid_q,
-            try_res_s!(projection_q.get(trigger.event().hit.camera)).scale,
+            try_res_s!(projection_q.get(trigger.event().hit.camera)).scale(),
         ),
     });
 }

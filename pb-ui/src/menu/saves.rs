@@ -1,6 +1,13 @@
 use anyhow::Result;
 use bevy::{
-    ecs::{system::SystemState, world::CommandQueue},
+    ecs::{
+        error::HandleError,
+        system::{
+            command::{run_system_cached, run_system_cached_with},
+            SystemState,
+        },
+        world::CommandQueue,
+    },
     prelude::*,
 };
 use pb_engine::{
@@ -11,10 +18,7 @@ use pb_store::{Metadata, Store};
 use smol_str::SmolStr;
 
 use pb_assets::AssetHandles;
-use pb_util::{
-    callback::CallbackSender, run_system_cached, run_system_cached_with, spawn_io, try_res_s,
-    AsDynError,
-};
+use pb_util::{callback::CallbackSender, spawn_io, try_res_s, AsDynError};
 
 use crate::{
     layout::Layout,
@@ -53,7 +57,7 @@ pub fn save_panel_button(
     store: Res<Store>,
 ) {
     for (id, &panel) in &panel_q {
-        commands.entity(id).despawn_recursive();
+        commands.entity(id).despawn();
         if panel == MenuPanel::Save {
             return;
         }
@@ -75,7 +79,7 @@ pub fn load_panel_button(
     store: Res<Store>,
 ) {
     for (id, &panel) in &panel_q {
-        commands.entity(id).despawn_recursive();
+        commands.entity(id).despawn();
         if panel == MenuPanel::Load {
             return;
         }
@@ -100,7 +104,7 @@ fn refresh_save_panel(
     }
 
     for (id, _) in &panel_q {
-        commands.entity(id).despawn_recursive();
+        commands.entity(id).despawn();
     }
 
     UiBuilder::new(commands, layout.menu)
@@ -121,8 +125,8 @@ fn load_button(
 ) {
     let save_name = try_res_s!(save_q.get(trigger.target)).0.name.clone();
 
-    if let Ok(root) = engine_root.get_single() {
-        commands.entity(root).despawn_recursive();
+    if let Ok(root) = engine_root.single() {
+        commands.entity(root).despawn();
     }
 
     ui_state.set(UiState::LoadingSave);
@@ -163,7 +167,7 @@ fn load_button(
 
                 ui_state.set(UiState::Menu);
 
-                message_e.send(Message::error(&error));
+                message_e.write(Message::error(&error));
             }
         }
     }
@@ -200,7 +204,7 @@ fn save_button(
 ) {
     trigger.propagate(false);
 
-    let save_form = try_res_s!(form_q.get(trigger.entity()))
+    let save_form = try_res_s!(form_q.get(trigger.target()))
         .value::<SaveForm>()
         .unwrap();
     save_impl(
@@ -238,8 +242,8 @@ fn save_impl(
         let res = store.set(&format!("saves/{name}.json"), scene).await;
 
         let mut queue = CommandQueue::default();
-        queue.push(run_system_cached_with(on_save_complete, (name, res)));
-        queue.push(run_system_cached(refresh_save_panel));
+        queue.push(run_system_cached_with(on_save_complete, (name, res)).handle_error());
+        queue.push(run_system_cached(refresh_save_panel).handle_error());
         callback.send_batch(queue);
     });
 
@@ -250,12 +254,12 @@ fn save_impl(
         match res {
             Ok(()) => {
                 info!("Successfully saved '{name}'");
-                message_e.send(Message::info(format!("Successfully saved '{name}'")));
+                message_e.write(Message::info(format!("Successfully saved '{name}'")));
             }
             Err(error) => {
                 let error = error.as_dyn_error();
                 error!(error, "Failed to save");
-                message_e.send(Message::error(&error));
+                message_e.write(Message::error(&error));
             }
         }
     }
@@ -335,7 +339,7 @@ impl<'w> UiBuilder<'w, '_> {
             theme: Res<Theme>,
             assets: Res<AssetHandles>,
         ) {
-            let Some(mut container) = commands.get_entity(container_id) else {
+            let Ok(mut container) = commands.get_entity(container_id) else {
                 return;
             };
 

@@ -6,6 +6,7 @@ use bevy::{
 };
 use grid::Grid;
 use pb_engine::{root::Root, EngineState};
+use pb_render::projection::ProjectionExt;
 use pb_util::try_res_s;
 
 #[derive(Event, Debug, Clone, Copy)]
@@ -23,7 +24,7 @@ pub struct ClickPoint {
 
 pub fn update_hits(
     ray_map: Res<RayMap>,
-    camera_q: Query<(&Camera, &OrthographicProjection)>,
+    camera_q: Query<(&Camera, &Projection)>,
     state: Res<State<EngineState>>,
     grid_q: Query<&Grid>,
     mut hits: EventWriter<PointerHits>,
@@ -40,7 +41,7 @@ pub fn update_hits(
 
         let mut pos = ray.origin.xy();
         for grid in &grid_q {
-            if let Some(mark) = grid.point_mark(ray.origin.xy(), projection.scale) {
+            if let Some(mark) = grid.point_mark(ray.origin.xy(), projection.scale()) {
                 pos = mark;
                 break;
             }
@@ -50,7 +51,7 @@ pub fn update_hits(
             root,
             HitData::new(ray_id.camera, 0., Some(pos.extend(0.)), None),
         )];
-        hits.send(PointerHits::new(
+        hits.write(PointerHits::new(
             ray_id.pointer,
             picks,
             camera.order as f32 - 0.5,
@@ -60,8 +61,8 @@ pub fn update_hits(
 
 pub fn root_added(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
     commands
-        .entity(trigger.entity())
-        .insert(PickingBehavior::default())
+        .entity(trigger.target())
+        .insert(Pickable::default())
         .observe(over)
         .observe(moved)
         .observe(out)

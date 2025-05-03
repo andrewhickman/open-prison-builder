@@ -3,8 +3,8 @@ use std::slice;
 use avian2d::prelude::*;
 use bevy::{
     ecs::{entity::MapEntities, reflect::ReflectMapEntities},
+    platform::collections::HashMap,
     prelude::*,
-    utils::HashMap,
 };
 use pb_util::try_res_s;
 use serde::{Deserialize, Serialize};
@@ -65,8 +65,8 @@ impl Wall {
 
 impl MapEntities for Wall {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.start = entity_mapper.map_entity(self.start);
-        self.end = entity_mapper.map_entity(self.end);
+        self.start = entity_mapper.get_mapped(self.start);
+        self.end = entity_mapper.get_mapped(self.end);
     }
 }
 
@@ -148,8 +148,8 @@ pub fn wall_added(
     mut map: ResMut<WallMap>,
     wall_q: Query<&Wall>,
 ) {
-    let wall = try_res_s!(wall_q.get(trigger.entity()));
-    map.add(trigger.entity(), wall.start(), wall.end());
+    let wall = try_res_s!(wall_q.get(trigger.target()));
+    map.add(trigger.target(), wall.start(), wall.end());
 }
 
 pub fn wall_removed(
@@ -157,8 +157,8 @@ pub fn wall_removed(
     mut map: ResMut<WallMap>,
     wall_q: Query<&Wall>,
 ) {
-    let wall = try_res_s!(wall_q.get(trigger.entity()));
-    map.remove(trigger.entity(), wall.start(), wall.end());
+    let wall = try_res_s!(wall_q.get(trigger.target()));
+    map.remove(trigger.target(), wall.start(), wall.end());
 }
 
 pub fn add_colliders(
@@ -167,7 +167,7 @@ pub fn add_colliders(
     vertex_q: Query<&Transform, With<Vertex>>,
 ) {
     for (id, wall) in &wall_q {
-        let [start, end] = vertex_q.many(wall.vertices());
+        let [start, end] = vertex_q.get_many(wall.vertices()).unwrap();
 
         let midpoint = start.translation.midpoint(end.translation);
 
@@ -180,8 +180,6 @@ pub fn add_colliders(
                 (end.translation - midpoint).xy(),
             ),
             CollisionLayers::new(Layer::Wall, LayerMask::ALL),
-            // TODO: https://github.com/vleue/vleue_navigator/pull/88
-            // CachableObstacle,
         ));
     }
 }

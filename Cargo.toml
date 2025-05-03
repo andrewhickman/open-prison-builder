@@ -37,8 +37,7 @@ strip = true
 dev = [
     "bevy/default_font",
     "bevy/bevy_remote",
-    "bevy/track_change_detection",
-    "dep:iyes_perf_ui",
+    "bevy/track_location",
 ]
 dev-dylib = ["bevy/dynamic_linking"]
 dev-engine = ["pb-engine/dev"]
@@ -47,7 +46,7 @@ dev-engine = ["pb-engine/dev"]
 pb-engine = { path = "pb-engine" }
 pb-render = { path = "pb-render" }
 pb-ui = { path = "pb-ui" }
-bevy = { version = "0.15.0", default-features = false, features = [
+bevy = { version = "0.16.0", default-features = false, features = [
     "default_font",
     "sysinfo_plugin",
     "bevy_asset",
@@ -59,13 +58,13 @@ bevy = { version = "0.15.0", default-features = false, features = [
     "webgl2",
     "x11",
     "zstd",
+    "web"
 ] }
 image = { version = "0.25.0", default-features = false, features = ["png"] }
 winit = { version = "0.30.0", default-features = false }
 pb-assets = { version = "0.1.0", path = "pb-assets" }
 pb-store = { version = "0.1.0", path = "pb-store" }
 pb-util = { version = "0.1.0", path = "pb-util" }
-iyes_perf_ui = { version = "0.4.0", optional = true }
 
 [build-dependencies]
 embed-resource = "1"

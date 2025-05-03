@@ -17,7 +17,6 @@ use build::Blueprint;
 use map::{Map, MapLayer};
 use pawn::{ai::path::PathQueryConfig, Pawn};
 use root::Root;
-use vleue_navigator::prelude::*;
 use wall::{Vertex, Wall, WallMap};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
@@ -45,8 +44,7 @@ impl Plugin for PbEnginePlugin {
 
         app.add_plugins((
             PhysicsPlugins::default(),
-            VleueNavigatorPlugin,
-            NavmeshUpdaterPlugin::<Collider, Wall>::default(),
+            // NavmeshUpdaterPlugin::<Collider, Wall>::default(),
         ));
 
         app.insert_resource(Gravity::ZERO);
@@ -76,10 +74,5 @@ impl Plugin for PbEnginePlugin {
 
         #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());
-
-        #[cfg(feature = "dev")]
-        app.insert_resource(NavMeshesDebug(
-            bevy::color::palettes::tailwind::RED_800.into(),
-        ));
     }
 }

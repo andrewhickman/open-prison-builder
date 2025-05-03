@@ -8,9 +8,9 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 approx = "0.5.1"
-avian2d = { version = "0.2.1", default-features = false }
-bevy = { version = "0.15.0", default-features = false, features = ["bevy_render", "bevy_ui", "bevy_ui_picking_backend", "bevy_sprite_picking_backend", "bevy_state"] }
-bevy_simple_text_input = { version = "0.10.0" }
+avian2d = { git = "https://github.com/Jondolf/avian", default-features = false }
+bevy = { version = "0.16.0", default-features = false, features = ["bevy_render", "bevy_ui", "bevy_ui_picking_backend", "bevy_sprite_picking_backend", "bevy_state"] }
+bevy_simple_text_input = { version = "0.11.0" }
 pb-assets = { version = "0.1.0", path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }
 pb-render = { path = "../pb-render" }
@@ -19,5 +19,4 @@ pb-util = { version = "0.1.0", path = "../pb-util" }
 rand = { version = "0.9.1" }
 serde = { version = "1.0.203", features = ["derive"] }
 smol_str = { version = "0.2.2", features = ["serde"] }
-vleue_navigator = { version = "0.11.1", default-features = false }
 webbrowser = { version = "1.0.1", features = ["hardened"] }

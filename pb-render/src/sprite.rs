@@ -8,7 +8,7 @@ use pb_engine::{
 
 pub fn root_added(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
     commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .insert(Visibility::default());
 }
 
@@ -17,7 +17,7 @@ pub fn pawn_added(
     mut commands: Commands,
     assets: Res<AssetHandles>,
 ) {
-    commands.entity(trigger.entity()).insert((Sprite {
+    commands.entity(trigger.target()).insert((Sprite {
         custom_size: Some(Vec2::splat(pawn::RADIUS * 2.5)),
         image: assets.pawn_image.clone(),
         ..default()

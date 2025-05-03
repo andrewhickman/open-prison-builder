@@ -52,11 +52,11 @@ pub fn run(
     fn on_save_complete(In(res): In<Result<()>>, mut message_e: EventWriter<Message>) {
         match res {
             Ok(()) => {
-                message_e.send(Message::info("Autosave succeeded"));
+                message_e.write(Message::info("Autosave succeeded"));
             }
             Err(error) => {
                 error!(error = error.as_dyn_error(), "Autosave failed");
-                message_e.send(Message::error(&error));
+                message_e.write(Message::error(&error));
             }
         }
     }

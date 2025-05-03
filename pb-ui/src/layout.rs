@@ -18,7 +18,7 @@ pub fn init(mut commands: Commands, theme: Res<Theme>) {
                 height: Val::Percent(100.),
                 ..default()
             },
-            PickingBehavior::IGNORE,
+            Pickable::IGNORE,
             Name::new("pb_ui::layout::root"),
         ))
         .id();

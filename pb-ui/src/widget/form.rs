@@ -52,13 +52,13 @@ impl FormField {
 }
 
 impl Event for FormUpdate {
-    type Traversal = &'static Parent;
+    type Traversal = &'static ChildOf;
 
     const AUTO_PROPAGATE: bool = true;
 }
 
 impl Event for FormSubmit {
-    type Traversal = &'static Parent;
+    type Traversal = &'static ChildOf;
 
     const AUTO_PROPAGATE: bool = true;
 }
@@ -68,7 +68,7 @@ impl Clone for FormUpdate {
         Self {
             target: self.target,
             name: self.name.clone(),
-            value: self.value.clone_value(),
+            value: self.value.reflect_clone().unwrap(),
         }
     }
 }
@@ -88,45 +88,45 @@ impl<'w> UiBuilder<'w, '_> {
 }
 
 pub fn submit(trigger: Trigger<Pointer<Click>>, mut commands: Commands) {
-    commands.trigger_targets(FormSubmit, trigger.entity());
+    commands.trigger_targets(FormSubmit, trigger.target());
 }
 
-fn update(mut event: Trigger<FormUpdate>, mut form_q: Query<(&mut Form, Option<&FormField>)>) {
-    let (mut form, field) = try_res_s!(form_q.get_mut(event.entity()));
+fn update(mut trigger: Trigger<FormUpdate>, mut form_q: Query<(&mut Form, Option<&FormField>)>) {
+    let (mut form, field) = try_res_s!(form_q.get_mut(trigger.target()));
 
     let ReflectMut::Struct(value) = form.value.reflect_mut() else {
         error!(
             "Unexpected form value type '{}' for {:?}",
             form.value.reflect_short_type_path(),
-            event.entity()
+            trigger.target()
         );
         return;
     };
 
-    let Some(field_value) = value.field_mut(&event.name) else {
+    let Some(field_value) = value.field_mut(&trigger.name) else {
         error!(
             "Form value of type '{}' for {:?} does not have field '{}'",
             value.reflect_short_type_path(),
-            event.entity(),
-            event.name
+            trigger.target(),
+            trigger.name
         );
         return;
     };
 
-    if let Err(error) = field_value.try_apply(&*event.value) {
+    if let Err(error) = field_value.try_apply(&*trigger.value) {
         error!(
             "Error updating field '{}' for {:?}: {}",
-            &event.name,
-            event.entity(),
+            &trigger.name,
+            trigger.target(),
             error,
         );
         return;
     }
 
     if let Some(field) = field {
-        event.value = form.value.clone_value();
-        event.name.clone_from(&field.name);
+        trigger.value = form.value.reflect_clone().unwrap();
+        trigger.name.clone_from(&field.name);
     } else {
-        event.propagate(false);
+        trigger.propagate(false);
     }
 }

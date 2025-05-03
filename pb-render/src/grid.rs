@@ -1,5 +1,5 @@
 use bevy::{
-    asset::RenderAssetUsages,
+    asset::{weak_handle, RenderAssetUsages},
     prelude::*,
     render::{
         mesh::{Indices, PrimitiveTopology},
@@ -7,7 +7,6 @@ use bevy::{
     },
     sprite::{AlphaMode2d, Material2d},
 };
-use pb_util::weak_handle;
 
 use crate::projection::PIXELS_PER_METER;
 

@@ -31,6 +31,6 @@ pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>) {
 
 pub fn hide(mut commands: Commands, query: Query<Entity, With<Loading>>) {
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }

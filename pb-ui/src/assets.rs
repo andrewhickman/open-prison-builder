@@ -22,7 +22,7 @@ pub fn update(
                 error = error.as_dyn_error(),
                 "Failed to load all assets, exiting"
             );
-            exit_e.send(AppExit::Error(NonZeroU8::new(1).unwrap()));
+            exit_e.write(AppExit::Error(NonZeroU8::new(1).unwrap()));
         }
     }
 

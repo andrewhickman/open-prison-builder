@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use bevy::{
     ecs::system::{EntityCommands, IntoObserverSystem},
-    picking::focus::PickingInteraction,
+    picking::hover::PickingInteraction,
     prelude::*,
     ui::FocusPolicy,
 };
@@ -31,12 +31,12 @@ impl<'w, 's> UiBuilder<'w, 's> {
     }
 
     pub fn spawn(&mut self, bundle: impl Bundle) -> UiBuilder<'w, '_> {
-        let child = self.commands.spawn(bundle).set_parent(self.entity).id();
+        let child = self.commands.spawn((bundle, ChildOf(self.entity))).id();
         UiBuilder::new(self.commands.reborrow(), child)
     }
 
     pub fn container(&mut self, style: Node) -> UiBuilder<'w, '_> {
-        self.spawn((style, FocusPolicy::Pass, PickingBehavior::IGNORE))
+        self.spawn((style, FocusPolicy::Pass, Pickable::IGNORE))
     }
 
     pub fn insert(&mut self, bundle: impl Bundle) -> UiBuilder<'w, '_> {
@@ -57,7 +57,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
         S: IntoSystem<Trigger<'static, Pointer<Click>>, (), M> + Send + 'static,
         M: 'static,
     {
-        self.insert((PickingBehavior::default(), PickingInteraction::None));
+        self.insert((Pickable::default(), PickingInteraction::None));
         self.observe(run_if(
             system,
             move |trigger: &mut Trigger<Pointer<Click>>| {
@@ -72,7 +72,9 @@ impl<'w, 's> UiBuilder<'w, 's> {
     }
 
     pub fn clear(&mut self) {
-        self.commands.entity(self.entity).despawn_descendants();
+        self.commands
+            .entity(self.entity)
+            .despawn_related::<Children>();
     }
 
     pub fn id(&self) -> Entity {

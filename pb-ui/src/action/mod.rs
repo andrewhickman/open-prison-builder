@@ -11,8 +11,8 @@ pub fn action_added(
     action_q: Query<Entity, With<Action>>,
 ) {
     for id in &action_q {
-        if trigger.entity() != id {
-            commands.entity(id).despawn_recursive();
+        if trigger.target() != id {
+            commands.entity(id).despawn();
         }
     }
 }
@@ -22,7 +22,7 @@ pub fn action_removed(
     commands: Commands,
     action_q: Query<Entity, With<Action>>,
 ) {
-    if action_q.iter().all(|id| id == trigger.entity()) {
+    if action_q.iter().all(|id| id == trigger.target()) {
         default::spawn(commands);
     }
 }

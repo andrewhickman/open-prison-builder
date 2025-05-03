@@ -1,10 +1,5 @@
 use bevy::prelude::*;
-use pb_engine::pawn::{ai::path::PathTaskBundle, Pawn};
-use pb_util::{try_opt, try_res_s, ChildBuildExt};
-use vleue_navigator::{
-    prelude::{ManagedNavMesh, NavMeshStatus},
-    NavMesh,
-};
+use pb_engine::pawn::ai::path::PathTaskBundle;
 
 use crate::{
     action::Action,
@@ -15,7 +10,7 @@ use crate::{
 };
 
 #[derive(Default, Debug, Component, TypePath)]
-#[require(Action, Name(|| Name::new(DefaultAction::type_path())))]
+#[require(Action, Name = Name::new(DefaultAction::type_path()))]
 pub enum DefaultAction {
     #[default]
     Default,
@@ -25,15 +20,15 @@ pub enum DefaultAction {
 }
 
 pub fn spawn(mut commands: Commands) {
-    commands
-        .spawn(DefaultAction::default())
-        .with_children(|builder| {
-            builder
-                .add_observer(select_pawn)
-                .add_observer(cancel_pawn)
-                .add_observer(click_pawn)
-                .add_observer(click_point);
-        });
+    commands.spawn((
+        DefaultAction::default(),
+        children![
+            Observer::new(select_pawn),
+            Observer::new(cancel_pawn),
+            Observer::new(click_pawn),
+            Observer::new(click_point),
+        ],
+    ));
 }
 
 fn select_pawn(_trigger: Trigger<SelectPawn>, _: Single<&mut DefaultAction>) {}
@@ -48,17 +43,8 @@ fn click_point(
     trigger: Trigger<ClickPoint>,
     mut commands: Commands,
     mut action: Single<&mut DefaultAction>,
-    transform_q: Query<&Transform, With<Pawn>>,
-    navmesh_q: Option<Single<(&ManagedNavMesh, &NavMeshStatus)>>,
-    navmeshes: Res<Assets<NavMesh>>,
 ) {
-    let (navmesh_id, navmesh_status) = *try_opt!(navmesh_q);
-    if *navmesh_status != NavMeshStatus::Built {
-        return;
-    }
-    let navmesh = try_opt!(navmeshes.get(navmesh_id));
-
-    action.click_point(&mut commands, trigger.point, &transform_q, navmesh);
+    action.click_point(&mut commands, trigger.point);
 }
 
 impl DefaultAction {
@@ -66,19 +52,12 @@ impl DefaultAction {
         *self = DefaultAction::SelectedPawn { pawn };
     }
 
-    fn click_point(
-        &mut self,
-        commands: &mut Commands,
-        to: Vec2,
-        transform_q: &Query<&Transform, With<Pawn>>,
-        navmesh: &NavMesh,
-    ) {
+    fn click_point(&mut self, commands: &mut Commands, to: Vec2) {
         match *self {
             DefaultAction::Default => (),
             DefaultAction::SelectedPawn { pawn } => {
                 info!("move {pawn} to {to}");
-                let from = try_res_s!(transform_q.get(pawn)).translation.xy();
-                commands.spawn(PathTaskBundle::path_to(pawn, navmesh.clone(), from, to));
+                commands.spawn(PathTaskBundle::move_to(pawn, to));
             }
         }
     }

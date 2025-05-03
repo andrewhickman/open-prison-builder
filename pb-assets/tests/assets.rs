@@ -29,7 +29,7 @@ fn assets() {
         RenderPlugin::default(),
         ImagePlugin::default(),
         CorePipelinePlugin,
-        SpritePlugin { add_picking: false },
+        SpritePlugin,
         LogPlugin::default(),
     ))
     .add_plugins(PbAssetsPlugin)
@@ -48,11 +48,11 @@ fn update(
         LoadState::NotLoaded | LoadState::Loading => info!("Waiting for assets to load..."),
         LoadState::Loaded => {
             info!("All assets loaded successfully");
-            exit_e.send(AppExit::Success);
+            exit_e.write(AppExit::Success);
         }
         LoadState::Failed(error) => {
             error!("Failed to load all assets, exiting: {error}");
-            exit_e.send(AppExit::error());
+            exit_e.write(AppExit::error());
         }
     }
 }

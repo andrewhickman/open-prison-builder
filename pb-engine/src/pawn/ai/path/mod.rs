@@ -3,14 +3,12 @@ mod model;
 
 use std::{collections::VecDeque, f32::consts::PI};
 
-use avian2d::prelude::*;
+use avian2d::{collision::collider::contact_query, prelude::*};
 use bevy::{
     ecs::{query::QueryEntityError, system::SystemParam},
     prelude::*,
 };
-use pb_util::callback::spawn_compute;
 use tokio::sync::oneshot;
-use vleue_navigator::prelude::*;
 
 use crate::{
     pawn::{ai::Task, Pawn, MAX_ANGULAR_VELOCITY, MAX_VELOCITY, VISION_RADIUS},
@@ -87,28 +85,6 @@ pub struct PathObservation {
 }
 
 impl PathTaskBundle {
-    pub fn path_to(actor: Entity, mesh: NavMesh, from: Vec2, to: Vec2) -> Self {
-        let (tx, rx) = oneshot::channel();
-        spawn_compute(async move {
-            let res = if let Some(path) = mesh
-                .get_transformed_path(from.extend(0.), to.extend(0.))
-                .await
-            {
-                Some(path.path.into_iter().map(|step| step.xy()).collect())
-            } else {
-                info!("path not found");
-                None
-            };
-
-            _ = tx.send(res);
-        });
-
-        PathTaskBundle {
-            task: Task::new(actor),
-            path: PathTask::Pending(rx),
-        }
-    }
-
     pub fn move_to(actor: Entity, to: Vec2) -> Self {
         PathTaskBundle {
             task: Task::new(actor),
@@ -130,7 +106,7 @@ pub fn update(
         if steps.is_empty() {
             info!("completed path");
             path_q.act(task.actor, 0., 0., 0.).expect("invalid entity");
-            commands.entity(id).despawn_recursive();
+            commands.entity(id).despawn();
             return;
         }
 
@@ -240,7 +216,7 @@ impl PathQuery<'_, '_> {
                 )
                 .unwrap()
                 {
-                    let point2 = collider_rotation * contact.point2 - pawn_position.0;
+                    let point2 = collider_rotation * contact.local_point2 - pawn_position.0;
                     let normal = inv_isometry.rotation * contact.global_normal2(collider_rotation);
 
                     let pawn_space_velocity = inv_isometry.rotation * collider_velocity.0;

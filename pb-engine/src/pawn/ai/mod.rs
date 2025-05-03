@@ -25,10 +25,10 @@ pub fn task_added(
     task_q: Query<&Task>,
     mut actor_q: Query<&mut Actor>,
 ) {
-    let task = try_res_s!(task_q.get(trigger.entity()));
+    let task = try_res_s!(task_q.get(trigger.target()));
     let mut actor = try_res_s!(actor_q.get_mut(task.actor));
-    if let Some(prev_task) = actor.task.replace(trigger.entity()) {
-        commands.entity(prev_task).try_despawn_recursive();
+    if let Some(prev_task) = actor.task.replace(trigger.target()) {
+        commands.entity(prev_task).despawn();
     }
 }
 
@@ -37,9 +37,9 @@ pub fn task_removed(
     task_q: Query<&Task>,
     mut actor_q: Query<&mut Actor>,
 ) {
-    let task = try_res_s!(task_q.get(trigger.entity()));
+    let task = try_res_s!(task_q.get(trigger.target()));
     let mut actor = try_res_s!(actor_q.get_mut(task.actor));
-    if actor.task == Some(trigger.entity()) {
+    if actor.task == Some(trigger.target()) {
         actor.task = None;
     }
 }
@@ -49,8 +49,8 @@ pub fn actor_removed(
     mut commands: Commands,
     actor_q: Query<&Actor>,
 ) {
-    let actor = try_res_s!(actor_q.get(trigger.entity()));
+    let actor = try_res_s!(actor_q.get(trigger.target()));
     if let Some(task) = actor.task {
-        commands.entity(task).try_despawn_recursive();
+        commands.entity(task).despawn();
     }
 }

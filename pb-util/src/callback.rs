@@ -2,8 +2,9 @@ use std::future::Future;
 
 use bevy::{
     ecs::{
-        system::RunSystemCachedWith,
-        world::{Command, CommandQueue},
+        error::HandleError,
+        system::command::{run_system_cached, run_system_cached_with},
+        world::CommandQueue,
     },
     prelude::*,
     tasks::{AsyncComputeTaskPool, IoTaskPool},
@@ -59,7 +60,7 @@ impl CallbackSender {
     where
         S: System<In = (), Out = ()> + Send + 'static,
     {
-        self.send(run_system_cached(system))
+        self.send(run_system_cached(system).handle_error())
     }
 
     pub fn send_oneshot_system_with_input<I, S, M>(&self, system: S, input: I)
@@ -68,7 +69,7 @@ impl CallbackSender {
         S: IntoSystem<In<I>, (), M> + Send + 'static,
         M: 'static,
     {
-        self.send(run_system_cached_with(system, input))
+        self.send(run_system_cached_with(system, input).handle_error())
     }
 
     pub fn send_batch(&self, queue: CommandQueue) {
@@ -80,24 +81,4 @@ pub fn apply_callbacks(mut commands: Commands, receiver: Res<CallbackReceiver>) 
     while let Ok(mut command) = receiver.0.try_recv() {
         commands.append(&mut command);
     }
-}
-
-pub fn run_system_cached<M, S>(system: S) -> impl Command
-where
-    S: IntoSystem<(), (), M> + Send + 'static,
-    M: 'static,
-{
-    RunSystemCachedWith::new(system, ())
-}
-
-pub fn run_system_cached_with<I, M, S>(
-    system: S,
-    input: <I as SystemInput>::Inner<'static>,
-) -> impl Command
-where
-    I: SystemInput<Inner<'static>: Send> + Send + 'static,
-    M: 'static,
-    S: IntoSystem<I, (), M> + Send + 'static,
-{
-    RunSystemCachedWith::new(system, input)
 }

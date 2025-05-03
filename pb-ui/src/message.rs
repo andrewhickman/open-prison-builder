@@ -59,7 +59,7 @@ impl<'w> UiBuilder<'w, '_> {
         match message.level {
             MessageLevel::Info => self
                 .spawn((Text::new(message.text.clone()), theme.normal_text.clone()))
-                .insert(PickingBehavior::IGNORE)
+                .insert(Pickable::IGNORE)
                 .insert(MessageExpiry(
                     time.elapsed().saturating_add(Duration::from_secs(15)),
                 )),
@@ -96,7 +96,7 @@ pub fn despawn_messages(
 ) {
     for (entity, expiry) in &mut timer_q {
         if expiry.0 < time.elapsed() {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 }

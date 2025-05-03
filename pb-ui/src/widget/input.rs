@@ -36,7 +36,7 @@ pub fn update(
             FormUpdate {
                 target,
                 name: field.name().into(),
-                value: value.0.clone_value(),
+                value: value.0.reflect_clone().unwrap(),
             },
             target,
         );

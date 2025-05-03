@@ -13,7 +13,7 @@ impl<'w> UiBuilder<'w, '_> {
             },
             BackgroundColor(theme.panel),
             FocusPolicy::Block,
-            PickingBehavior::IGNORE,
+            Pickable::IGNORE,
             theme.outline,
         ))
     }
@@ -27,7 +27,7 @@ impl<'w> UiBuilder<'w, '_> {
         self.icon_button(theme, assets.close_icon.clone(), theme.icon_size())
             .on_click(
                 move |_: Trigger<'_, Pointer<Click>>, mut commands: Commands| {
-                    commands.entity(panel_id).despawn_recursive()
+                    commands.entity(panel_id).despawn()
                 },
             );
         self.reborrow()

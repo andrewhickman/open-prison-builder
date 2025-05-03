@@ -20,7 +20,7 @@ pub struct ClickPawn {
 
 pub fn pawn_added(trigger: Trigger<OnAdd, Pawn>, mut commands: Commands) {
     commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .observe(over)
         .observe(moved)
         .observe(out)
@@ -31,7 +31,7 @@ fn over(mut trigger: Trigger<Pointer<Over>>, mut commands: Commands) {
     trigger.propagate(false);
 
     commands.trigger(SelectPawn {
-        pawn: trigger.entity(),
+        pawn: trigger.target(),
     });
 }
 
@@ -39,7 +39,7 @@ fn moved(mut trigger: Trigger<Pointer<Move>>, mut commands: Commands) {
     trigger.propagate(false);
 
     commands.trigger(SelectPawn {
-        pawn: trigger.entity(),
+        pawn: trigger.target(),
     });
 }
 
@@ -47,7 +47,7 @@ fn out(mut trigger: Trigger<Pointer<Out>>, mut commands: Commands) {
     trigger.propagate(false);
 
     commands.trigger(CancelPawn {
-        pawn: trigger.entity(),
+        pawn: trigger.target(),
     });
 }
 
@@ -55,6 +55,6 @@ fn click(mut trigger: Trigger<Pointer<Click>>, mut commands: Commands) {
     trigger.propagate(false);
 
     commands.trigger(ClickPawn {
-        pawn: trigger.entity(),
+        pawn: trigger.target(),
     });
 }

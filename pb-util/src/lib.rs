@@ -5,60 +5,42 @@ pub mod system;
 pub use anyhow;
 pub use bevy;
 pub use tracing;
-pub use uuid;
 
 use bevy::{
     ecs::{
-        bundle::Bundle,
-        component::Component,
+        component::{Component, Mutable},
         entity::Entity,
-        event::Event,
-        observer::Observer,
-        system::{BoxedSystem, IntoObserverSystem, IntoSystem, ResMut},
-        world::{Command, Mut, World},
+        error::Result,
+        system::{BoxedSystem, IntoSystem, ResMut},
+        world::{Mut, World},
     },
-    hierarchy::ChildBuild,
+    prelude::Command,
     state::state::{FreelyMutableState, NextState},
 };
 use tracing::warn;
 
 pub use self::{
-    callback::{run_system_cached, run_system_cached_with, spawn_io, CallbackPlugin},
+    callback::{spawn_io, CallbackPlugin},
     system::run_if,
 };
 
 use std::{any::type_name, fmt::Write};
 
-pub trait ChildBuildExt {
-    fn add_observer<E, B, M>(&mut self, observer: impl IntoObserverSystem<E, B, M>) -> &mut Self
-    where
-        E: Event,
-        B: Bundle;
-}
-
-impl<T: ChildBuild> ChildBuildExt for T {
-    fn add_observer<E, B, M>(&mut self, observer: impl IntoObserverSystem<E, B, M>) -> &mut Self
-    where
-        E: Event,
-        B: Bundle,
-    {
-        self.spawn(Observer::new(observer));
-        self
-    }
-}
-
-pub fn set_state<S>(state: S) -> BoxedSystem
+pub fn set_state<S>(state: S) -> BoxedSystem<(), Result>
 where
     S: FreelyMutableState + Clone,
 {
     Box::new(IntoSystem::into_system(
-        move |mut next_state: ResMut<NextState<S>>| next_state.set(state.clone()),
+        move |mut next_state: ResMut<NextState<S>>| {
+            next_state.set(state.clone());
+            Ok(())
+        },
     ))
 }
 
 pub fn modify_component<C, F>(id: Entity, f: F) -> impl Command
 where
-    C: Component,
+    C: Component<Mutability = Mutable>,
     F: FnOnce(Mut<C>) + Send + 'static,
 {
     move |world: &mut World| {
@@ -79,7 +61,7 @@ where
 
 pub fn try_modify_component<C, F>(id: Entity, f: F) -> impl Command
 where
-    C: Component,
+    C: Component<Mutability = Mutable>,
     F: FnOnce(Mut<C>) + Send + 'static,
 {
     move |world: &mut World| {
@@ -158,13 +140,4 @@ macro_rules! try_opt {
             None => return,
         }
     };
-}
-
-#[macro_export]
-macro_rules! weak_handle {
-    ($uuid:expr) => {{
-        $crate::bevy::asset::Handle::Weak($crate::bevy::asset::AssetId::Uuid {
-            uuid: $crate::uuid::uuid!($uuid),
-        })
-    }};
 }

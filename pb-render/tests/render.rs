@@ -7,7 +7,7 @@ use std::{fs, path::PathBuf};
 use bevy::{
     asset::{LoadState, RenderAssetUsages},
     core_pipeline::CorePipelinePlugin,
-    ecs::system::SystemState,
+    ecs::system::{ScheduleSystem, SystemState},
     log::DEFAULT_FILTER,
     prelude::*,
     render::{
@@ -79,7 +79,6 @@ fn render_grid() {
             Visibility::default(),
             Mesh2d(GRID_MESH_HANDLE),
             MeshMaterial2d(grid),
-            PickingBehavior::IGNORE,
             NoFrustumCulling,
         ));
     }
@@ -91,7 +90,7 @@ fn run_test(name: &str) {
 
 fn run_test_with_setup<M, S>(name: &str, setup: S)
 where
-    S: IntoSystemConfigs<M>,
+    S: IntoScheduleConfigs<ScheduleSystem, M>,
 {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(DEFAULT_FILTER)
@@ -101,7 +100,6 @@ where
     app.add_plugins((
         MinimalPlugins,
         TransformPlugin,
-        HierarchyPlugin,
         WindowPlugin {
             primary_window: None,
             exit_condition: ExitCondition::DontExit,
@@ -116,7 +114,7 @@ where
         RenderPlugin::default(),
         ImagePlugin::default(),
         CorePipelinePlugin,
-        SpritePlugin { add_picking: false },
+        SpritePlugin,
         StatesPlugin,
     ))
     .add_plugins((PbAssetsPlugin, PbEnginePlugin, PbRenderPlugin));
@@ -148,7 +146,7 @@ fn update(
 ) {
     if timer.elapsed_secs() > 5. {
         error!("Test execution timed out");
-        exit_e.send(AppExit::error());
+        exit_e.write(AppExit::error());
     }
 
     match &*state {
@@ -172,7 +170,7 @@ fn update(
             commands.spawn((
                 Camera2d,
                 Camera {
-                    target: RenderTarget::Image(image.clone()),
+                    target: RenderTarget::Image(image.clone().into()),
                     clear_color: ClearColorConfig::Custom(Srgba::hex("192a28").unwrap().into()),
                     ..Default::default()
                 },
@@ -199,7 +197,7 @@ fn update(
                 LoadState::Loaded => (),
                 LoadState::Failed(error) => {
                     error!("Failed to load all assets, exiting: {error}");
-                    exit_e.send(AppExit::error());
+                    exit_e.write(AppExit::error());
                 }
             }
 
@@ -230,7 +228,7 @@ fn update(
             let expected_path = config.dir.join("expected.png");
             if !expected_path.exists() {
                 actual.save(expected_path).unwrap();
-                exit_e.send(AppExit::Success);
+                exit_e.write(AppExit::Success);
                 return;
             }
 
@@ -249,9 +247,9 @@ fn update(
                 diff.save(diff_path).unwrap();
                 actual.save(actual_path).unwrap();
 
-                exit_e.send(AppExit::error());
+                exit_e.write(AppExit::error());
             } else {
-                exit_e.send(AppExit::Success);
+                exit_e.write(AppExit::Success);
             }
         }
     }

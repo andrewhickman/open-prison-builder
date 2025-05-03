@@ -5,7 +5,7 @@ use pb_engine::{
     EngineState,
 };
 use pb_render::wall::Hidden;
-use pb_util::{try_modify_component, ChildBuildExt};
+use pb_util::try_modify_component;
 
 use crate::{
     action::Action,
@@ -22,23 +22,22 @@ use crate::{
 };
 
 pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
-    commands
-        .spawn(WallAction::default())
-        .with_children(|builder| {
-            builder.spawn(Grid::default());
-
-            builder
-                .add_observer(select_point)
-                .add_observer(cancel_point)
-                .add_observer(click_point)
-                .add_observer(select_wall)
-                .add_observer(cancel_wall)
-                .add_observer(click_wall);
-        });
+    commands.spawn((
+        WallAction::default(),
+        children![
+            Grid::default(),
+            Observer::new(select_point),
+            Observer::new(cancel_point),
+            Observer::new(click_point),
+            Observer::new(select_wall),
+            Observer::new(cancel_wall),
+            Observer::new(click_wall),
+        ],
+    ));
 }
 
 #[derive(Default, Debug, Component, TypePath)]
-#[require(Action, Cancellable, PhysicsPickingState(|| PhysicsPickingState::Wall), Transform, Visibility, Name(|| Name::new(WallAction::type_path())))]
+#[require(Action, Cancellable, PhysicsPickingState = PhysicsPickingState::Wall, Transform, Visibility, Name = Name::new(WallAction::type_path()))]
 pub enum WallAction {
     #[default]
     SelectStart,
@@ -401,8 +400,7 @@ impl WallAction {
 impl SelectedVertex {
     pub fn spawn(commands: &mut Commands, parent: Entity, pos: Vec2) -> Self {
         let id = commands
-            .spawn((VertexBundle::new(pos), Blueprint))
-            .set_parent(parent)
+            .spawn((VertexBundle::new(pos), Blueprint, ChildOf(parent)))
             .id();
 
         SelectedVertex {
@@ -529,7 +527,7 @@ impl SelectedVertex {
 
     pub fn despawn(&self, commands: &mut Commands) {
         if self.spawned {
-            commands.entity(self.id).remove_parent().despawn();
+            commands.entity(self.id).despawn();
         }
         if let Some(split) = self.split {
             split.despawn(commands);
@@ -565,9 +563,13 @@ impl SelectedWall {
         end: SelectedVertex,
     ) -> Self {
         if let Some(mut entity) = wall_map.insert(commands, start.id, end.id) {
-            entity.insert((Wall::transform(start.pos, end.pos), Blueprint));
-            entity.set_parent(parent);
-            let id = entity.id();
+            let id = entity
+                .insert((
+                    Wall::transform(start.pos, end.pos),
+                    Blueprint,
+                    ChildOf(parent),
+                ))
+                .id();
 
             SelectedWall { id: Some(id) }
         } else {
@@ -600,13 +602,16 @@ impl SelectedWall {
 
     pub fn despawn(&self, commands: &mut Commands) {
         if let Some(id) = self.id {
-            commands.entity(id).remove_parent().despawn();
+            commands.entity(id).despawn();
         }
     }
 
     pub fn commit(&self, commands: &mut Commands, root: Entity) {
         if let Some(id) = self.id {
-            commands.entity(id).set_parent(root).remove::<Blueprint>();
+            commands
+                .entity(id)
+                .insert(ChildOf(root))
+                .remove::<Blueprint>();
         }
     }
 }

@@ -1,5 +1,5 @@
 use bevy::{input::ButtonState, prelude::*};
-use pb_render::projection::{projection, PIXELS_PER_METER};
+use pb_render::projection::{projection, ProjectionExt, PIXELS_PER_METER};
 
 use crate::{
     input::{CameraInput, CameraInputKind},
@@ -55,7 +55,7 @@ pub fn update_condition(input: Res<CameraState>) -> bool {
 pub fn update(
     input: Res<CameraState>,
     time: Res<Time<Real>>,
-    mut camera_transform_q: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
+    mut camera_transform_q: Query<(&mut Transform, &mut Projection), With<Camera>>,
 ) {
     for (mut transform, mut camera_projection) in &mut camera_transform_q {
         input.apply(&mut transform, &mut camera_projection, time.delta_secs());
@@ -87,17 +87,13 @@ impl CameraState {
         self.zoom += delta(state);
     }
 
-    pub fn apply(
-        &self,
-        transform: &mut Transform,
-        projection: &mut OrthographicProjection,
-        delta: f32,
-    ) {
+    pub fn apply(&self, transform: &mut Transform, projection: &mut Projection, delta: f32) {
         transform.translation += self.pan.extend(0.)
-            * (CAMERA_PAN_SPEED * PIXELS_PER_METER * projection.scale * PIXELS_PER_METER * delta);
-        projection.scale = (projection.scale
-            + self.zoom * CAMERA_ZOOM_SPEED * delta / PIXELS_PER_METER)
-            .clamp(0.1 / PIXELS_PER_METER, 5. / PIXELS_PER_METER);
+            * (CAMERA_PAN_SPEED * PIXELS_PER_METER * projection.scale() * PIXELS_PER_METER * delta);
+        projection.set_scale(
+            (projection.scale() + self.zoom * CAMERA_ZOOM_SPEED * delta / PIXELS_PER_METER)
+                .clamp(0.1 / PIXELS_PER_METER, 5. / PIXELS_PER_METER),
+        );
     }
 }
 

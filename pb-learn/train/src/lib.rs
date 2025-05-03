@@ -18,10 +18,6 @@ use pb_engine::{
 use pyo3::prelude::*;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use serde::de::DeserializeSeed;
-use vleue_navigator::{
-    prelude::{ManagedNavMesh, NavMeshStatus},
-    NavMesh,
-};
 
 #[pymodule(name = "pb_learn_env")]
 pub fn pb_learn(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -35,7 +31,6 @@ pub struct Environment {
     rng: SmallRng,
     entity: Entity,
     path_q: SystemState<PathQuery<'static, 'static>>,
-    navmesh_q: QueryState<(&'static ManagedNavMesh, &'static NavMeshStatus)>,
     step_count: usize,
     path: VecDeque<Vec2>,
 }
@@ -72,7 +67,6 @@ impl Environment {
         app.add_plugins((
             MinimalPlugins,
             TransformPlugin,
-            HierarchyPlugin,
             AssetPlugin {
                 file_path: concat!(env!("CARGO_MANIFEST_DIR"), "/../assets").to_owned(),
                 ..default()
@@ -97,7 +91,6 @@ impl Environment {
         load(app.world_mut(), &mut load_state, &saved_walls).unwrap();
 
         let path_q = SystemState::new(app.world_mut());
-        let navmesh_q = app.world_mut().query();
 
         app.update();
 
@@ -106,7 +99,6 @@ impl Environment {
             rng: SmallRng::from_os_rng(),
             entity: Entity::PLACEHOLDER,
             path_q,
-            navmesh_q,
             step_count: 0,
             path: VecDeque::new(),
         }
@@ -223,24 +215,8 @@ impl Environment {
             .unwrap()
     }
 
-    fn path(&mut self, from: Vec2, to: Vec2) -> Option<Vec<Vec2>> {
-        loop {
-            let (navmesh_id, status) = self.navmesh_q.single(self.app.world());
-            match status {
-                NavMeshStatus::Building => (),
-                status @ (NavMeshStatus::Failed
-                | NavMeshStatus::Invalid
-                | NavMeshStatus::Cancelled) => panic!("unexpected navmesh status {status:?}"),
-                NavMeshStatus::Built => {
-                    let navmesh_assets = self.app.world().resource::<Assets<NavMesh>>();
-                    let navmesh = navmesh_assets.get(navmesh_id).unwrap();
-
-                    return navmesh.path(from, to).map(|p| p.path);
-                }
-            }
-
-            self.app.update();
-        }
+    fn path(&mut self, _from: Vec2, _to: Vec2) -> Option<Vec<Vec2>> {
+        todo!()
     }
 }
 

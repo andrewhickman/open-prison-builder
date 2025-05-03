@@ -23,13 +23,13 @@ pub const VISION_RADIUS: f32 = 10.;
 #[reflect(Component, Serialize, Deserialize)]
 #[require(
     Actor,
-    RigidBody(|| RigidBody::Dynamic),
-    Collider(|| Collider::circle(RADIUS)),
-    CollisionLayers(|| CollisionLayers::new(Layer::Pawn, LayerMask::ALL)),
+    RigidBody = RigidBody::Dynamic,
+    Collider = Collider::circle(RADIUS),
+    CollisionLayers = CollisionLayers::new(Layer::Pawn, LayerMask::ALL),
     CollidingEntities,
     TranslationInterpolation,
-    LinearDamping(|| LinearDamping(0.5)),
-    AngularDamping(|| AngularDamping(0.5)),
+    LinearDamping = LinearDamping(0.5),
+    AngularDamping = AngularDamping(0.5),
 )]
 pub struct Pawn {
     pub dir: Vec2,

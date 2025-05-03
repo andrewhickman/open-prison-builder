@@ -12,11 +12,11 @@ pub struct CancelStack {
 pub struct Cancellable;
 
 pub fn on_add(trigger: Trigger<OnAdd, Cancellable>, mut stack: ResMut<CancelStack>) {
-    stack.entities.push(trigger.entity());
+    stack.entities.push(trigger.target());
 }
 
 pub fn on_remove(trigger: Trigger<OnRemove, Cancellable>, mut stack: ResMut<CancelStack>) {
-    if let Some(pos) = stack.entities.iter().position(|&e| e == trigger.entity()) {
+    if let Some(pos) = stack.entities.iter().position(|&e| e == trigger.target()) {
         stack.entities.remove(pos);
     }
 }
@@ -49,8 +49,8 @@ pub fn input(
     }
 
     if let Some(entity) = stack.pop() {
-        if let Some(entity) = commands.get_entity(entity) {
-            entity.despawn_recursive();
+        if let Ok(mut entity) = commands.get_entity(entity) {
+            entity.despawn();
             return;
         }
     }

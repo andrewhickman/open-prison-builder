@@ -41,7 +41,7 @@ pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>, assets: 
 }
 
 pub fn hide(mut commands: Commands, layout: Res<Layout>) {
-    commands.entity(layout.menu).despawn_descendants();
+    commands.entity(layout.menu).despawn_related::<Children>();
 }
 
 pub fn update(mut button_q: Query<(&MenuButton, &mut Disabled)>, state: Res<State<EngineState>>) {
@@ -106,6 +106,7 @@ impl<'w> UiBuilder<'w, '_> {
                 ..default()
             },
         );
+        menu.named("pb_ui::menu::menu_panel");
 
         menu.large_button(theme, assets, "New Prison", default())
             .insert((MenuButton::New, Disabled::ENABLED))
@@ -205,7 +206,7 @@ fn settings_panel_button(
     panel_q: Query<(Entity, &MenuPanel)>,
 ) {
     for (id, &panel) in &panel_q {
-        commands.entity(id).despawn_recursive();
+        commands.entity(id).despawn();
         if panel == MenuPanel::Settings {
             return;
         }
@@ -218,7 +219,7 @@ fn settings_panel_button(
 
 fn exit_button(_: Trigger<Pointer<Click>>, mut exit_e: EventWriter<AppExit>) {
     info!("Exiting application");
-    exit_e.send(AppExit::Success);
+    exit_e.write(AppExit::Success);
 }
 
 fn open_url(url: &str) {

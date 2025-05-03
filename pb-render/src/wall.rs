@@ -4,7 +4,9 @@ use std::{
 };
 
 use bevy::{
-    math::FloatOrd,
+    asset::weak_handle,
+    ecs::entity::EntityHashSet,
+    math::{Affine2, FloatOrd},
     prelude::*,
     render::{
         mesh::{Indices, MeshAabb, PrimitiveTopology},
@@ -12,14 +14,13 @@ use bevy::{
         render_asset::RenderAssetUsages,
     },
     sprite::AlphaMode2d,
-    utils::HashSet,
 };
 use pb_assets::AssetHandles;
 use pb_engine::{
     build::Blueprint,
     wall::{self, Vertex, Wall, WallMap},
 };
-use pb_util::{try_modify_component, try_res_s, weak_handle};
+use pb_util::{try_modify_component, try_res_s};
 use smallvec::SmallVec;
 
 const VERTEX_LOCUS: Vec2 = Vec2::new(0.25 * wall::RADIUS, 0.5 * wall::RADIUS);
@@ -66,6 +67,7 @@ pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, assets: Res<AssetHa
             color: Color::WHITE.with_alpha(0.38),
             alpha_mode: AlphaMode2d::Blend,
             texture: Some(assets.brick_image.clone()),
+            uv_transform: Affine2::IDENTITY,
         },
     );
 }
@@ -77,14 +79,14 @@ pub fn vertex_inserted(
     preview_q: Query<&Blueprint>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let color = if preview_q.contains(trigger.entity()) {
+    let color = if preview_q.contains(trigger.target()) {
         TRANSLUCENT_WHITE.clone()
     } else {
         WHITE.clone()
     };
 
     let vertex_info =
-        VertexGeometry::new(try_res_s!(transform_q.get(trigger.entity())), iter::empty());
+        VertexGeometry::new(try_res_s!(transform_q.get(trigger.target())), iter::empty());
 
     let mesh = vertex_info.mesh();
     let aabb = mesh
@@ -97,7 +99,7 @@ pub fn vertex_inserted(
         default()
     };
 
-    commands.entity(trigger.entity()).insert((
+    commands.entity(trigger.target()).insert((
         vertex_info,
         MeshMaterial2d(color),
         Mesh2d(mesh),
@@ -112,7 +114,7 @@ pub fn wall_inserted(
     preview_q: Query<&Blueprint>,
     meshes: Res<Assets<Mesh>>,
 ) {
-    let color = if preview_q.contains(trigger.entity()) {
+    let color = if preview_q.contains(trigger.target()) {
         TRANSLUCENT_WHITE.clone()
     } else {
         WHITE.clone()
@@ -120,7 +122,7 @@ pub fn wall_inserted(
 
     let mesh = meshes.reserve_handle();
 
-    commands.entity(trigger.entity()).insert((
+    commands.entity(trigger.target()).insert((
         WallGeometry::default(),
         MeshMaterial2d(color.clone()),
         Mesh2d(mesh),
@@ -144,7 +146,7 @@ pub fn preview_inserted(
     mut wall_map: ResMut<WallMap>,
 ) {
     commands.queue(try_modify_component(
-        trigger.entity(),
+        trigger.target(),
         |mut color: Mut<MeshMaterial2d<ColorMaterial>>| color.0 = TRANSLUCENT_WHITE,
     ));
     wall_map.set_changed();
@@ -156,7 +158,7 @@ pub fn preview_removed(
     mut wall_map: ResMut<WallMap>,
 ) {
     commands.queue(try_modify_component(
-        trigger.entity(),
+        trigger.target(),
         |mut color: Mut<MeshMaterial2d<ColorMaterial>>| color.0 = WHITE,
     ));
     wall_map.set_changed();
@@ -168,7 +170,7 @@ pub fn hidden_inserted(
     mut wall_map: ResMut<WallMap>,
     assets: Res<Assets<Mesh>>,
 ) {
-    if let Ok((mut info, mut mesh, mut aabb)) = wall_q.get_mut(trigger.entity()) {
+    if let Ok((mut info, mut mesh, mut aabb)) = wall_q.get_mut(trigger.target()) {
         *info = Default::default();
         mesh.0 = assets.reserve_handle();
         *aabb = Default::default();
@@ -182,7 +184,7 @@ pub fn hidden_removed(
     wall_q: Query<Entity, With<Wall>>,
     mut wall_map: ResMut<WallMap>,
 ) {
-    if wall_q.contains(trigger.entity()) {
+    if wall_q.contains(trigger.target()) {
         wall_map.set_changed();
     }
 }
@@ -213,7 +215,7 @@ pub fn update_wall(
         Without<Vertex>,
     >,
 ) {
-    let mut updated_walls = HashSet::new();
+    let mut updated_walls = EntityHashSet::new();
 
     for (id, transform, mut info, mut mesh, mut aabb) in vertex_q.iter_mut() {
         let new_info = VertexGeometry::new(
@@ -247,7 +249,8 @@ pub fn update_wall(
             continue;
         }
 
-        let [(_, _, start_info, _, _), (_, _, end_info, _, _)] = vertex_q.many(wall.vertices());
+        let [(_, _, start_info, _, _), (_, _, end_info, _, _)] =
+            vertex_q.get_many(wall.vertices()).unwrap();
 
         let new_info = WallGeometry::new(id, start_info, end_info);
         if info.set_if_neq(new_info) {

@@ -61,7 +61,7 @@ impl<'w> UiBuilder<'w, '_> {
     ) -> UiBuilder<'w, '_> {
         let button_image_border = 64.;
         let slicer = TextureSlicer {
-            border: BorderRect::square(button_image_border),
+            border: BorderRect::all(button_image_border),
             center_scale_mode: SliceScaleMode::Stretch,
             sides_scale_mode: SliceScaleMode::Stretch,
             max_corner_scale: button_border / button_image_border,
@@ -82,7 +82,7 @@ impl<'w> UiBuilder<'w, '_> {
             ),
         );
 
-        button.spawn((Text::new(text), text_style, PickingBehavior::IGNORE));
+        button.spawn((Text::new(text), text_style, Pickable::IGNORE));
         button
     }
 
@@ -130,12 +130,12 @@ impl<'w> UiBuilder<'w, '_> {
                 aspect_ratio: Some(1.),
                 ..default()
             },
-            PickingBehavior::IGNORE,
+            Pickable::IGNORE,
         ));
         container.spawn((
             Text::new(title),
             theme.button_text.clone(),
-            PickingBehavior::IGNORE,
+            Pickable::IGNORE,
         ));
 
         container
@@ -147,8 +147,8 @@ impl<'w> UiBuilder<'w, '_> {
         builder
             .observe(over)
             .observe(out)
-            .observe(down)
-            .observe(up)
+            .observe(pressed)
+            .observe(released)
             .observe(disabled);
 
         builder
@@ -166,7 +166,7 @@ fn over(
 ) {
     trigger.propagate(false);
 
-    let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
+    let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
     style.hovered(&theme, image.as_deref_mut(), bg.as_deref_mut());
 }
 
@@ -181,12 +181,12 @@ fn out(
 ) {
     trigger.propagate(false);
 
-    let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
+    let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
     style.normal(&theme, image.as_deref_mut(), bg.as_deref_mut());
 }
 
-fn down(
-    mut trigger: Trigger<Pointer<Down>>,
+fn pressed(
+    mut trigger: Trigger<Pointer<Pressed>>,
     theme: Res<Theme>,
     mut button_q: Query<(
         &ButtonStyle,
@@ -197,13 +197,13 @@ fn down(
     trigger.propagate(false);
 
     if trigger.button == PointerButton::Primary {
-        let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
+        let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
         style.active(&theme, image.as_deref_mut(), bg.as_deref_mut());
     }
 }
 
-fn up(
-    mut trigger: Trigger<Pointer<Up>>,
+fn released(
+    mut trigger: Trigger<Pointer<Released>>,
     theme: Res<Theme>,
     mut button_q: Query<(
         &ButtonStyle,
@@ -214,7 +214,7 @@ fn up(
     trigger.propagate(false);
 
     if trigger.button == PointerButton::Primary {
-        let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
+        let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
         style.hovered(&theme, image.as_deref_mut(), bg.as_deref_mut());
     }
 }
@@ -224,19 +224,19 @@ fn disabled(
     theme: Res<Theme>,
     mut button_q: Query<(
         &ButtonStyle,
-        &mut PickingBehavior,
+        &mut Pickable,
         Option<&mut ImageNode>,
         Option<&mut BackgroundColor>,
     )>,
 ) {
     trigger.propagate(false);
 
-    let (style, mut behaviour, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.entity()));
+    let (style, mut behaviour, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
     if trigger.0 {
-        behaviour.set_if_neq(PickingBehavior::IGNORE);
+        behaviour.set_if_neq(Pickable::IGNORE);
         style.disabled(&theme, image.as_deref_mut(), bg.as_deref_mut());
     } else {
-        behaviour.set_if_neq(PickingBehavior::default());
+        behaviour.set_if_neq(Pickable::default());
         style.normal(&theme, image.as_deref_mut(), bg.as_deref_mut());
     }
 }

@@ -36,7 +36,7 @@ pub fn show(commands: Commands, layout: Res<Layout>, theme: Res<Theme>, assets: 
 }
 
 pub fn hide(mut commands: Commands, layout: Res<Layout>) {
-    commands.entity(layout.ribbon).despawn_descendants();
+    commands.entity(layout.ribbon).despawn_related::<Children>();
 }
 
 impl ComputedStates for RibbonState {
@@ -218,7 +218,7 @@ impl RibbonButton {
     ) {
         let requested_panel = self.panel();
         for (id, &panel) in &panel_q {
-            commands.entity(id).despawn_recursive();
+            commands.entity(id).despawn();
             if panel == requested_panel {
                 return;
             }
