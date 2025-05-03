@@ -1,11 +1,11 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::*;
-use pb_engine::pawn::{ai::path::PathTaskBundle, Pawn, PawnBundle};
+use pb_engine::pawn::{Pawn, PawnBundle, ai::path::PathTaskBundle};
 use rand::{
+    SeedableRng,
     distr::{Distribution, Uniform},
     rngs::SmallRng,
-    SeedableRng,
 };
 
 pub fn spawn_1000_pawns(_: Trigger<Pointer<Click>>, mut commands: Commands) {

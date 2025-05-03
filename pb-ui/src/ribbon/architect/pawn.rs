@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use pb_engine::{pawn::PawnBundle, EngineState};
+use pb_engine::{EngineState, pawn::PawnBundle};
 
 use crate::{
     action::Action,

@@ -3,7 +3,7 @@ name = "open-prison-builder"
 version = "0.1.0"
 publish = false
 authors = ["Andrew Hickman <me@andrewhickman.dev>"]
-edition = "2021"
+edition = "2024"
 exclude = ["dist", "build", "assets"]
 build = "build.rs"
 

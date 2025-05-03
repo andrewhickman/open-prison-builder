@@ -20,7 +20,7 @@ use bevy::{
 use tracing::warn;
 
 pub use self::{
-    callback::{spawn_io, CallbackPlugin},
+    callback::{CallbackPlugin, spawn_io},
     system::run_if,
 };
 

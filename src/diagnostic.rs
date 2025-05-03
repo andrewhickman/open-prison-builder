@@ -5,7 +5,7 @@ use bevy::{
     },
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     prelude::*,
-    remote::{http::RemoteHttpPlugin, RemotePlugin},
+    remote::{RemotePlugin, http::RemoteHttpPlugin},
     render::diagnostic::RenderDiagnosticsPlugin,
 };
 

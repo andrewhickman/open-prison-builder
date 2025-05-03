@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use pb_engine::EngineState;
 
-use crate::{input::CancelInput, widget::UiBuilder, UiState};
+use crate::{UiState, input::CancelInput, widget::UiBuilder};
 
 #[derive(Debug, Default, Resource)]
 pub struct CancelStack {

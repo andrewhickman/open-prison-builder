@@ -5,7 +5,7 @@ use bevy::{app::AppExit, asset::LoadState, prelude::*};
 use pb_assets::AssetHandles;
 use pb_util::AsDynError;
 
-use crate::{input::Settings, UiState};
+use crate::{UiState, input::Settings};
 
 pub fn update(
     mut state: ResMut<NextState<UiState>>,

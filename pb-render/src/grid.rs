@@ -1,5 +1,5 @@
 use bevy::{
-    asset::{weak_handle, RenderAssetUsages},
+    asset::{RenderAssetUsages, weak_handle},
     prelude::*,
     render::{
         mesh::{Indices, PrimitiveTopology},

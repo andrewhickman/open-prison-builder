@@ -13,7 +13,7 @@ mod theme;
 mod widget;
 
 use bevy::{
-    input::{keyboard::KeyboardInput, InputSystem},
+    input::{InputSystem, keyboard::KeyboardInput},
     picking::PickSet,
     prelude::*,
 };

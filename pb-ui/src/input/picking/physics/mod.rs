@@ -7,7 +7,7 @@ use avian2d::{
 };
 use bevy::{
     math::FloatOrd,
-    picking::backend::{ray::RayMap, HitData, PointerHits},
+    picking::backend::{HitData, PointerHits, ray::RayMap},
     prelude::*,
 };
 use pb_engine::picking::Layer;

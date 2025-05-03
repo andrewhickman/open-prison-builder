@@ -15,7 +15,7 @@ use avian2d::{
 use bevy::prelude::*;
 use build::Blueprint;
 use map::{Map, MapLayer};
-use pawn::{ai::path::PathQueryConfig, Pawn};
+use pawn::{Pawn, ai::path::PathQueryConfig};
 use root::Root;
 use wall::{Vertex, Wall, WallMap};
 

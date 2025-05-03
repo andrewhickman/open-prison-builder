@@ -3,7 +3,7 @@ name = "pb-render"
 version = "0.1.0"
 authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 publish = false
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 approx = "0.5.1"

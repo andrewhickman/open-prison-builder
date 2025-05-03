@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use bevy::{log::info, reflect::TypePath};
-use serde::{de::DeserializeSeed, Serialize};
+use serde::{Serialize, de::DeserializeSeed};
 use wasm_bindgen::{JsCast, JsValue};
 
-use crate::{from_json, Metadata};
+use crate::{Metadata, from_json};
 
 const META_SUFFIX: &str = ".meta";
 

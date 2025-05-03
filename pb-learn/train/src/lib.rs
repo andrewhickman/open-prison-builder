@@ -8,15 +8,15 @@ use bevy::{
     time::TimeUpdateStrategy,
 };
 use pb_engine::{
-    pawn::{
-        ai::path::{PathObservation, PathQuery},
-        PawnBundle, MAX_ANGULAR_VELOCITY, MAX_VELOCITY,
-    },
-    save::{load, LoadSeed, Save},
     PbEnginePlugin,
+    pawn::{
+        MAX_ANGULAR_VELOCITY, MAX_VELOCITY, PawnBundle,
+        ai::path::{PathObservation, PathQuery},
+    },
+    save::{LoadSeed, Save, load},
 };
 use pyo3::prelude::*;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, rngs::SmallRng};
 use serde::de::DeserializeSeed;
 
 #[pymodule(name = "pb_learn_env")]

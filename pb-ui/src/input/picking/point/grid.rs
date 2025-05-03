@@ -1,9 +1,9 @@
 use bevy::{prelude::*, render::view::NoFrustumCulling};
 
-use pb_render::grid::{GridMaterial, GRID_MESH_HANDLE};
+use pb_render::grid::{GRID_MESH_HANDLE, GridMaterial};
 
 use crate::{
-    input::{picking::POINT_PICKING_THRESHOLD, GridInput},
+    input::{GridInput, picking::POINT_PICKING_THRESHOLD},
     theme::Theme,
 };
 

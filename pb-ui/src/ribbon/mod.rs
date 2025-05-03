@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 use pb_assets::AssetHandles;
 
-use crate::{layout::Layout, theme::Theme, widget::UiBuilder, UiState};
+use crate::{UiState, layout::Layout, theme::Theme, widget::UiBuilder};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum RibbonState {

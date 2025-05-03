@@ -1,10 +1,10 @@
 use bevy::{input::ButtonState, prelude::*};
-use pb_render::projection::{projection, ProjectionExt, PIXELS_PER_METER};
+use pb_render::projection::{PIXELS_PER_METER, ProjectionExt, projection};
 
 use crate::{
+    UiState,
     input::{CameraInput, CameraInputKind},
     theme::Theme,
-    UiState,
 };
 
 /// Camera speed, in metres per second

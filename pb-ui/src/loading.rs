@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{layout::Layout, theme::Theme, widget::UiBuilder, UiState};
+use crate::{UiState, layout::Layout, theme::Theme, widget::UiBuilder};
 
 #[derive(Default, Copy, Clone, Component)]
 pub struct Loading;

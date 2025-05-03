@@ -11,7 +11,7 @@ use bevy::{
 use tokio::sync::oneshot;
 
 use crate::{
-    pawn::{ai::Task, Pawn, MAX_ANGULAR_VELOCITY, MAX_VELOCITY, VISION_RADIUS},
+    pawn::{MAX_ANGULAR_VELOCITY, MAX_VELOCITY, Pawn, VISION_RADIUS, ai::Task},
     picking::Layer,
     wall::Wall,
 };

@@ -73,7 +73,7 @@ impl AssetHandles {
             })
     }
 
-    fn asset_ids(&self) -> impl Iterator<Item = UntypedAssetId> {
+    fn asset_ids(&self) -> impl Iterator<Item = UntypedAssetId> + '_ {
         let AssetHandles {
             font_graduate,
             font_tomorrow,

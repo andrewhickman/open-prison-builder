@@ -11,13 +11,13 @@ use bevy::{
     log::DEFAULT_FILTER,
     prelude::*,
     render::{
+        RenderPlugin,
         camera::RenderTarget,
         render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
         view::{
-            screenshot::{Screenshot, ScreenshotCaptured},
             NoFrustumCulling,
+            screenshot::{Screenshot, ScreenshotCaptured},
         },
-        RenderPlugin,
     },
     scene::ScenePlugin,
     sprite::SpritePlugin,
@@ -28,13 +28,13 @@ use bevy::{
 
 use pb_assets::{AssetHandles, PbAssetsPlugin};
 use pb_engine::{
-    save::{load, LoadSeed},
     EngineState, PbEnginePlugin,
+    save::{LoadSeed, load},
 };
 use pb_render::{
-    grid::{GridMaterial, GRID_MESH_HANDLE},
-    projection::projection,
     PbRenderPlugin,
+    grid::{GRID_MESH_HANDLE, GridMaterial},
+    projection::projection,
 };
 use serde::de::DeserializeSeed;
 

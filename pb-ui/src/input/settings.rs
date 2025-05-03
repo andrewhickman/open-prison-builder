@@ -1,6 +1,6 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use pb_store::Store;
-use pb_util::{callback::CallbackSender, spawn_io, AsDynError};
+use pb_util::{AsDynError, callback::CallbackSender, spawn_io};
 use serde::{Deserialize, Serialize};
 
 use crate::input::Input;

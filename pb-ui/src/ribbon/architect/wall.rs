@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use pb_engine::{
+    EngineState,
     build::Blueprint,
     wall::{VertexBundle, Wall, WallMap},
-    EngineState,
 };
 use pb_render::wall::Hidden;
 use pb_util::try_modify_component;
@@ -13,10 +13,10 @@ use crate::{
         cancel::Cancellable,
         picking::{
             physics::{
-                wall::{CancelWall, ClickWall, SelectWall, WallPickKind},
                 PhysicsPickingState,
+                wall::{CancelWall, ClickWall, SelectWall, WallPickKind},
             },
-            point::{grid::Grid, CancelPoint, ClickPoint, SelectPoint},
+            point::{CancelPoint, ClickPoint, SelectPoint, grid::Grid},
         },
     },
 };

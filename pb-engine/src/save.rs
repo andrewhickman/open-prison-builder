@@ -1,6 +1,6 @@
 use std::iter::once;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use avian2d::prelude::LinearVelocity;
 use bevy::{
     ecs::{
@@ -11,7 +11,7 @@ use bevy::{
     reflect::TypeRegistryArc,
     scene::serde::{SceneDeserializer, SceneSerializer},
 };
-use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
+use serde::{Deserializer, Serialize, Serializer, de::DeserializeSeed};
 
 use crate::{
     map::{Map, MapLayer},

@@ -8,7 +8,7 @@ pub mod settings;
 pub use self::settings::Settings;
 
 use bevy::{
-    input::{keyboard::KeyboardInput, ButtonState},
+    input::{ButtonState, keyboard::KeyboardInput},
     prelude::*,
 };
 use movement::{MovementDirection, MovementInput};

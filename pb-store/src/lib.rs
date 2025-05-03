@@ -8,8 +8,8 @@ use anyhow::{Context, Result};
 use bevy::prelude::*;
 use chrono::{DateTime, Local, Utc};
 use serde::{
-    de::{DeserializeOwned, DeserializeSeed},
     Deserialize, Serialize,
+    de::{DeserializeOwned, DeserializeSeed},
 };
 use smol_str::SmolStr;
 

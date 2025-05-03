@@ -3,7 +3,7 @@ name = "pb-assets"
 version = "0.1.0"
 authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 publish = false
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 bevy = { version = "0.16.0", default-features = false, features = [

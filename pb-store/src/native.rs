@@ -2,9 +2,9 @@ use std::{ffi::OsStr, io, path::PathBuf};
 
 use anyhow::{Context, Error, Result};
 use bevy::{log::info, reflect::TypePath, tasks::futures_lite::StreamExt};
-use serde::{de::DeserializeSeed, Serialize};
+use serde::{Serialize, de::DeserializeSeed};
 
-use crate::{from_json, Metadata};
+use crate::{Metadata, from_json};
 
 pub(crate) struct Store {
     path: PathBuf,
@@ -35,7 +35,7 @@ impl Store {
             Err(error) => {
                 return Err(
                     Error::from(error).context(format!("failed to read from '{}'", path.display()))
-                )
+                );
             }
         };
 
@@ -74,7 +74,7 @@ impl Store {
             Err(error) => {
                 return Err(
                     Error::from(error).context(format!("failed to write to '{}'", path.display()))
-                )
+                );
             }
         };
 
@@ -96,7 +96,7 @@ impl Store {
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(vec![]),
             Err(error) => {
                 return Err(Error::from(error)
-                    .context(format!("failed to read directory '{}'", path.display())))
+                    .context(format!("failed to read directory '{}'", path.display())));
             }
         };
 
