@@ -1,6 +1,5 @@
 use std::iter::once;
 
-use anyhow::{Context, Result, bail};
 use avian2d::prelude::LinearVelocity;
 use bevy::{
     ecs::{
@@ -68,9 +67,7 @@ pub fn save(world: &World, param: &SaveParam, root: Entity) -> Save {
 
 pub fn load(world: &mut World, param: &mut SystemState<LoadParam>, save: &Save) -> Result<Entity> {
     let mut entities = EntityHashMap::default();
-    save.scene
-        .write_to_world(world, &mut entities)
-        .context("failed to load save")?;
+    save.scene.write_to_world(world, &mut entities)?;
 
     let mut param = param.get(world);
     let root = entities
@@ -81,7 +78,7 @@ pub fn load(world: &mut World, param: &mut SystemState<LoadParam>, save: &Save) 
         for &entity in entities.values() {
             param.commands.entity(entity).despawn();
         }
-        bail!("no root entity found in save")
+        return Err("no root entity found in save".into());
     };
 
     Ok(root)

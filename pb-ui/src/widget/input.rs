@@ -30,15 +30,15 @@ impl<'w> UiBuilder<'w, '_> {
 pub fn update(
     mut commands: Commands,
     input_q: Query<(Entity, &FormField, &TextInputValue), Changed<TextInputValue>>,
-) {
+) -> Result {
     for (target, field, value) in &input_q {
         commands.trigger_targets(
             FormUpdate {
-                target,
                 name: field.name().into(),
-                value: value.0.reflect_clone().unwrap(),
+                value: value.0.reflect_clone()?,
             },
             target,
         );
     }
+    Ok(())
 }

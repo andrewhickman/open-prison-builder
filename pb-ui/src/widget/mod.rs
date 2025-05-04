@@ -54,7 +54,7 @@ impl<'w, 's> UiBuilder<'w, 's> {
 
     pub fn on_click<M, S>(&mut self, system: S) -> UiBuilder<'w, '_>
     where
-        S: IntoSystem<Trigger<'static, Pointer<Click>>, (), M> + Send + 'static,
+        S: IntoSystem<Trigger<'static, Pointer<Click>>, Result, M> + Send + 'static,
         M: 'static,
     {
         self.insert((Pickable::default(), PickingInteraction::None));

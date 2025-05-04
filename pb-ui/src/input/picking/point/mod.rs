@@ -7,7 +7,6 @@ use bevy::{
 use grid::Grid;
 use pb_engine::{EngineState, root::Root};
 use pb_render::projection::ProjectionExt;
-use pb_util::try_res_s;
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct SelectPoint {
@@ -28,13 +27,13 @@ pub fn update_hits(
     state: Res<State<EngineState>>,
     grid_q: Query<&Grid>,
     mut hits: EventWriter<PointerHits>,
-) {
+) -> Result {
     let EngineState::Running(root) = *state.get() else {
-        return;
+        return Ok(());
     };
 
     for (&ray_id, &ray) in ray_map.iter() {
-        let (camera, projection) = try_res_s!(camera_q.get(ray_id.camera));
+        let (camera, projection) = camera_q.get(ray_id.camera)?;
         if !camera.is_active {
             continue;
         }
@@ -57,6 +56,8 @@ pub fn update_hits(
             camera.order as f32 - 0.5,
         ));
     }
+
+    Ok(())
 }
 
 pub fn root_added(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
@@ -69,7 +70,7 @@ pub fn root_added(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
         .observe(click);
 }
 
-fn over(mut trigger: Trigger<Pointer<Over>>, mut commands: Commands) {
+fn over(mut trigger: Trigger<Pointer<Over>>, mut commands: Commands) -> Result {
     trigger.propagate(false);
 
     commands.trigger(SelectPoint {
@@ -78,12 +79,13 @@ fn over(mut trigger: Trigger<Pointer<Over>>, mut commands: Commands) {
             .event
             .hit
             .position
-            .expect("expected hit to have position")
+            .ok_or("expected hit to have position")?
             .xy(),
     });
+    Ok(())
 }
 
-fn moved(mut trigger: Trigger<Pointer<Move>>, mut commands: Commands) {
+fn moved(mut trigger: Trigger<Pointer<Move>>, mut commands: Commands) -> Result {
     trigger.propagate(false);
 
     commands.trigger(SelectPoint {
@@ -92,9 +94,10 @@ fn moved(mut trigger: Trigger<Pointer<Move>>, mut commands: Commands) {
             .event
             .hit
             .position
-            .expect("expected hit to have position")
+            .ok_or("expected hit to have position")?
             .xy(),
     });
+    Ok(())
 }
 
 fn out(mut trigger: Trigger<Pointer<Out>>, mut commands: Commands) {
@@ -103,7 +106,7 @@ fn out(mut trigger: Trigger<Pointer<Out>>, mut commands: Commands) {
     commands.trigger(CancelPoint);
 }
 
-fn click(mut trigger: Trigger<Pointer<Click>>, mut commands: Commands) {
+fn click(mut trigger: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
     trigger.propagate(false);
 
     commands.trigger(ClickPoint {
@@ -112,7 +115,8 @@ fn click(mut trigger: Trigger<Pointer<Click>>, mut commands: Commands) {
             .event
             .hit
             .position
-            .expect("expected hit to have position")
+            .ok_or("expected hit to have position")?
             .xy(),
     });
+    Ok(())
 }

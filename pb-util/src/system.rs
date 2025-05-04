@@ -1,4 +1,7 @@
-use bevy::ecs::system::{Adapt, IntoAdapterSystem, System, SystemIn};
+use bevy::ecs::{
+    error::Result,
+    system::{Adapt, IntoAdapterSystem, System, SystemIn},
+};
 
 pub fn run_if<S, P>(system: S, predicate: P) -> IntoAdapterSystem<RunIfAdapter<P>, S> {
     IntoAdapterSystem::new(RunIfAdapter { predicate }, system)
@@ -11,11 +14,11 @@ pub struct RunIfAdapter<P> {
 
 impl<S, P> Adapt<S> for RunIfAdapter<P>
 where
-    S: System<Out = ()>,
+    S: System<Out = Result>,
     P: for<'a> FnMut(&mut SystemIn<'a, S>) -> bool + Send + Sync + 'static,
 {
     type In = <S as System>::In;
-    type Out = ();
+    type Out = Result;
 
     fn adapt(
         &mut self,
@@ -23,7 +26,9 @@ where
         run_system: impl FnOnce(SystemIn<'_, S>) -> <S as System>::Out,
     ) -> Self::Out {
         if (self.predicate)(&mut input) {
-            run_system(input);
+            run_system(input)
+        } else {
+            Ok(())
         }
     }
 }

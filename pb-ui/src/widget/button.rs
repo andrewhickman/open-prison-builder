@@ -1,7 +1,6 @@
 use bevy::{prelude::*, ui::widget::NodeImageMode};
 
 use pb_assets::AssetHandles;
-use pb_util::try_res_s;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
@@ -163,11 +162,12 @@ fn over(
         Option<&mut ImageNode>,
         Option<&mut BackgroundColor>,
     )>,
-) {
+) -> Result<()> {
     trigger.propagate(false);
 
-    let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
+    let (style, mut image, mut bg) = button_q.get_mut(trigger.target())?;
     style.hovered(&theme, image.as_deref_mut(), bg.as_deref_mut());
+    Ok(())
 }
 
 fn out(
@@ -178,11 +178,12 @@ fn out(
         Option<&mut ImageNode>,
         Option<&mut BackgroundColor>,
     )>,
-) {
+) -> Result {
     trigger.propagate(false);
 
-    let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
+    let (style, mut image, mut bg) = button_q.get_mut(trigger.target())?;
     style.normal(&theme, image.as_deref_mut(), bg.as_deref_mut());
+    Ok(())
 }
 
 fn pressed(
@@ -193,13 +194,14 @@ fn pressed(
         Option<&mut ImageNode>,
         Option<&mut BackgroundColor>,
     )>,
-) {
+) -> Result {
     trigger.propagate(false);
 
     if trigger.button == PointerButton::Primary {
-        let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
+        let (style, mut image, mut bg) = button_q.get_mut(trigger.target())?;
         style.active(&theme, image.as_deref_mut(), bg.as_deref_mut());
     }
+    Ok(())
 }
 
 fn released(
@@ -210,13 +212,14 @@ fn released(
         Option<&mut ImageNode>,
         Option<&mut BackgroundColor>,
     )>,
-) {
+) -> Result {
     trigger.propagate(false);
 
     if trigger.button == PointerButton::Primary {
-        let (style, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
+        let (style, mut image, mut bg) = button_q.get_mut(trigger.target())?;
         style.hovered(&theme, image.as_deref_mut(), bg.as_deref_mut());
     }
+    Ok(())
 }
 
 fn disabled(
@@ -228,10 +231,10 @@ fn disabled(
         Option<&mut ImageNode>,
         Option<&mut BackgroundColor>,
     )>,
-) {
+) -> Result {
     trigger.propagate(false);
 
-    let (style, mut behaviour, mut image, mut bg) = try_res_s!(button_q.get_mut(trigger.target()));
+    let (style, mut behaviour, mut image, mut bg) = button_q.get_mut(trigger.target())?;
     if trigger.0 {
         behaviour.set_if_neq(Pickable::IGNORE);
         style.disabled(&theme, image.as_deref_mut(), bg.as_deref_mut());
@@ -239,6 +242,8 @@ fn disabled(
         behaviour.set_if_neq(Pickable::default());
         style.normal(&theme, image.as_deref_mut(), bg.as_deref_mut());
     }
+
+    Ok(())
 }
 
 impl ButtonStyle {

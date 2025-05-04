@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
+pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
     commands.spawn((
         WallAction::default(),
         children![
@@ -34,6 +34,7 @@ pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) {
             Observer::new(click_wall),
         ],
     ));
+    Ok(())
 }
 
 #[derive(Default, Debug, Component, TypePath)]

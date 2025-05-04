@@ -1,7 +1,6 @@
 use std::f32;
 
 use bevy::prelude::*;
-use pb_util::try_res_s;
 
 use crate::{theme::Theme, widget::UiBuilder};
 
@@ -70,15 +69,16 @@ pub fn update(
     theme: Res<Theme>,
     mut spinner_q: Query<(&mut Spinner, &Children)>,
     mut spoke_q: Query<(&SpinnerSpoke, &mut BackgroundColor)>,
-) {
+) -> Result {
     for (mut spinner, children) in spinner_q.iter_mut() {
         spinner.progress = (spinner.progress + time.delta_secs()).rem_euclid(1.0);
 
         for &spoke in children {
-            let (spoke, mut color) = try_res_s!(spoke_q.get_mut(spoke));
+            let (spoke, mut color) = spoke_q.get_mut(spoke)?;
             *color = spoke_color(&theme, spinner.progress, spoke.index)
         }
     }
+    Ok(())
 }
 
 fn spoke_color(theme: &Theme, progress: f32, index: u32) -> BackgroundColor {

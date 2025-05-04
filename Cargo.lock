@@ -3864,7 +3864,6 @@ dependencies = [
 name = "pb-engine"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "approx",
  "avian2d",
  "bevy",
@@ -3926,7 +3925,6 @@ dependencies = [
 name = "pb-store"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-fs",
  "bevy",
  "chrono",
@@ -3945,7 +3943,6 @@ dependencies = [
 name = "pb-ui"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "approx",
  "avian2d",
  "bevy",
@@ -3965,7 +3962,6 @@ dependencies = [
 name = "pb-util"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "approx",
  "bevy",
  "crossbeam-channel",

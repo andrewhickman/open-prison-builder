@@ -12,7 +12,6 @@ use bevy::{
 };
 use pb_engine::picking::Layer;
 use pb_render::projection::ProjectionExt;
-use pb_util::try_res_s;
 
 use super::PHYSICS_PICKING_THRESHOLD;
 
@@ -31,11 +30,11 @@ pub fn update_hits(
     spatial_query: SpatialQuery,
     state: Option<Single<&PhysicsPickingState>>,
     mut output_events: EventWriter<PointerHits>,
-) {
+) -> Result {
     let state = state.map(|s| s.to_owned()).unwrap_or_default();
 
     for (&ray_id, &ray) in ray_map.iter() {
-        let (camera, projection) = try_res_s!(camera_q.get(ray_id.camera));
+        let (camera, projection) = camera_q.get(ray_id.camera)?;
         if !camera.is_active {
             continue;
         }
@@ -75,6 +74,8 @@ pub fn update_hits(
 
         output_events.write(PointerHits::new(ray_id.pointer, hits, camera.order as f32));
     }
+
+    Ok(())
 }
 
 impl PhysicsPickingState {

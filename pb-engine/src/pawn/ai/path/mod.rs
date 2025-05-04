@@ -97,26 +97,26 @@ pub fn update(
     mut commands: Commands,
     mut task_q: Query<(Entity, &Task, &mut PathTask)>,
     mut path_q: PathQuery,
-) {
+) -> Result {
     for (id, task, mut path) in &mut task_q {
         let Some(steps) = path.poll() else {
-            return;
+            return Ok(());
         };
 
         if steps.is_empty() {
             info!("completed path");
-            path_q.act(task.actor, 0., 0., 0.).expect("invalid entity");
+            path_q.act(task.actor, 0., 0., 0.)?;
             commands.entity(id).despawn();
-            return;
+            return Ok(());
         }
 
-        let obs = path_q.observe(task.actor, steps).expect("invalid entity");
+        let obs = path_q.observe(task.actor, steps)?;
 
         let [[angle, force, torque, _, _, _]] = model::main_graph([obs.into()]);
-        path_q
-            .act(task.actor, angle, force, torque)
-            .expect("invalid entity");
+        path_q.act(task.actor, angle, force, torque)?;
     }
+
+    Ok(())
 }
 
 impl PathQuery<'_, '_> {

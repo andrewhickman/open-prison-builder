@@ -1,9 +1,6 @@
-use std::num::NonZeroU8;
-
 use bevy::{app::AppExit, asset::LoadState, prelude::*};
 
 use pb_assets::AssetHandles;
-use pb_util::AsDynError;
 
 use crate::{UiState, input::Settings};
 
@@ -18,11 +15,8 @@ pub fn update(
         LoadState::NotLoaded | LoadState::Loading => return,
         LoadState::Loaded => (),
         LoadState::Failed(error) => {
-            error!(
-                error = error.as_dyn_error(),
-                "Failed to load all assets, exiting"
-            );
-            exit_e.write(AppExit::Error(NonZeroU8::new(1).unwrap()));
+            error!("Failed to load all assets, exiting: {error}");
+            exit_e.write(AppExit::error());
         }
     }
 

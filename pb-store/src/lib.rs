@@ -4,7 +4,6 @@ mod sys;
 
 use std::{marker::PhantomData, sync::Arc};
 
-use anyhow::{Context, Result};
 use bevy::prelude::*;
 use chrono::{DateTime, Local, Utc};
 use serde::{
@@ -52,7 +51,7 @@ impl Store {
         self.0
             .get(key, seed)
             .await?
-            .with_context(|| format!("file '{key}' not found"))
+            .ok_or_else(|| format!("file '{key}' not found").into())
     }
 
     pub async fn try_get_with<S, T>(&self, key: &str, seed: S) -> Result<Option<T>>

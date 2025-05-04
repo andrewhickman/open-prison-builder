@@ -1,14 +1,12 @@
 use std::time::Duration;
 
-use anyhow::Result;
-
 use bevy::prelude::*;
 use pb_engine::{
     EngineState,
     save::{SaveParam, save},
 };
 use pb_store::Store;
-use pb_util::{AsDynError, callback::CallbackSender, spawn_io};
+use pb_util::{callback::CallbackSender, spawn_io};
 
 use crate::message::Message;
 
@@ -55,7 +53,7 @@ pub fn run(
                 message_e.write(Message::info("Autosave succeeded"));
             }
             Err(error) => {
-                error!(error = error.as_dyn_error(), "Autosave failed");
+                error!("Autosave failed: {error}");
                 message_e.write(Message::error(&error));
             }
         }

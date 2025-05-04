@@ -6,8 +6,9 @@ use crate::{
     input::{cancel::Cancellable, picking::point::ClickPoint},
 };
 
-pub fn pawn(_: Trigger<Pointer<Click>>, mut commands: Commands) {
+pub fn pawn(_: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
     commands.spawn((PawnAction, children![Observer::new(click_point)]));
+    Ok(())
 }
 
 #[derive(Default, Debug, Component, TypePath)]

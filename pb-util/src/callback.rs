@@ -73,7 +73,9 @@ impl CallbackSender {
     }
 
     pub fn send_batch(&self, queue: CommandQueue) {
-        self.0.send(queue).expect("channel disconnected");
+        if let Err(err) = self.0.send(queue) {
+            warn!("Dropping callback commands: {}", err);
+        }
     }
 }
 

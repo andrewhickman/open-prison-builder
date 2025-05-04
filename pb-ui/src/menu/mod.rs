@@ -136,12 +136,14 @@ impl<'w> UiBuilder<'w, '_> {
             .insert(MenuButton::OpenBevy)
             .on_click(|_: Trigger<'_, Pointer<Click>>| {
                 open_url("https://bevyengine.org/");
+                Ok(())
             });
         icon_bar
             .icon_button(theme, assets.github_icon.clone(), theme.large_icon_size())
             .insert(MenuButton::OpenGithub)
             .on_click(|_: Trigger<'_, Pointer<Click>>| {
                 open_url("https://github.com/andrewhickman/open-prison-builder/");
+                Ok(())
             });
 
         self.reborrow()
@@ -190,11 +192,12 @@ fn new_prison_button(
     mut commands: Commands,
     mut ui_state: ResMut<NextState<UiState>>,
     mut engine_state: ResMut<NextState<EngineState>>,
-) {
+) -> Result {
     let parent = commands.spawn(RootBundle::default()).id();
 
     ui_state.set(UiState::Game);
     engine_state.set(EngineState::Running(parent));
+    Ok(())
 }
 
 fn settings_panel_button(
@@ -204,22 +207,24 @@ fn settings_panel_button(
     assets: Res<AssetHandles>,
     layout: Res<Layout>,
     panel_q: Query<(Entity, &MenuPanel)>,
-) {
+) -> Result {
     for (id, &panel) in &panel_q {
         commands.entity(id).despawn();
         if panel == MenuPanel::Settings {
-            return;
+            return Ok(());
         }
     }
 
     UiBuilder::new(commands, layout.menu)
         .settings_panel(&theme, &assets)
         .insert(MenuPanel::Settings);
+    Ok(())
 }
 
-fn exit_button(_: Trigger<Pointer<Click>>, mut exit_e: EventWriter<AppExit>) {
+fn exit_button(_: Trigger<Pointer<Click>>, mut exit_e: EventWriter<AppExit>) -> Result {
     info!("Exiting application");
     exit_e.write(AppExit::Success);
+    Ok(())
 }
 
 fn open_url(url: &str) {

@@ -1,7 +1,5 @@
-use anyhow::{Context, Result};
 use bevy::{prelude::*, reflect::ReflectMut};
 
-use pb_util::try_res_s;
 use smol_str::SmolStr;
 
 use crate::widget::UiBuilder;
@@ -18,7 +16,6 @@ pub struct FormField {
 
 #[derive(Component)]
 pub struct FormUpdate {
-    pub target: Entity,
     pub name: SmolStr,
     pub value: Box<dyn PartialReflect>,
 }
@@ -31,12 +28,13 @@ impl Form {
     where
         T: FromReflect + TypePath,
     {
-        T::from_reflect(&*self.value).with_context(|| {
+        T::from_reflect(&*self.value).ok_or_else(|| {
             format!(
                 "expected form to have value of type '{}' but found '{}'",
                 T::short_type_path(),
                 self.value.reflect_short_type_path()
             )
+            .into()
         })
     }
 }
@@ -63,16 +61,6 @@ impl Event for FormSubmit {
     const AUTO_PROPAGATE: bool = true;
 }
 
-impl Clone for FormUpdate {
-    fn clone(&self) -> Self {
-        Self {
-            target: self.target,
-            name: self.name.clone(),
-            value: self.value.reflect_clone().unwrap(),
-        }
-    }
-}
-
 impl<'w> UiBuilder<'w, '_> {
     pub fn form<T>(&mut self, style: Node, value: T) -> UiBuilder<'w, '_>
     where
@@ -87,46 +75,52 @@ impl<'w> UiBuilder<'w, '_> {
     }
 }
 
-pub fn submit(trigger: Trigger<Pointer<Click>>, mut commands: Commands) {
+pub fn submit(trigger: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
     commands.trigger_targets(FormSubmit, trigger.target());
+    Ok(())
 }
 
-fn update(mut trigger: Trigger<FormUpdate>, mut form_q: Query<(&mut Form, Option<&FormField>)>) {
-    let (mut form, field) = try_res_s!(form_q.get_mut(trigger.target()));
+fn update(
+    mut trigger: Trigger<FormUpdate>,
+    mut form_q: Query<(&mut Form, Option<&FormField>)>,
+) -> Result {
+    let (mut form, field) = form_q.get_mut(trigger.target())?;
 
     let ReflectMut::Struct(value) = form.value.reflect_mut() else {
-        error!(
+        return Err(format!(
             "Unexpected form value type '{}' for {:?}",
             form.value.reflect_short_type_path(),
             trigger.target()
-        );
-        return;
+        )
+        .into());
     };
 
     let Some(field_value) = value.field_mut(&trigger.name) else {
-        error!(
+        return Err(format!(
             "Form value of type '{}' for {:?} does not have field '{}'",
             value.reflect_short_type_path(),
             trigger.target(),
             trigger.name
-        );
-        return;
+        )
+        .into());
     };
 
     if let Err(error) = field_value.try_apply(&*trigger.value) {
-        error!(
+        return Err(format!(
             "Error updating field '{}' for {:?}: {}",
             &trigger.name,
             trigger.target(),
             error,
-        );
-        return;
+        )
+        .into());
     }
 
     if let Some(field) = field {
-        trigger.value = form.value.reflect_clone().unwrap();
+        trigger.value = form.value.reflect_clone()?;
         trigger.name.clone_from(&field.name);
     } else {
         trigger.propagate(false);
     }
+
+    Ok(())
 }

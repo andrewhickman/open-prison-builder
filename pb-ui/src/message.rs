@@ -3,7 +3,6 @@ use std::time::Duration;
 use bevy::prelude::*;
 
 use pb_assets::AssetHandles;
-use pb_util::AsDynError;
 
 use crate::{layout::Layout, theme::Theme, widget::UiBuilder};
 
@@ -23,16 +22,21 @@ pub enum MessageLevel {
 pub struct MessageExpiry(Duration);
 
 impl Message {
-    pub fn info(text: impl Into<String>) -> Self {
+    pub fn info(text: impl ToString) -> Self {
         Message {
-            text: text.into(),
+            text: text.to_string(),
             level: MessageLevel::Info,
         }
     }
 
-    pub fn error<'a, M: ?Sized>(error: &impl AsDynError<'a, M>) -> Self {
+    pub fn error(error: &BevyError) -> Self {
         Message {
-            text: error.to_string_compact(),
+            text: error
+                .to_string()
+                .lines()
+                .next()
+                .unwrap_or_default()
+                .to_owned(),
             level: MessageLevel::Error,
         }
     }

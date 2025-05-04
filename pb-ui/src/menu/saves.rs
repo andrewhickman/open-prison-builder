@@ -1,4 +1,3 @@
-use anyhow::Result;
 use bevy::{
     ecs::{
         error::HandleError,
@@ -18,7 +17,7 @@ use pb_store::{Metadata, Store};
 use smol_str::SmolStr;
 
 use pb_assets::AssetHandles;
-use pb_util::{AsDynError, callback::CallbackSender, spawn_io, try_res_s};
+use pb_util::{callback::CallbackSender, spawn_io};
 
 use crate::{
     EngineState, UiState,
@@ -55,17 +54,18 @@ pub fn save_panel_button(
     panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
     store: Res<Store>,
-) {
+) -> Result {
     for (id, &panel) in &panel_q {
         commands.entity(id).despawn();
         if panel == MenuPanel::Save {
-            return;
+            return Ok(());
         }
     }
 
     UiBuilder::new(commands, layout.menu)
         .save_panel(&theme, &assets, store.clone(), callback.clone())
         .insert(MenuPanel::Save);
+    Ok(())
 }
 
 pub fn load_panel_button(
@@ -77,17 +77,18 @@ pub fn load_panel_button(
     panel_q: Query<(Entity, &MenuPanel)>,
     callback: Res<CallbackSender>,
     store: Res<Store>,
-) {
+) -> Result {
     for (id, &panel) in &panel_q {
         commands.entity(id).despawn();
         if panel == MenuPanel::Load {
-            return;
+            return Ok(());
         }
     }
 
     UiBuilder::new(commands, layout.menu)
         .load_panel(&theme, &assets, store.clone(), callback.clone())
         .insert(MenuPanel::Load);
+    Ok(())
 }
 
 fn refresh_save_panel(
@@ -122,8 +123,8 @@ fn load_button(
     registry: Res<AppTypeRegistry>,
     callback: Res<CallbackSender>,
     store: Res<Store>,
-) {
-    let save_name = try_res_s!(save_q.get(trigger.target)).0.name.clone();
+) -> Result {
+    let save_name = save_q.get(trigger.target)?.0.name.clone();
 
     if let Ok(root) = engine_root.single() {
         commands.entity(root).despawn();
@@ -162,8 +163,7 @@ fn load_button(
                 info!("Successfully loaded save");
             }
             Err(error) => {
-                let error = error.as_dyn_error();
-                error!(error, "Failed to load save");
+                error!("Failed to load save: {error}");
 
                 ui_state.set(UiState::Menu);
 
@@ -171,6 +171,8 @@ fn load_button(
             }
         }
     }
+
+    Ok(())
 }
 
 fn overwrite_button(
@@ -181,8 +183,8 @@ fn overwrite_button(
     state: Res<State<EngineState>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
-) {
-    let save_name = try_res_s!(save_q.get(trigger.target)).0.name.clone();
+) -> Result {
+    let save_name = save_q.get(trigger.target)?.0.name.clone();
     save_impl(
         save_name,
         world,
@@ -190,7 +192,7 @@ fn overwrite_button(
         *state.get(),
         store.clone(),
         callback.clone(),
-    );
+    )
 }
 
 fn save_button(
@@ -201,12 +203,10 @@ fn save_button(
     state: Res<State<EngineState>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
-) {
+) -> Result {
     trigger.propagate(false);
 
-    let save_form = try_res_s!(form_q.get(trigger.target()))
-        .value::<SaveForm>()
-        .unwrap();
+    let save_form = form_q.get(trigger.target())?.value::<SaveForm>()?;
     save_impl(
         SmolStr::from(&save_form.name),
         world,
@@ -214,7 +214,7 @@ fn save_button(
         *state.get(),
         store.clone(),
         callback.clone(),
-    );
+    )
 }
 
 fn save_impl(
@@ -224,14 +224,14 @@ fn save_impl(
     state: EngineState,
     store: Store,
     callback: CallbackSender,
-) {
+) -> Result {
     if name.is_empty() {
-        return;
+        return Ok(());
     }
 
     let EngineState::Running(root) = state else {
         error!("Failed to save: not running");
-        return;
+        return Ok(());
     };
 
     let scene = save(world, &save_p, root);
@@ -257,12 +257,13 @@ fn save_impl(
                 message_e.write(Message::info(format!("Successfully saved '{name}'")));
             }
             Err(error) => {
-                let error = error.as_dyn_error();
-                error!(error, "Failed to save");
+                error!("Failed to save: {error}");
                 message_e.write(Message::error(&error));
             }
         }
     }
+
+    Ok(())
 }
 
 impl<'w> UiBuilder<'w, '_> {
@@ -351,8 +352,17 @@ impl<'w> UiBuilder<'w, '_> {
                     builder.saves_table_items(&theme, &assets, items, action);
                 }
                 Err(error) => {
-                    error!(error = error.as_dyn_error(), "failed to load saves");
-                    builder.error_message(&theme, &assets, error.to_string_compact());
+                    error!("failed to load saves: {error}");
+                    builder.error_message(
+                        &theme,
+                        &assets,
+                        error
+                            .to_string()
+                            .lines()
+                            .next()
+                            .unwrap_or_default()
+                            .to_owned(),
+                    );
                 }
             }
         }

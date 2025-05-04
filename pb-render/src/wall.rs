@@ -20,7 +20,7 @@ use pb_engine::{
     build::Blueprint,
     wall::{self, Vertex, Wall, WallMap},
 };
-use pb_util::{try_modify_component, try_res_s};
+use pb_util::try_modify_component;
 use smallvec::SmallVec;
 
 const VERTEX_LOCUS: Vec2 = Vec2::new(0.25 * wall::RADIUS, 0.5 * wall::RADIUS);
@@ -78,15 +78,14 @@ pub fn vertex_inserted(
     transform_q: Query<&Transform>,
     preview_q: Query<&Blueprint>,
     mut meshes: ResMut<Assets<Mesh>>,
-) {
+) -> Result {
     let color = if preview_q.contains(trigger.target()) {
         TRANSLUCENT_WHITE.clone()
     } else {
         WHITE.clone()
     };
 
-    let vertex_info =
-        VertexGeometry::new(try_res_s!(transform_q.get(trigger.target())), iter::empty());
+    let vertex_info = VertexGeometry::new(transform_q.get(trigger.target())?, iter::empty());
 
     let mesh = vertex_info.mesh();
     let aabb = mesh
@@ -106,6 +105,7 @@ pub fn vertex_inserted(
         aabb,
         Visibility::default(),
     ));
+    Ok(())
 }
 
 pub fn wall_inserted(
@@ -214,7 +214,7 @@ pub fn update_wall(
         ),
         Without<Vertex>,
     >,
-) {
+) -> Result {
     let mut updated_walls = EntityHashSet::new();
 
     for (id, transform, mut info, mut mesh, mut aabb) in vertex_q.iter_mut() {
@@ -244,21 +244,22 @@ pub fn update_wall(
     }
 
     for id in updated_walls {
-        let (wall, mut info, mut mesh, mut aabb, hidden) = try_res_s!(wall_mesh_q.get_mut(id));
+        let (wall, mut info, mut mesh, mut aabb, hidden) = wall_mesh_q.get_mut(id)?;
         if hidden {
             continue;
         }
 
         let [(_, _, start_info, _, _), (_, _, end_info, _, _)] =
-            vertex_q.get_many(wall.vertices()).unwrap();
+            vertex_q.get_many(wall.vertices())?;
 
-        let new_info = WallGeometry::new(id, start_info, end_info);
+        let new_info = WallGeometry::new(id, start_info, end_info)?;
         if info.set_if_neq(new_info) {
             let new_mesh = info.mesh();
             *aabb = new_mesh.compute_aabb().unwrap_or_default();
             mesh.0 = meshes.add(new_mesh);
         }
     }
+    Ok(())
 }
 
 impl VertexGeometry {
@@ -354,12 +355,16 @@ impl VertexGeometry {
 }
 
 impl WallGeometry {
-    fn new(id: Entity, start: &VertexGeometry, end: &VertexGeometry) -> Self {
+    fn new(id: Entity, start: &VertexGeometry, end: &VertexGeometry) -> Result<Self> {
         let pos = start.pos.midpoint(end.pos);
-        let (start1, start2, start3) = start.wall_intersection(id, pos).unwrap();
-        let (end1, end2, end3) = end.wall_intersection(id, pos).unwrap();
+        let (start1, start2, start3) = start
+            .wall_intersection(id, pos)
+            .ok_or("wall intersection not found")?;
+        let (end1, end2, end3) = end
+            .wall_intersection(id, pos)
+            .ok_or("wall intersection not found")?;
 
-        WallGeometry {
+        Ok(WallGeometry {
             points: [start1, start2, start3, end1, end2, end3],
             lens: [
                 start1.project_onto(start2).length(),
@@ -369,7 +374,7 @@ impl WallGeometry {
                 end2.length(),
                 end3.project_onto(end2).length(),
             ],
-        }
+        })
     }
 
     fn mesh(&self) -> Mesh {

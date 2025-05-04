@@ -1,5 +1,8 @@
-use anyhow::{Context, Result, anyhow};
-use bevy::{log::info, reflect::TypePath};
+use bevy::{
+    ecs::error::{BevyError, Result},
+    log::info,
+    reflect::TypePath,
+};
 use serde::{Serialize, de::DeserializeSeed};
 use wasm_bindgen::{JsCast, JsValue};
 
@@ -23,13 +26,10 @@ impl Store {
     {
         let storage = self.storage()?;
 
-        let json = storage
-            .get_item(key)
-            .map_err(map_err)
-            .with_context(|| format!("failed to read from '{key}'"))?;
+        let json = storage.get_item(key).map_err(map_err)?;
         if let Some(json) = json {
             let settings = from_json(seed, &json)
-                .with_context(|| format!("failed to parse JSON at '{}'", key))?;
+                .map_err(|err| format!("failed to parse JSON at '{key}': {err}"))?;
             info!(
                 "Loaded value of type '{}' from '{}'",
                 T::short_type_path(),
@@ -41,25 +41,23 @@ impl Store {
         }
     }
 
-    pub async fn set<T>(&self, key: &str, value: T) -> Result<()>
+    pub async fn set<T>(&self, key: &str, value: T) -> Result
     where
         T: Serialize + TypePath,
     {
         let storage = self.storage()?;
 
-        let json = serde_json::to_string(&value).context("failed to serialize JSON")?;
-        storage
-            .set_item(key, &json)
-            .map_err(map_err)
-            .with_context(|| format!("failed to write to '{key}'"))?;
+        let json = serde_json::to_string(&value)
+            .map_err(|err| BevyError::from(format!("failed to serialize JSON: {err}")))?;
+        storage.set_item(key, &json).map_err(map_err)?;
 
         let metadata = Metadata::new(file_stem(key));
-        let metadata_json = serde_json::to_string(&metadata).context("failed to serialize JSON")?;
+        let metadata_json = serde_json::to_string(&metadata)
+            .map_err(|err| BevyError::from(format!("failed to serialize JSON: {err}")))?;
         let metadata_key = format!("{}{}", key, META_SUFFIX);
         storage
             .set_item(&metadata_key, &metadata_json)
-            .map_err(map_err)
-            .with_context(|| format!("failed to write to '{metadata_key}'"))?;
+            .map_err(map_err)?;
 
         info!(
             "Stored value of type '{}' at '{}'",
@@ -87,15 +85,11 @@ impl Store {
                 continue;
             }
 
-            let Some(json) = storage
-                .get_item(&key)
-                .map_err(map_err)
-                .with_context(|| format!("failed to read from '{key}'"))?
-            else {
+            let Some(json) = storage.get_item(&key).map_err(map_err)? else {
                 continue;
             };
             let metadata = serde_json::from_str(&json)
-                .with_context(|| format!("failed to parse JSON at '{}'", key))?;
+                .map_err(|error| format!("failed to parse JSON at '{}': {error}", key))?;
             results.push(metadata)
         }
 
@@ -105,12 +99,11 @@ impl Store {
 
 impl Store {
     fn storage(&self) -> Result<web_sys::Storage> {
-        web_sys::window()
-            .context("failed to get window")?
+        Ok(web_sys::window()
+            .ok_or("failed to get window")?
             .local_storage()
-            .map_err(map_err)
-            .context("failed to get local storage")?
-            .context("failed to get local storage")
+            .map_err(map_err)?
+            .ok_or("failed to get local storage")?)
     }
 }
 
@@ -119,9 +112,9 @@ fn file_stem(path: &str) -> &str {
     name.rsplit_once('.').map(|(s, _)| s).unwrap_or(name)
 }
 
-fn map_err(err: JsValue) -> anyhow::Error {
+fn map_err(err: JsValue) -> BevyError {
     match err.dyn_into::<js_sys::Error>() {
-        Ok(error) => anyhow!("{}", error.message()),
-        Err(value) => anyhow!("{value:?}"),
+        Ok(error) => format!("{}", error.message()).into(),
+        Err(value) => format!("{value:?}").into(),
     }
 }

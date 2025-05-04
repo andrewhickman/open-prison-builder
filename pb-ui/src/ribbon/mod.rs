@@ -215,15 +215,16 @@ impl RibbonButton {
         assets: Res<AssetHandles>,
         layout: Res<Layout>,
         panel_q: Query<(Entity, &RibbonPanel)>,
-    ) {
+    ) -> Result {
         let requested_panel = self.panel();
         for (id, &panel) in &panel_q {
             commands.entity(id).despawn();
             if panel == requested_panel {
-                return;
+                return Ok(());
             }
         }
 
-        UiBuilder::new(commands, layout.ribbon).ribbon_panel(&theme, &assets, requested_panel)
+        UiBuilder::new(commands, layout.ribbon).ribbon_panel(&theme, &assets, requested_panel);
+        Ok(())
     }
 }

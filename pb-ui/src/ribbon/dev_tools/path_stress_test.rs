@@ -8,7 +8,7 @@ use rand::{
     rngs::SmallRng,
 };
 
-pub fn spawn_1000_pawns(_: Trigger<Pointer<Click>>, mut commands: Commands) {
+pub fn spawn_1000_pawns(_: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
     let mut rng = SmallRng::from_os_rng();
     let position_distr = Uniform::new(-100., 100.).unwrap();
     let rotation_distr = Uniform::new(-PI, PI).unwrap();
@@ -26,13 +26,14 @@ pub fn spawn_1000_pawns(_: Trigger<Pointer<Click>>, mut commands: Commands) {
         .collect();
 
     commands.spawn_batch(pawns);
+    Ok(())
 }
 
 pub fn create_path_tasks(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     query: Query<Entity, With<Pawn>>,
-) {
+) -> Result {
     let mut rng = SmallRng::from_os_rng();
     let position_distr = Uniform::new(-100., 100.).unwrap();
 
@@ -51,4 +52,5 @@ pub fn create_path_tasks(
     info!("created {} path tasks", tasks.len());
 
     commands.spawn_batch(tasks);
+    Ok(())
 }

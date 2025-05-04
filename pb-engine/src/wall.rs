@@ -6,7 +6,6 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use pb_util::try_res_s;
 use serde::{Deserialize, Serialize};
 
 use crate::{build::Blueprint, picking::Layer};
@@ -147,27 +146,29 @@ pub fn wall_added(
     trigger: Trigger<OnInsert, Wall>,
     mut map: ResMut<WallMap>,
     wall_q: Query<&Wall>,
-) {
-    let wall = try_res_s!(wall_q.get(trigger.target()));
+) -> Result {
+    let wall = wall_q.get(trigger.target())?;
     map.add(trigger.target(), wall.start(), wall.end());
+    Ok(())
 }
 
 pub fn wall_removed(
     trigger: Trigger<OnReplace, Wall>,
     mut map: ResMut<WallMap>,
     wall_q: Query<&Wall>,
-) {
-    let wall = try_res_s!(wall_q.get(trigger.target()));
+) -> Result {
+    let wall = wall_q.get(trigger.target())?;
     map.remove(trigger.target(), wall.start(), wall.end());
+    Ok(())
 }
 
 pub fn add_colliders(
     mut commands: Commands,
     wall_q: Query<(Entity, &Wall), (Without<Collider>, Without<Blueprint>)>,
     vertex_q: Query<&Transform, With<Vertex>>,
-) {
+) -> Result {
     for (id, wall) in &wall_q {
-        let [start, end] = vertex_q.get_many(wall.vertices()).unwrap();
+        let [start, end] = vertex_q.get_many(wall.vertices())?;
 
         let midpoint = start.translation.midpoint(end.translation);
 
@@ -182,4 +183,5 @@ pub fn add_colliders(
             CollisionLayers::new(Layer::Wall, LayerMask::ALL),
         ));
     }
+    Ok(())
 }

@@ -1,6 +1,6 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use pb_store::Store;
-use pb_util::{AsDynError, callback::CallbackSender, spawn_io};
+use pb_util::{callback::CallbackSender, spawn_io};
 use serde::{Deserialize, Serialize};
 
 use crate::input::Input;
@@ -19,7 +19,7 @@ pub fn init(store: Res<Store>, callback: Res<CallbackSender>) {
                 Settings::default()
             }
             Err(error) => {
-                error!(error = error.as_dyn_error(), "Failed to load settings");
+                error!("Failed to load settings: {error}");
                 Settings::default()
             }
         };

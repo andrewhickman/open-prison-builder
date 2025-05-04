@@ -1,7 +1,7 @@
 use std::{ffi::OsStr, io, path::PathBuf};
 
-use anyhow::{Context, Error, Result};
-use bevy::{log::info, reflect::TypePath, tasks::futures_lite::StreamExt};
+use bevy::{prelude::*, tasks::futures_lite::StreamExt};
+use directories::ProjectDirs;
 use serde::{Serialize, de::DeserializeSeed};
 
 use crate::{Metadata, from_json};
@@ -12,9 +12,8 @@ pub(crate) struct Store {
 
 impl Store {
     pub fn new() -> Result<Self> {
-        let dirs =
-            directories::ProjectDirs::from("pb.dev.andrewhickman", "", "open-prison-builder")
-                .context("failed to find data directory")?;
+        let dirs = ProjectDirs::from("pb.dev.andrewhickman", "", "open-prison-builder")
+            .ok_or("failed to find data directory")?;
 
         Ok(Store {
             path: dirs.data_dir().to_owned(),
@@ -33,14 +32,12 @@ impl Store {
             Ok(json) => json,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
             Err(error) => {
-                return Err(
-                    Error::from(error).context(format!("failed to read from '{}'", path.display()))
-                );
+                return Err(format!("failed to read from '{}': {error}", path.display()).into());
             }
         };
 
         let value = from_json(seed, &json)
-            .with_context(|| format!("failed to parse JSON at '{}'", path.display()))?;
+            .map_err(|error| format!("failed to parse JSON at '{}': {error}", path.display()))?;
         info!(
             "Loaded value of type '{}' from '{}'",
             T::short_type_path(),
@@ -54,27 +51,24 @@ impl Store {
         T: Serialize + TypePath,
     {
         let path = self.path.join(key);
-        let json = serde_json::to_string(&value).context("failed to serialize JSON")?;
+        let json = serde_json::to_string(&value)?;
 
         match async_fs::write(&path, &json).await {
             Ok(()) => (),
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
                 let Some(dir) = path.parent() else {
-                    return Err(Error::from(error)
-                        .context(format!("failed to write to '{}'", path.display())));
+                    return Err(format!("failed to write to '{}': {error}", path.display()).into());
                 };
 
-                async_fs::create_dir_all(&dir)
-                    .await
-                    .with_context(|| format!("failed to create directory '{}'", dir.display()))?;
+                async_fs::create_dir_all(&dir).await.map_err(|error| {
+                    format!("failed to create directory '{}': {error}", dir.display())
+                })?;
                 async_fs::write(&path, &json)
                     .await
-                    .with_context(|| format!("failed to write to '{}'", path.display()))?;
+                    .map_err(|error| format!("failed to write to '{}': {error}", path.display()))?;
             }
             Err(error) => {
-                return Err(
-                    Error::from(error).context(format!("failed to write to '{}'", path.display()))
-                );
+                return Err(format!("failed to write to '{}': {error}", path.display()).into());
             }
         };
 
@@ -91,12 +85,15 @@ impl Store {
 
         let mut files = match async_fs::read_dir(&path).await {
             Ok(files) => files.map(|res| {
-                res.with_context(|| format!("failed to read directory '{}'", path.display()))
+                res.map_err(|error| {
+                    format!("failed to read directory '{}': {error}", path.display())
+                })
             }),
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(vec![]),
             Err(error) => {
-                return Err(Error::from(error)
-                    .context(format!("failed to read directory '{}'", path.display())));
+                return Err(
+                    format!("failed to read directory '{}': {error}", path.display()).into(),
+                );
             }
         };
 
@@ -107,8 +104,11 @@ impl Store {
                 continue;
             };
 
-            let metadata = entry.metadata().await.with_context(|| {
-                format!("failed to get metadata for '{}'", entry_path.display())
+            let metadata = entry.metadata().await.map_err(|error| {
+                format!(
+                    "failed to get metadata for '{}': {error}",
+                    entry_path.display()
+                )
             })?;
 
             results.push(Metadata {
