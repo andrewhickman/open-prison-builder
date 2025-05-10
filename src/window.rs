@@ -1,12 +1,6 @@
 use std::io;
 
-use bevy::{
-    ecs::{entity::Entity, query::With, system::NonSend},
-    prelude::Single,
-    utils::default,
-    window::{PrimaryWindow, Window, WindowPlugin},
-    winit::WinitWindows,
-};
+use bevy::{prelude::*, window::PrimaryWindow, winit::WinitWindows};
 use winit::window::Icon;
 
 pub fn plugin() -> WindowPlugin {
@@ -26,17 +20,16 @@ pub fn plugin() -> WindowPlugin {
 pub fn set_icon(
     windows: NonSend<WinitWindows>,
     primary_window: Single<Entity, With<PrimaryWindow>>,
-) {
+) -> Result {
     let Some(primary) = windows.get_window(*primary_window) else {
-        return;
+        return Ok(());
     };
 
     let icon_buf = io::Cursor::new(include_bytes!("../build/icon.png"));
-    let image = image::load(icon_buf, image::ImageFormat::Png)
-        .unwrap()
-        .into_rgba8();
+    let image = image::load(icon_buf, image::ImageFormat::Png)?.into_rgba8();
     let (width, height) = image.dimensions();
     let rgba = image.into_raw();
-    let icon = Icon::from_rgba(rgba, width, height).unwrap();
+    let icon = Icon::from_rgba(rgba, width, height)?;
     primary.set_window_icon(Some(icon));
+    Ok(())
 }

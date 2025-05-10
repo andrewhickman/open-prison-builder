@@ -7,7 +7,7 @@ use std::{fs, path::PathBuf};
 use bevy::{
     asset::{LoadState, RenderAssetUsages},
     core_pipeline::CorePipelinePlugin,
-    ecs::system::{ScheduleSystem, SystemState},
+    ecs::system::ScheduleSystem,
     log::DEFAULT_FILTER,
     prelude::*,
     render::{
@@ -27,16 +27,12 @@ use bevy::{
 };
 
 use pb_assets::{AssetHandles, PbAssetsPlugin};
-use pb_engine::{
-    EngineState, PbEnginePlugin,
-    save::{LoadSeed, load},
-};
+use pb_engine::{EngineState, PbEnginePlugin, save::SaveModel};
 use pb_render::{
     PbRenderPlugin,
     grid::{GRID_MESH_HANDLE, GridMaterial},
     projection::projection,
 };
-use serde::de::DeserializeSeed;
 
 #[derive(Resource)]
 struct TestConfig {
@@ -133,7 +129,6 @@ where
 
 fn update(
     mut commands: Commands,
-    registry: Res<AppTypeRegistry>,
     config: Res<TestConfig>,
     mut state: ResMut<TestState>,
     timer: Res<Time>,
@@ -141,12 +136,12 @@ fn update(
     asset_server: Res<AssetServer>,
     mut images: ResMut<Assets<Image>>,
     engine_state: Res<State<EngineState>>,
+    mut next_engine_state: ResMut<NextState<EngineState>>,
     mut exit_e: EventWriter<AppExit>,
     mut ticks: Local<u32>,
-) {
+) -> Result {
     if timer.elapsed_secs() > 5. {
-        error!("Test execution timed out");
-        exit_e.write(AppExit::error());
+        panic!("Test execution timed out");
     }
 
     match &*state {
@@ -160,7 +155,7 @@ fn update(
                 TextureDimension::D2,
                 &[0; 4],
                 TextureFormat::bevy_default(),
-                RenderAssetUsages::RENDER_WORLD,
+                RenderAssetUsages::default(),
             );
             image.texture_descriptor.usage = TextureUsages::COPY_SRC
                 | TextureUsages::RENDER_ATTACHMENT
@@ -171,44 +166,37 @@ fn update(
                 Camera2d,
                 Camera {
                     target: RenderTarget::Image(image.clone().into()),
-                    clear_color: ClearColorConfig::Custom(Srgba::hex("192a28").unwrap().into()),
+                    clear_color: ClearColorConfig::Custom(Srgba::hex("192a28")?.into()),
                     ..Default::default()
                 },
                 projection(),
                 Msaa::Off,
             ));
 
-            let save_json = fs::read_to_string(config.dir.join("scene.json")).unwrap();
-            let save = from_json(LoadSeed::new(registry.0.clone()), &save_json).unwrap();
-            commands.queue(move |world: &mut World| {
-                let mut param: SystemState<pb_engine::save::LoadParam<'_, '_>> =
-                    SystemState::new(world);
-                let root = load(world, &mut param, &save).unwrap();
-                world
-                    .resource_mut::<NextState<EngineState>>()
-                    .set(EngineState::Running(root));
-            });
+            let save_json = fs::read_to_string(config.dir.join("save.json"))?;
+            let save: SaveModel = serde_json::from_str(&save_json)?;
+            let root = save.spawn(&mut commands);
+            next_engine_state.set(EngineState::Running(root));
 
             *state = TestState::Prepare { image };
         }
         TestState::Prepare { image } => {
             match assets.load_state(&asset_server) {
-                LoadState::NotLoaded | LoadState::Loading => return,
+                LoadState::NotLoaded | LoadState::Loading => return Ok(()),
                 LoadState::Loaded => (),
                 LoadState::Failed(error) => {
-                    error!("Failed to load all assets, exiting: {error}");
-                    exit_e.write(AppExit::error());
+                    panic!("Failed to load all assets: {error}");
                 }
             }
 
             if matches!(engine_state.get(), EngineState::Disabled) {
-                return;
+                return Ok(());
             }
 
             // Wait for all render resources to be created...
             *ticks += 1;
             if *ticks < 100 {
-                return;
+                return Ok(());
             }
 
             commands.spawn(Screenshot::image(image.clone())).observe(
@@ -220,48 +208,37 @@ fn update(
             );
             *state = TestState::Screenshot;
         }
-        TestState::Screenshot => (),
+        TestState::Screenshot => {}
         TestState::ScreenshotCaptured { screenshot } => {
-            let actual = screenshot.clone().try_into_dynamic().unwrap();
+            let actual = screenshot.clone().try_into_dynamic()?;
 
-            fs::create_dir_all(&config.dir).unwrap();
+            fs::create_dir_all(&config.dir)?;
             let expected_path = config.dir.join("expected.png");
             if !expected_path.exists() {
                 actual.save(expected_path).unwrap();
                 exit_e.write(AppExit::Success);
-                return;
+                return Ok(());
             }
 
-            let expected = image::open(expected_path).unwrap();
+            let expected = image::open(expected_path)?;
 
             let (error, diff) = diff::diff_image(&expected, &actual);
             if error > 0 {
                 let diff_path = config.dir.join("diff.png");
                 let actual_path = config.dir.join("actual.png");
 
-                error!(
-                    "Difference of ({error}) in image. See '{}' for the changed pixels.",
+                diff.save(&diff_path)?;
+                actual.save(&actual_path)?;
+
+                panic!(
+                    "Difference of {error} in image. See '{}' for the changed pixels.",
                     diff_path.display()
                 );
-
-                diff.save(diff_path).unwrap();
-                actual.save(actual_path).unwrap();
-
-                exit_e.write(AppExit::error());
             } else {
                 exit_e.write(AppExit::Success);
             }
         }
     }
-}
 
-fn from_json<S, T>(seed: S, json: &str) -> Result<T, serde_json::Error>
-where
-    S: for<'de> DeserializeSeed<'de, Value = T>,
-    T: 'static,
-{
-    let mut de = serde_json::Deserializer::from_str(json);
-    let value = seed.deserialize(&mut de)?;
-    de.end()?;
-    Ok(value)
+    Ok(())
 }

@@ -9,6 +9,7 @@ edition = "2024"
 bevy = { version = "0.16.0", default-features = false, features = [
     "bevy_asset",
     "bevy_image",
+    "bevy_log",
     "bevy_text",
     "bevy_window",
     "png"

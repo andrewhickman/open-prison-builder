@@ -1,26 +1,23 @@
 use bevy::{
     ecs::{
         error::HandleError,
-        system::{
-            SystemState,
-            command::{run_system_cached, run_system_cached_with},
-        },
+        system::command::{run_system_cached, run_system_cached_with},
         world::CommandQueue,
     },
     prelude::*,
 };
 use pb_engine::{
-    root::Root,
-    save::{LoadParam, LoadSeed, Save, SaveParam, load, save},
+    EngineState,
+    save::{SaveModel, SaveParam},
 };
 use pb_store::{Metadata, Store};
-use smol_str::SmolStr;
 
 use pb_assets::AssetHandles;
 use pb_util::{callback::CallbackSender, spawn_io};
+use smol_str::SmolStr;
 
 use crate::{
-    EngineState, UiState,
+    UiState,
     layout::Layout,
     menu::MenuPanel,
     message::Message,
@@ -118,15 +115,14 @@ fn load_button(
     mut commands: Commands,
     save_q: Query<&SaveItem>,
     mut ui_state: ResMut<NextState<UiState>>,
-    engine_root: Query<Entity, With<Root>>,
+    engine_state: Res<State<EngineState>>,
     mut next_engine_state: ResMut<NextState<EngineState>>,
-    registry: Res<AppTypeRegistry>,
     callback: Res<CallbackSender>,
     store: Res<Store>,
 ) -> Result {
-    let save_name = save_q.get(trigger.target)?.0.name.clone();
+    let save_name = save_q.get(trigger.target())?.0.name.clone();
 
-    if let Ok(root) = engine_root.single() {
+    if let &EngineState::Running(root) = engine_state.get() {
         commands.entity(root).despawn();
     }
 
@@ -135,29 +131,24 @@ fn load_button(
 
     let store = store.clone();
     let callback = callback.clone();
-    let seed = LoadSeed::new(registry.0.clone());
     spawn_io(async move {
         let res = store
-            .get_with(&format!("saves/{save_name}.json"), seed)
+            .get::<SaveModel>(&format!("saves/{save_name}.json"))
             .await;
-        callback.send_oneshot_system_with_input(on_load_complete, res);
+        callback.run_system_cached_with(on_load_complete, res);
     });
 
     fn on_load_complete(
-        In(save): In<Result<Save>>,
-        world: &mut World,
-        load_p: &mut SystemState<LoadParam>,
-        state: &mut SystemState<(
-            ResMut<NextState<UiState>>,
-            ResMut<NextState<EngineState>>,
-            EventWriter<Message>,
-        )>,
+        In(save): In<Result<SaveModel>>,
+        mut commands: Commands,
+        mut ui_state: ResMut<NextState<UiState>>,
+        mut engine_state: ResMut<NextState<EngineState>>,
+        mut message_e: EventWriter<Message>,
     ) {
-        let res = save.and_then(|save| load(world, load_p, &save));
-        let (mut ui_state, mut engine_state, mut message_e) = state.get_mut(world);
+        match save {
+            Ok(save) => {
+                let root = save.spawn(&mut commands);
 
-        match res {
-            Ok(root) => {
                 ui_state.set(UiState::Game);
                 engine_state.set(EngineState::Running(root));
                 info!("Successfully loaded save");
@@ -166,7 +157,6 @@ fn load_button(
                 error!("Failed to load save: {error}");
 
                 ui_state.set(UiState::Menu);
-
                 message_e.write(Message::error(&error));
             }
         }
@@ -177,69 +167,39 @@ fn load_button(
 
 fn overwrite_button(
     trigger: Trigger<Pointer<Click>>,
-    world: &World,
     save_q: Query<&SaveItem>,
     save_p: SaveParam,
-    state: Res<State<EngineState>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) -> Result {
-    let save_name = save_q.get(trigger.target)?.0.name.clone();
-    save_impl(
-        save_name,
-        world,
-        save_p,
-        *state.get(),
-        store.clone(),
-        callback.clone(),
-    )
+    let save_name = save_q.get(trigger.target())?.0.name.clone();
+    save_impl(save_name, save_p, store.clone(), callback.clone())
 }
 
 fn save_button(
     mut trigger: Trigger<FormSubmit>,
-    world: &World,
     form_q: Query<&Form>,
     save_p: SaveParam,
-    state: Res<State<EngineState>>,
     store: Res<Store>,
     callback: Res<CallbackSender>,
 ) -> Result {
     trigger.propagate(false);
 
-    let save_form = form_q.get(trigger.target())?.value::<SaveForm>()?;
-    save_impl(
-        SmolStr::from(&save_form.name),
-        world,
-        save_p,
-        *state.get(),
-        store.clone(),
-        callback.clone(),
-    )
+    let save_name = form_q.get(trigger.target())?.value::<SaveForm>()?.name;
+    save_impl(save_name.into(), save_p, store.clone(), callback.clone())
 }
 
-fn save_impl(
-    name: SmolStr,
-    world: &World,
-    save_p: SaveParam,
-    state: EngineState,
-    store: Store,
-    callback: CallbackSender,
-) -> Result {
-    if name.is_empty() {
-        return Ok(());
-    }
-
-    let EngineState::Running(root) = state else {
-        error!("Failed to save: not running");
-        return Ok(());
-    };
-
-    let scene = save(world, &save_p, root);
+fn save_impl(name: SmolStr, save_p: SaveParam, store: Store, callback: CallbackSender) -> Result {
+    let scene = save_p.save()?;
 
     let store = store.clone();
     let callback = callback.clone();
     spawn_io(async move {
-        let res = store.set(&format!("saves/{name}.json"), scene).await;
+        let res = if name.is_empty() {
+            Err("empty name".into())
+        } else {
+            store.set(&format!("saves/{name}.json"), scene).await
+        };
 
         let mut queue = CommandQueue::default();
         queue.push(run_system_cached_with(on_save_complete, (name, res)).handle_error());
@@ -331,7 +291,7 @@ impl<'w> UiBuilder<'w, '_> {
 
         spawn_io(async move {
             let res = store.iter("saves").await;
-            callback.send_oneshot_system_with_input(on_list_complete, (res, container_id, action));
+            callback.run_system_cached_with(on_list_complete, (res, container_id, action));
         });
 
         fn on_list_complete(

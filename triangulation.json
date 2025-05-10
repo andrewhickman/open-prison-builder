@@ -1,0 +1,2124 @@
+{
+  "dcel": {
+    "vertices": [
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967478
+          },
+          "position": [
+            -1.0,
+            -1.0
+          ]
+        },
+        "out_edge": {
+          "index": 52,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 17179869238
+          },
+          "position": [
+            -1.0,
+            1.0
+          ]
+        },
+        "out_edge": {
+          "index": 40,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 128849018976
+          },
+          "position": [
+            1.0,
+            1.0
+          ]
+        },
+        "out_edge": {
+          "index": 4,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967479
+          },
+          "position": [
+            1.0,
+            -1.0
+          ]
+        },
+        "out_edge": {
+          "index": 48,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967523
+          },
+          "position": [
+            -2.0,
+            -0.0
+          ]
+        },
+        "out_edge": {
+          "index": 12,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967524
+          },
+          "position": [
+            2.0,
+            -0.0
+          ]
+        },
+        "out_edge": {
+          "index": 16,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967525
+          },
+          "position": [
+            -1.0,
+            -0.0
+          ]
+        },
+        "out_edge": {
+          "index": 21,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967526
+          },
+          "position": [
+            1.0,
+            0.0
+          ]
+        },
+        "out_edge": {
+          "index": 8,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967587
+          },
+          "position": [
+            0.0,
+            2.0
+          ]
+        },
+        "out_edge": {
+          "index": 32,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967588
+          },
+          "position": [
+            0.0,
+            -2.0
+          ]
+        },
+        "out_edge": {
+          "index": 36,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967589
+          },
+          "position": [
+            0.0,
+            1.0
+          ]
+        },
+        "out_edge": {
+          "index": 5,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967590
+          },
+          "position": [
+            0.0,
+            0.0
+          ]
+        },
+        "out_edge": {
+          "index": 24,
+          "ty": null,
+          "inner_outer": null
+        }
+      },
+      {
+        "data": {
+          "corner": {
+            "Owned": 4294967591
+          },
+          "position": [
+            -0.0,
+            -1.0
+          ]
+        },
+        "out_edge": {
+          "index": 6,
+          "ty": null,
+          "inner_outer": null
+        }
+      }
+    ],
+    "faces": [
+      {
+        "adjacent_edge": {
+          "index": 37,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": null
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 23,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967534
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 3,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967602
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 18,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967603
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 9,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967604
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 20,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967605
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 44,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967534
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 25,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967606
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 28,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967607
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 38,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967608
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 7,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967609
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 40,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967610
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 42,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967611
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 46,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967611
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 50,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967606
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 52,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967602
+          }
+        }
+      },
+      {
+        "adjacent_edge": {
+          "index": 54,
+          "ty": null,
+          "inner_outer": null
+        },
+        "data": {
+          "room": {
+            "Owned": 4294967612
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 18,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 42,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 41,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 12,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 1,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967527
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 52,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 51,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 15,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 47,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 21,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 2,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 23,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 8,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 1,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 2,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 30,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 38,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 9,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967592
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 48,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 50,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 14,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 12,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 55,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 36,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967593
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 4,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 23,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 1,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 29,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 16,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 4,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 2,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967528
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 18,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 1,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 33,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 13,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 4,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 20,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 19,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 5,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 4,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 35,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 28,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 27,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 8,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 37,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 17,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 5,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 9,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 29,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 4,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 5,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 15,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 31,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 2,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 4,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 12,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 20,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 5,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967529
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 19,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 12,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 5,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 47,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 2,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967530
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 44,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 24,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 8,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 4,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 1,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 22,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 44,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 49,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 26,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967594
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 25,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 49,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 14,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 28,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 8,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967532
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 27,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 14,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 8,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 5,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 16,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 9,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 4,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967533
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 38,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 5,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 9,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 2,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 17,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 33,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 8,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 40,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 39,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 8,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 31,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 1,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 54,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 53,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 16,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 13,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 37,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 9,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 55,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 9,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 35,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 15,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 5,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 30,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 9,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 8,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 32,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 40,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967595
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 39,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 32,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 1,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 1,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 42,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 12,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967596
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 41,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 1,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 12,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 46,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 45,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 13,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 24,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 22,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 43,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 46,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 13,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967597
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 45,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 43,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 13,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 21,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 2,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967598
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 50,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 14,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 3,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 26,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 25,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          false,
+          {
+            "wall": null
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 6,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 48,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 14,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 11,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 2,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 52,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 15,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 12,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967599
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 51,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 2,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 15,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 0,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 34,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 54,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 16,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 12,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967600
+            }
+          }
+        ]
+      },
+      {
+        "entries": [
+          {
+            "next": {
+              "index": 53,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 34,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 16,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 9,
+              "ty": null,
+              "inner_outer": null
+            }
+          },
+          {
+            "next": {
+              "index": 36,
+              "ty": null,
+              "inner_outer": null
+            },
+            "prev": {
+              "index": 7,
+              "ty": null,
+              "inner_outer": null
+            },
+            "face": {
+              "index": 10,
+              "ty": null,
+              "inner_outer": null
+            },
+            "origin": {
+              "index": 12,
+              "ty": null,
+              "inner_outer": null
+            }
+          }
+        ],
+        "directed_data": [
+          null,
+          null
+        ],
+        "undirected_data": [
+          true,
+          {
+            "wall": {
+              "Owned": 4294967601
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "num_constraints": 16,
+  "hint_generator": {
+    "hierarchy": [
+      {
+        "dcel": {
+          "vertices": [
+            {
+              "data": {
+                "x": -1.0,
+                "y": -1.0
+              },
+              "out_edge": null
+            }
+          ],
+          "faces": [
+            {
+              "adjacent_edge": null,
+              "data": null
+            }
+          ],
+          "edges": []
+        },
+        "hint_generator": {}
+      },
+      {
+        "dcel": {
+          "vertices": [
+            {
+              "data": {
+                "x": -1.0,
+                "y": -1.0
+              },
+              "out_edge": null
+            }
+          ],
+          "faces": [
+            {
+              "adjacent_edge": null,
+              "data": null
+            }
+          ],
+          "edges": []
+        },
+        "hint_generator": {}
+      }
+    ],
+    "num_elements_of_base_triangulation": 14
+  }
+}

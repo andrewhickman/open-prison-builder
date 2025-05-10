@@ -4,8 +4,9 @@ use std::{
 };
 
 use bevy::{
+    asset::weak_handle,
     ecs::entity::{EntityHashMap, EntityHashSet},
-    math::FloatOrd,
+    math::{Affine2, FloatOrd},
     prelude::*,
     render::{
         mesh::{Indices, MeshAabb, PrimitiveTopology},
@@ -15,12 +16,14 @@ use bevy::{
     sprite::AlphaMode2d,
 };
 use pb_assets::AssetHandles;
-use pb_engine::{wall, EngineState};
-use pb_map::{Corner, Map, MapEntity, Wall};
-use pb_util::{try_res_s, weak_handle};
+use pb_engine::{
+    EngineState,
+    map::{Corner, Map, MapEntity, Wall},
+    wall,
+};
 use smallvec::SmallVec;
 
-const CORNER_LOCUS: Vec2 = Vec2::new(0.25 * wall::RADIUS, 0.5 * wall::RADIUS);
+const CORNER_LOCUS: Vec2 = Vec2::new(0., 0.5 * wall::RADIUS);
 
 const TEXTURE_TOP: f32 = 0.0;
 const TEXTURE_BOTTOM: f32 = 1.0;
@@ -70,7 +73,7 @@ pub const ADDED_MATERIAL: Handle<ColorMaterial> =
 pub const REMOVED_MATERIAL: Handle<ColorMaterial> =
     weak_handle!("202d16ae-02f2-4584-a77c-7882a55db5fa");
 
-pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, assets: Res<AssetHandles>) {
+pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, assets: Res<AssetHandles>) -> Result {
     materials.insert(
         &DEFAULT_MATERIAL,
         ColorMaterial::from(assets.brick_image.clone()),
@@ -81,30 +84,31 @@ pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, assets: Res<AssetHa
             color: Color::WHITE.with_alpha(0.38),
             alpha_mode: AlphaMode2d::Blend,
             texture: Some(assets.brick_image.clone()),
+            uv_transform: Affine2::IDENTITY,
         },
     );
     materials.insert(
         &REMOVED_MATERIAL,
         ColorMaterial {
-            color: Srgba::hex("f2200d").unwrap().with_alpha(0.38).into(),
+            color: Srgba::hex("f2200d")?.with_alpha(0.38).into(),
             alpha_mode: AlphaMode2d::Blend,
             texture: Some(assets.brick_image.clone()),
+            uv_transform: Affine2::IDENTITY,
         },
     );
+    Ok(())
 }
 
 pub fn corner_inserted(
     trigger: Trigger<OnInsert, Corner>,
     mut commands: Commands,
-    corner_q: Query<(&Transform, &Parent)>,
+    corner_q: Query<&Corner>,
     mut meshes: ResMut<Assets<Mesh>>,
-    visible_map: Res<VisibleMap>,
-) {
-    info!("query corner {:?}", trigger.target());
-    let (transform, parent) = corner_q.get(trigger.target()).unwrap();
-    let render_mode = MapRenderMode::inserted(&visible_map, parent.get());
+) -> Result {
+    let corner = corner_q.get(trigger.target())?;
+    let render_mode = MapRenderMode::Hidden;
 
-    let corner_info = CornerGeometry::new(transform, iter::empty());
+    let corner_info = CornerGeometry::new(corner, iter::empty());
 
     let mesh = corner_info.mesh();
     let aabb = mesh
@@ -124,40 +128,47 @@ pub fn corner_inserted(
         render_mode.material(),
         render_mode.visibility(),
     ));
+    Ok(())
 }
 
-pub fn wall_inserted(
-    trigger: Trigger<OnInsert, Wall>,
-    mut commands: Commands,
-    wall_q: Query<&Parent>,
-    meshes: Res<Assets<Mesh>>,
-    visible_map: Res<VisibleMap>,
-) {
-    let parent = wall_q.get(trigger.target()).unwrap();
-    let render_mode = MapRenderMode::inserted(&visible_map, parent.get());
-
-    let mesh = meshes.reserve_handle();
-
+pub fn wall_inserted(trigger: Trigger<OnInsert, Wall>, mut commands: Commands) {
+    let render_mode = MapRenderMode::Hidden;
     commands.entity(trigger.target()).insert((
         WallGeometry::default(),
-        Mesh2d(mesh),
+        Mesh2d::default(),
         Aabb::default(),
         render_mode.material(),
         render_mode.visibility(),
     ));
 }
 
+pub fn map_removed(
+    trigger: Trigger<OnRemove, Map>,
+    mut visible_map: ResMut<VisibleMap>,
+    map_q: Query<&Map>,
+) -> Result {
+    if visible_map.id == Some(trigger.target()) {
+        if let Some(source) = visible_map.source() {
+            let map = map_q.get(source)?;
+            visible_map.set(map.id(), map.source());
+        } else {
+            visible_map.clear();
+        }
+    }
+    Ok(())
+}
+
 pub fn update_visibility(
     engine_state: Res<State<EngineState>>,
     mut visible_maps: ResMut<VisibleMap>,
-    map_q: Query<&Map>,
+    map_q: Query<Ref<Map>>,
     children_q: Query<&Children>,
     mut render_mode_q: Query<(&mut Visibility, &mut MeshMaterial2d<ColorMaterial>)>,
-) {
+) -> Result {
     if engine_state.is_changed() {
         match *engine_state.get() {
             EngineState::Running(root) => {
-                for &child in children_q.children(root) {
+                for child in children_q.relationship_sources(root) {
                     if let Ok(map) = map_q.get(child) {
                         visible_maps.set(map.id(), map.source());
                     }
@@ -169,7 +180,11 @@ pub fn update_visibility(
         }
     }
 
-    if visible_maps.is_changed() {
+    if visible_maps.is_changed()
+        || visible_maps
+            .id()
+            .is_some_and(|map| map_q.get(map).is_ok_and(|map| map.is_changed()))
+    {
         let mut render_modes = EntityHashMap::default();
         for map in &map_q {
             if visible_maps.id() != Some(map.id()) && visible_maps.source() != Some(map.id()) {
@@ -180,14 +195,14 @@ pub fn update_visibility(
         }
 
         if let Some(source) = visible_maps.source() {
-            let source = map_q.get(source).unwrap();
+            let source = map_q.get(source)?;
             for entity in children_q.iter_descendants(source.id()) {
                 render_modes.insert(entity, MapRenderMode::Removed);
             }
         }
 
         if let Some(map) = visible_maps.id() {
-            let map = map_q.get(map).unwrap();
+            let map = map_q.get(map)?;
             for entity in map.entities() {
                 match entity {
                     MapEntity::Cloned(entity) => {
@@ -198,14 +213,20 @@ pub fn update_visibility(
                         render_modes.insert(entity, MapRenderMode::Added);
                     }
                     MapEntity::Owned(entity) => {
-                        render_modes.insert(entity, MapRenderMode::Added);
+                        if map.source().is_some() {
+                            render_modes.insert(entity, MapRenderMode::Added);
+                        } else {
+                            render_modes.insert(entity, MapRenderMode::Visible);
+                        }
                     }
                 }
             }
         }
 
         for (id, render_mode) in render_modes {
-            let (mut visibility, mut material) = render_mode_q.get_mut(id).unwrap();
+            let Ok((mut visibility, mut material)) = render_mode_q.get_mut(id) else {
+                continue;
+            };
             visibility.set_if_neq(render_mode.visibility());
 
             let new_material = render_mode.material();
@@ -214,52 +235,37 @@ pub fn update_visibility(
             }
         }
     }
-}
 
-pub fn map_removed(
-    trigger: Trigger<OnRemove, Map>,
-    mut visible_map: ResMut<VisibleMap>,
-    map_q: Query<&Map>,
-) {
-    if visible_map.id == Some(trigger.target()) {
-        if let Some(source) = visible_map.source {
-            if let Ok(map) = map_q.get(source) {
-                visible_map.set(map.id(), map.source());
-            } else {
-                visible_map.clear()
-            }
-        } else {
-            visible_map.clear();
-        }
-    }
+    Ok(())
 }
 
 pub fn update_geometry(
     mut meshes: ResMut<Assets<Mesh>>,
-    map_q: Query<&Map, Changed<Map>>,
-    transform_q: Query<&Transform, With<Corner>>,
-    mut corner_q: Query<(
-        &Corner,
-        &Transform,
-        &mut CornerGeometry,
-        &mut Mesh2d,
-        &mut Aabb,
-    )>,
-    mut wall_mesh_q: Query<(&Wall, &mut WallGeometry, &mut Mesh2d, &mut Aabb), Without<Corner>>,
-) {
+    visible_maps: Res<VisibleMap>,
+    map_q: Query<Ref<Map>>,
+    corner_position_q: Query<&Corner>,
+    mut corner_q: Query<(&Corner, &mut CornerGeometry, &mut Mesh2d, &mut Aabb), Without<Wall>>,
+    mut wall_q: Query<(&Wall, &mut WallGeometry, &mut Mesh2d, &mut Aabb), Without<Corner>>,
+) -> Result {
     for map in &map_q {
+        if !map.is_changed() && !visible_maps.is_changed() {
+            continue;
+        }
+
         let mut updated_walls = EntityHashSet::default();
 
         for id in map.corners() {
-            let Ok((corner, transform, mut info, mut mesh, mut aabb)) = corner_q.get_mut(id.id())
-            else {
+            let Ok((corner, mut info, mut mesh, mut aabb)) = corner_q.get_mut(id.id()) else {
                 continue;
             };
 
             let new_info = CornerGeometry::new(
-                transform,
+                corner,
                 map.corner_walls(corner).filter_map(|(wall, end_corner)| {
-                    transform_q.get(end_corner).ok().map(|pos| (wall, pos))
+                    corner_position_q
+                        .get(end_corner)
+                        .ok()
+                        .map(|end_corner| (wall, end_corner))
                 }),
             );
 
@@ -281,11 +287,10 @@ pub fn update_geometry(
         }
 
         for id in updated_walls {
-            let (wall, mut info, mut mesh, mut aabb) = try_res_s!(wall_mesh_q.get_mut(id));
-            let [(_, _, start_info, _, _), (_, _, end_info, _, _)] =
-                corner_q.many(map.wall_corners(wall));
+            let (wall, mut info, mut mesh, mut aabb) = wall_q.get_mut(id)?;
+            let [(_, start_info, _, _), (_, end_info, _, _)] = corner_q.get_many(wall.corners())?;
 
-            let new_info = WallGeometry::new(id, start_info, end_info);
+            let new_info = WallGeometry::new(id, wall, start_info, end_info)?;
             if info.set_if_neq(new_info) {
                 let new_mesh = info.mesh();
                 *aabb = new_mesh.compute_aabb().unwrap_or_default();
@@ -293,17 +298,16 @@ pub fn update_geometry(
             }
         }
     }
+
+    Ok(())
 }
 
 impl CornerGeometry {
-    fn new<'a>(
-        transform: &Transform,
-        walls: impl Iterator<Item = (Entity, &'a Transform)>,
-    ) -> Self {
-        let start = transform.translation.xy();
+    fn new<'a>(start: &Corner, walls: impl Iterator<Item = (Entity, &'a Corner)>) -> Self {
+        let start = start.position();
 
         let mut angles: SmallVec<[(Option<Entity>, f32); 4]> = walls
-            .map(|(id, end)| (Some(id), (end.translation.xy() - start).to_angle()))
+            .map(|(id, end)| (Some(id), (end.position() - start).to_angle()))
             .collect();
         angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
 
@@ -336,17 +340,17 @@ impl CornerGeometry {
         CornerGeometry { pos: start, points }
     }
 
-    fn wall_intersection(&self, id: Entity, pos: Vec2) -> Option<(Vec2, Vec2, Vec2)> {
-        let offset = self.pos - pos;
+    fn wall_intersection(&self, id: Entity) -> Option<(Vec2, Vec2, Vec2)> {
         let index = self
             .points
             .iter()
             .position(|p| p.kind == CornerGeometryPointKind::Wall(id))?;
-        let i1 = wrapping_idx(&self.points, index, -1).point;
-        let i2 = wrapping_idx(&self.points, index, 0).point;
-        let i3 = wrapping_idx(&self.points, index, 1).point;
 
-        Some((i1 + offset, i2 + offset, i3 + offset))
+        Some((
+            self.pos + wrapping_idx(&self.points, index, -1).point,
+            self.pos + wrapping_idx(&self.points, index, 0).point,
+            self.pos + wrapping_idx(&self.points, index, 1).point,
+        ))
     }
 
     fn mesh(&self) -> Option<Mesh> {
@@ -408,18 +412,6 @@ impl VisibleMap {
 }
 
 impl MapRenderMode {
-    pub fn inserted(visible_map: &VisibleMap, map: Entity) -> Self {
-        if visible_map.id() == Some(map) {
-            if visible_map.source().is_some() {
-                MapRenderMode::Added
-            } else {
-                MapRenderMode::Visible
-            }
-        } else {
-            MapRenderMode::Hidden
-        }
-    }
-
     pub fn material(self) -> MeshMaterial2d<ColorMaterial> {
         match self {
             MapRenderMode::Added => MeshMaterial2d(ADDED_MATERIAL.clone()),
@@ -440,22 +432,35 @@ impl MapRenderMode {
 }
 
 impl WallGeometry {
-    fn new(id: Entity, start: &CornerGeometry, end: &CornerGeometry) -> Self {
-        let pos = start.pos.midpoint(end.pos);
-        let (start1, start2, start3) = start.wall_intersection(id, pos).unwrap();
-        let (end1, end2, end3) = end.wall_intersection(id, pos).unwrap();
+    fn new(id: Entity, wall: &Wall, start: &CornerGeometry, end: &CornerGeometry) -> Result<Self> {
+        let (start1, start2, start3) = start
+            .wall_intersection(id)
+            .ok_or("wall intersection not found")?;
+        let (end1, end2, end3) = end
+            .wall_intersection(id)
+            .ok_or("wall intersection not found")?;
 
-        WallGeometry {
-            points: [start1, start2, start3, end1, end2, end3],
+        let wall_inv_isometry = wall.isometry().inverse();
+        let points = [
+            wall_inv_isometry * start1,
+            wall_inv_isometry * start2,
+            wall_inv_isometry * start3,
+            wall_inv_isometry * end1,
+            wall_inv_isometry * end2,
+            wall_inv_isometry * end3,
+        ];
+
+        Ok(WallGeometry {
+            points,
             lens: [
-                start1.project_onto(start2).length(),
-                start2.length(),
-                start3.project_onto(start2).length(),
-                end1.project_onto(end2).length(),
-                end2.length(),
-                end3.project_onto(end2).length(),
+                points[0].project_onto(points[1]).length(),
+                points[1].length(),
+                points[2].project_onto(points[1]).length(),
+                points[3].project_onto(points[4]).length(),
+                points[4].length(),
+                points[5].project_onto(points[4]).length(),
             ],
-        }
+        })
     }
 
     fn mesh(&self) -> Mesh {

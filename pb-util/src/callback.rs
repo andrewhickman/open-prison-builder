@@ -56,14 +56,14 @@ impl CallbackSender {
         self.send_batch(queue);
     }
 
-    pub fn send_oneshot_system<S>(&self, system: S)
+    pub fn run_system_cached<S>(&self, system: S)
     where
         S: System<In = (), Out = ()> + Send + 'static,
     {
         self.send(run_system_cached(system).handle_error())
     }
 
-    pub fn send_oneshot_system_with_input<I, S, M>(&self, system: S, input: I)
+    pub fn run_system_cached_with<I, S, M>(&self, system: S, input: I)
     where
         I: Send + 'static,
         S: IntoSystem<In<I>, (), M> + Send + 'static,

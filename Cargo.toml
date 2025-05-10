@@ -2,6 +2,7 @@
 name = "open-prison-builder"
 version = "0.1.0"
 publish = false
+license = "GPL-3.0"
 authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 edition = "2024"
 exclude = ["dist", "build", "assets"]
@@ -49,6 +50,7 @@ pb-ui = { path = "pb-ui" }
 bevy = { version = "0.16.0", default-features = false, features = [
     "default_font",
     "sysinfo_plugin",
+    "configurable_error_handler",
     "bevy_asset",
     "bevy_render",
     "bevy_winit",
@@ -58,7 +60,7 @@ bevy = { version = "0.16.0", default-features = false, features = [
     "webgl2",
     "x11",
     "zstd",
-    "web"
+    "web",
 ] }
 image = { version = "0.25.0", default-features = false, features = ["png"] }
 winit = { version = "0.30.0", default-features = false }
