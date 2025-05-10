@@ -38,9 +38,10 @@ pub fn task_removed(
     mut actor_q: Query<&mut Actor>,
 ) -> Result {
     let task = task_q.get(trigger.target())?;
-    let mut actor = actor_q.get_mut(task.actor)?;
-    if actor.task == Some(trigger.target()) {
-        actor.task = None;
+    if let Ok(mut actor) = actor_q.get_mut(task.actor) {
+        if actor.task == Some(trigger.target()) {
+            actor.task = None;
+        }
     }
     Ok(())
 }

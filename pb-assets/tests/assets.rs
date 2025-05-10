@@ -1,9 +1,10 @@
 use bevy::{
     asset::{AssetPlugin, LoadState},
     core_pipeline::CorePipelinePlugin,
+    image::TextureAtlasPlugin,
     log::LogPlugin,
     prelude::*,
-    render::RenderPlugin,
+    render::{RenderPlugin, mesh::MeshPlugin},
     sprite::SpritePlugin,
     text::TextPlugin,
     window::ExitCondition,
@@ -26,10 +27,9 @@ fn assets() {
             ..default()
         },
         TextPlugin,
-        RenderPlugin::default(),
+        MeshPlugin,
         ImagePlugin::default(),
-        CorePipelinePlugin,
-        SpritePlugin,
+        TextureAtlasPlugin,
         LogPlugin::default(),
     ))
     .add_plugins(PbAssetsPlugin)
