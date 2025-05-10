@@ -1,11 +1,9 @@
 use bevy::{
     asset::{AssetPlugin, LoadState},
-    core_pipeline::CorePipelinePlugin,
     image::TextureAtlasPlugin,
     log::LogPlugin,
     prelude::*,
-    render::{RenderPlugin, mesh::MeshPlugin},
-    sprite::SpritePlugin,
+    render::mesh::MeshPlugin,
     text::TextPlugin,
     window::ExitCondition,
 };
