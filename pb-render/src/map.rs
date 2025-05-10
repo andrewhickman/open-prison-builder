@@ -18,8 +18,7 @@ use bevy::{
 use pb_assets::AssetHandles;
 use pb_engine::{
     EngineState,
-    map::{Corner, Map, MapEntity, Wall},
-    wall,
+    map::{Corner, Map, MapEntity, Wall, wall},
 };
 use smallvec::SmallVec;
 
@@ -162,6 +161,7 @@ pub fn update_visibility(
     engine_state: Res<State<EngineState>>,
     mut visible_maps: ResMut<VisibleMap>,
     map_q: Query<Ref<Map>>,
+    wall_q: Query<&Wall>,
     children_q: Query<&Children>,
     mut render_mode_q: Query<(&mut Visibility, &mut MeshMaterial2d<ColorMaterial>)>,
 ) -> Result {
@@ -203,14 +203,37 @@ pub fn update_visibility(
 
         if let Some(map) = visible_maps.id() {
             let map = map_q.get(map)?;
-            for entity in map.entities() {
-                match entity {
+            for corners in map.corners() {
+                match corners {
                     MapEntity::Cloned(entity) => {
                         render_modes.insert(entity, MapRenderMode::Visible);
                     }
                     MapEntity::Replaced(source, entity) => {
                         render_modes.insert(source, MapRenderMode::Hidden);
-                        render_modes.insert(entity, MapRenderMode::Added);
+                        render_modes.insert(entity, MapRenderMode::Visible);
+                    }
+                    MapEntity::Owned(entity) => {
+                        if map.source().is_some() {
+                            render_modes.insert(entity, MapRenderMode::Added);
+                        } else {
+                            render_modes.insert(entity, MapRenderMode::Visible);
+                        }
+                    }
+                }
+            }
+
+            for wall in map.walls() {
+                match wall {
+                    MapEntity::Cloned(entity) => {
+                        render_modes.insert(entity, MapRenderMode::Visible);
+                    }
+                    MapEntity::Replaced(source, entity) => {
+                        render_modes.insert(source, MapRenderMode::Hidden);
+                        if wall_q.get(source)?.corners() == wall_q.get(entity)?.corners() {
+                            render_modes.insert(entity, MapRenderMode::Visible);
+                        } else {
+                            render_modes.insert(entity, MapRenderMode::Added);
+                        }
                     }
                     MapEntity::Owned(entity) => {
                         if map.source().is_some() {

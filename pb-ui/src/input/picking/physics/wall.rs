@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use pb_engine::{map::Wall, wall};
+use pb_engine::map::{Wall, wall};
 use pb_render::projection::ProjectionExt;
 
 use crate::input::picking::point::grid::Grid;

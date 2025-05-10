@@ -1,5 +1,8 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
+pub mod room;
+pub mod wall;
+
 #[cfg(test)]
 mod tests;
 
@@ -372,16 +375,6 @@ impl Map {
     pub fn rooms_deduped(&self) -> impl Iterator<Item = MapEntity> + '_ {
         let mut unique = EntityHashSet::default();
         self.rooms().filter(move |&face| unique.insert(face.id()))
-    }
-
-    pub fn entities(&self) -> impl Iterator<Item = MapEntity> + '_ {
-        self.corners().chain(self.walls()).chain(self.rooms())
-    }
-
-    pub fn entity_deduped(&self) -> impl Iterator<Item = MapEntity> + '_ {
-        self.corners()
-            .chain(self.walls())
-            .chain(self.rooms_deduped())
     }
 
     pub fn corner_walls(&self, corner: &Corner) -> impl Iterator<Item = (Entity, Entity)> + '_ {

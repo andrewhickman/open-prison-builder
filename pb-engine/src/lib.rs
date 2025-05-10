@@ -5,7 +5,6 @@ pub mod pawn;
 pub mod picking;
 pub mod root;
 pub mod save;
-pub mod wall;
 
 use avian2d::{
     dynamics::{integrator::IntegrationSet, solver::schedule::SubstepSolverSet},
@@ -42,7 +41,7 @@ impl Plugin for PbEnginePlugin {
             .add_observer(pawn::ai::task_added)
             .add_observer(pawn::ai::task_removed)
             .add_observer(pawn::ai::actor_removed)
-            .add_systems(FixedPreUpdate, wall::add_colliders)
+            .add_systems(FixedPreUpdate, map::wall::add_colliders)
             .add_systems(
                 SubstepSchedule,
                 pawn::clamp_velocity
