@@ -36,11 +36,18 @@ impl Store {
         ))
     }
 
+    pub async fn get<T>(&self, key: &str) -> Result<T>
+    where
+        T: TypePath + DeserializeOwned + Send,
+    {
+        self.get_with(key, PhantomData).await
+    }
+
     pub async fn try_get<T>(&self, key: &str) -> Result<Option<T>>
     where
         T: TypePath + DeserializeOwned + Send,
     {
-        self.0.get(key, PhantomData).await
+        self.try_get_with(key, PhantomData).await
     }
 
     pub async fn get_with<S, T>(&self, key: &str, seed: S) -> Result<T>

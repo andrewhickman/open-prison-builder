@@ -11,7 +11,7 @@ name = "pb_learn_env"
 
 [dependencies]
 approx = "0.5.1"
-avian2d = { git = "https://github.com/Jondolf/avian", default-features = false }
+avian2d = { version = "0.3.0", default-features = false }
 bevy = { version = "0.16.0", default-features = false }
 pb-engine = { version = "0.1.0", path = "../../pb-engine" }
 pb-util = { version = "0.1.0", path = "../../pb-util" }

@@ -1,11 +1,6 @@
-use bevy::prelude::*;
-use pb_engine::{
-    EngineState,
-    build::Blueprint,
-    wall::{VertexBundle, Wall, WallMap},
-};
-use pb_render::wall::Hidden;
-use pb_util::try_modify_component;
+use bevy::{ecs::system::SystemParam, prelude::*};
+use pb_engine::map::{CornerDef, Map, MapQueries};
+use pb_render::map::VisibleMap;
 
 use crate::{
     action::Action,
@@ -21,19 +16,34 @@ use crate::{
     },
 };
 
-pub fn wall(_: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
-    commands.spawn((
-        WallAction::default(),
-        children![
-            Grid::default(),
-            Observer::new(select_point),
-            Observer::new(cancel_point),
-            Observer::new(click_point),
-            Observer::new(select_wall),
-            Observer::new(cancel_wall),
-            Observer::new(click_wall),
-        ],
-    ));
+pub fn wall(
+    _: Trigger<Pointer<Click>>,
+    mut commands: Commands,
+    mut visible_map: ResMut<VisibleMap>,
+    map_q: Query<&Map>,
+) -> Result {
+    let Some(source_id) = visible_map.source().or_else(|| visible_map.id()) else {
+        return Ok(());
+    };
+    let source = map_q.get(source_id)?;
+    assert_eq!(source.id(), source_id);
+
+    let id = commands
+        .spawn((
+            WallAction::default(),
+            children![
+                Grid::default(),
+                Observer::new(select_point),
+                Observer::new(cancel_point),
+                Observer::new(click_point),
+                Observer::new(select_wall),
+                Observer::new(cancel_wall),
+                Observer::new(click_wall),
+            ],
+        ))
+        .id();
+    let map = commands.spawn((source.cloned(), ChildOf(id))).id();
+    visible_map.set(map, Some(source.id()));
     Ok(())
 }
 
@@ -43,79 +53,59 @@ pub enum WallAction {
     #[default]
     SelectStart,
     PreviewStart {
-        start: SelectedVertex,
+        start: CornerDef,
     },
     SelectEnd {
-        start: SelectedVertex,
+        start: CornerDef,
     },
     PreviewEnd {
-        start: SelectedVertex,
-        end: SelectedVertex,
-        wall: SelectedWall,
+        start: CornerDef,
+        end: CornerDef,
     },
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct SelectedVertex {
-    id: Entity,
-    pos: Vec2,
-    spawned: bool,
-    split: Option<SplitWall>,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct SelectedWall {
-    id: Option<Entity>,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct SplitWall {
-    start: SelectedWall,
-    end: SelectedWall,
-    prev: Entity,
+#[derive(SystemParam)]
+struct MapParam<'w, 's> {
+    map_queries: MapQueries<'w, 's>,
+    visible_map: Res<'w, VisibleMap>,
+    map_q: Query<'w, 's, &'static mut Map>,
 }
 
 fn select_point(
     trigger: Trigger<SelectPoint>,
-    mut commands: Commands,
-    mut wall_map: ResMut<WallMap>,
-    mut action: Single<(Entity, &mut WallAction)>,
-) {
-    let (id, ref mut action) = *action;
-    action.select_point(id, &mut commands, &mut wall_map, trigger.point);
+    mut action: Single<&mut WallAction>,
+    mut map: MapParam,
+) -> Result {
+    action.select_corner(&mut map, CornerDef::Position(trigger.point))
 }
 
 fn cancel_point(
     _: Trigger<CancelPoint>,
-    mut commands: Commands,
-    mut action: Single<(Entity, &mut WallAction)>,
-) {
-    let (_, ref mut action) = *action;
-    action.cancel(&mut commands);
+    mut action: Single<&mut WallAction>,
+    mut map: MapParam,
+) -> Result {
+    action.cancel(&mut map)
 }
 
 fn click_point(
     trigger: Trigger<ClickPoint>,
-    mut commands: Commands,
-    mut wall_map: ResMut<WallMap>,
-    mut action: Single<(Entity, &mut WallAction)>,
-    engine_state: Res<State<EngineState>>,
-) {
-    let (id, ref mut action) = *action;
-    action.select_point(id, &mut commands, &mut wall_map, trigger.point);
-    action.click(&mut commands, &engine_state)
+    mut action: Single<&mut WallAction>,
+    mut map: MapParam,
+) -> Result {
+    action.select_corner(&mut map, CornerDef::Position(trigger.point))?;
+    action.click(&mut map)?;
+    Ok(())
 }
 
 fn select_wall(
     trigger: Trigger<SelectWall>,
-    mut commands: Commands,
-    mut wall_map: ResMut<WallMap>,
     mut action: Single<(Entity, &mut WallAction)>,
-) {
-    let (id, ref mut action) = *action;
+    mut map: MapParam,
+) -> Result {
+    let (_, ref mut action) = *action;
     match trigger.kind {
-        WallPickKind::Vertex { vertex, position } => {
-            action.select_vertex(id, &mut commands, &mut wall_map, vertex, position)
+        WallPickKind::Corner { corner, .. } => {
+            action.select_corner(&mut map, CornerDef::Corner(corner))
         }
         WallPickKind::Wall {
             wall,
@@ -125,9 +115,7 @@ fn select_wall(
             end,
             end_position,
         } => action.select_wall(
-            id,
-            &mut commands,
-            &mut wall_map,
+            &mut map,
             wall,
             position,
             start,
@@ -140,25 +128,21 @@ fn select_wall(
 
 fn cancel_wall(
     _: Trigger<CancelWall>,
-    mut commands: Commands,
-    mut action: Single<(Entity, &mut WallAction)>,
-) {
-    let (_, ref mut action) = *action;
-    action.cancel(&mut commands);
+    mut action: Single<&mut WallAction>,
+    mut map: MapParam,
+) -> Result {
+    action.cancel(&mut map)
 }
 
 fn click_wall(
     trigger: Trigger<ClickWall>,
-    mut commands: Commands,
-    mut wall_map: ResMut<WallMap>,
-    mut action: Single<(Entity, &mut WallAction)>,
-    engine_state: Res<State<EngineState>>,
-) {
-    let (id, ref mut action) = *action;
+    mut action: Single<&mut WallAction>,
+    mut map: MapParam,
+) -> Result {
     match trigger.kind {
-        WallPickKind::Vertex { vertex, position } => {
-            action.select_vertex(id, &mut commands, &mut wall_map, vertex, position);
-            action.click(&mut commands, &engine_state)
+        WallPickKind::Corner { corner, .. } => {
+            action.select_corner(&mut map, CornerDef::Corner(corner))?;
+            action.click(&mut map)
         }
         WallPickKind::Wall {
             wall,
@@ -169,493 +153,116 @@ fn click_wall(
             end_position,
         } => {
             action.select_wall(
-                id,
-                &mut commands,
-                &mut wall_map,
+                &mut map,
                 wall,
                 position,
                 start,
                 start_position,
                 end,
                 end_position,
-            );
-            action.click(&mut commands, &engine_state)
+            )
+            // action.click(&mut commands, &engine_state)
         }
     }
 }
 
-pub fn cancel(
-    _: Trigger<OnRemove, WallAction>,
-    mut commands: Commands,
-    hidden_q: Query<Entity, With<Hidden>>,
-) {
-    for entity in &hidden_q {
-        commands.entity(entity).remove::<Hidden>();
-    }
-}
+pub fn cancel(_: Trigger<OnRemove, WallAction>) {}
 
 impl WallAction {
-    pub fn select_point(
-        &mut self,
-        this: Entity,
-        commands: &mut Commands,
-        wall_map: &mut WallMap,
-        point: Vec2,
-    ) {
+    fn select_corner(&mut self, map: &mut MapParam, corner: CornerDef) -> Result {
+        map.reset()?;
+
         match *self {
             WallAction::SelectStart => {
-                *self = WallAction::PreviewStart {
-                    start: SelectedVertex::spawn(commands, this, point),
-                };
+                map.insert_corner(corner)?;
+                *self = WallAction::PreviewStart { start: corner }
             }
             WallAction::PreviewStart { ref mut start } => {
-                start.update_spawned(commands, this, point);
+                map.insert_corner(corner)?;
+                *start = corner;
             }
             WallAction::SelectEnd { start } => {
-                let end = SelectedVertex::spawn(commands, this, point);
-                let wall = SelectedWall::spawn(commands, wall_map, this, start, end);
-
-                *self = WallAction::PreviewEnd { start, end, wall };
+                map.insert_wall(start, corner)?;
+                *self = WallAction::PreviewEnd { start, end: corner };
             }
-            WallAction::PreviewEnd {
-                start,
-                ref mut end,
-                ref mut wall,
-                ..
-            } => {
-                if end.update_spawned(commands, this, point) {
-                    wall.replace(commands, wall_map, this, start, *end);
-                } else {
-                    wall.update(commands, start, *end);
-                }
+            WallAction::PreviewEnd { start, ref mut end } => {
+                map.insert_wall(start, corner)?;
+                *end = corner;
             }
         }
+
+        Ok(())
     }
 
-    pub fn select_vertex(
+    fn select_wall(
         &mut self,
-        this: Entity,
-        commands: &mut Commands,
-        wall_map: &mut WallMap,
-        vertex: Entity,
-        pos: Vec2,
-    ) {
-        match *self {
-            WallAction::SelectStart => {
-                *self = WallAction::PreviewStart {
-                    start: SelectedVertex::existing(vertex, pos),
-                };
-            }
-            WallAction::PreviewStart { ref mut start } => {
-                start.update_existing(commands, vertex, pos);
-            }
-            WallAction::SelectEnd { start } => {
-                let end = SelectedVertex::existing(vertex, pos);
-                let wall = SelectedWall::spawn(commands, wall_map, this, start, end);
-
-                *self = WallAction::PreviewEnd { start, end, wall };
-            }
-            WallAction::PreviewEnd {
-                start,
-                ref mut end,
-                ref mut wall,
-                ..
-            } => {
-                if end.update_existing(commands, vertex, pos) {
-                    wall.replace(commands, wall_map, this, start, *end);
-                } else {
-                    wall.update(commands, start, *end);
-                }
-            }
-        }
-    }
-
-    pub fn select_wall(
-        &mut self,
-        this: Entity,
-        commands: &mut Commands,
-        wall_map: &mut WallMap,
-        prev_wall: Entity,
-        pos: Vec2,
-        wall_start: Entity,
-        wall_start_pos: Vec2,
-        wall_end: Entity,
-        wall_end_pos: Vec2,
-    ) {
-        match *self {
-            WallAction::SelectStart => {
-                *self = WallAction::PreviewStart {
-                    start: SelectedVertex::split(
-                        commands,
-                        wall_map,
-                        this,
-                        prev_wall,
-                        pos,
-                        wall_start,
-                        wall_start_pos,
-                        wall_end,
-                        wall_end_pos,
-                    ),
-                };
-            }
-            WallAction::PreviewStart { ref mut start } => {
-                start.update_split(
-                    commands,
-                    wall_map,
-                    this,
-                    prev_wall,
-                    pos,
-                    wall_start,
-                    wall_start_pos,
-                    wall_end,
-                    wall_end_pos,
-                );
-            }
-            WallAction::SelectEnd { start } => {
-                let end = SelectedVertex::split(
-                    commands,
-                    wall_map,
-                    this,
-                    prev_wall,
-                    pos,
-                    wall_start,
-                    wall_start_pos,
-                    wall_end,
-                    wall_end_pos,
-                );
-                let wall = SelectedWall::spawn(commands, wall_map, this, start, end);
-
-                *self = WallAction::PreviewEnd { start, end, wall };
-            }
-            WallAction::PreviewEnd {
-                start,
-                ref mut end,
-                ref mut wall,
-                ..
-            } => {
-                if end.update_split(
-                    commands,
-                    wall_map,
-                    this,
-                    prev_wall,
-                    pos,
-                    wall_start,
-                    wall_start_pos,
-                    wall_end,
-                    wall_end_pos,
-                ) {
-                    wall.replace(commands, wall_map, this, start, *end);
-                } else {
-                    wall.update(commands, start, *end);
-                }
-            }
-        }
-    }
-
-    pub fn cancel(&mut self, commands: &mut Commands) {
+        _param: &mut MapParam,
+        _prev_wall: Entity,
+        _pos: Vec2,
+        _wall_start: Entity,
+        _wall_start_pos: Vec2,
+        _wall_end: Entity,
+        _wall_end_pos: Vec2,
+    ) -> Result {
         match *self {
             WallAction::SelectStart => {}
-            WallAction::PreviewStart { start } => {
-                start.despawn(commands);
-                *self = WallAction::SelectStart;
-            }
+            WallAction::PreviewStart { .. } => {}
             WallAction::SelectEnd { .. } => {}
-            WallAction::PreviewEnd {
-                start, wall, end, ..
-            } => {
-                wall.despawn(commands);
-                end.despawn(commands);
-
-                *self = WallAction::SelectEnd { start };
-            }
+            WallAction::PreviewEnd { .. } => {}
         }
+
+        Ok(())
     }
 
-    pub fn click(&mut self, commands: &mut Commands, state: &EngineState) {
-        let &EngineState::Running(root) = state else {
-            warn!("engine not running");
-            return;
-        };
+    fn cancel(&mut self, map: &mut MapParam) -> Result {
+        map.reset()
+    }
 
+    fn click(&mut self, map: &mut MapParam) -> Result {
         match *self {
             WallAction::SelectStart => {}
-            WallAction::PreviewStart { start } => {
-                *self = WallAction::SelectEnd { start };
-            }
+            WallAction::PreviewStart { start } => *self = WallAction::SelectEnd { start },
             WallAction::SelectEnd { .. } => {}
-            WallAction::PreviewEnd {
-                mut start,
-                wall,
-                mut end,
-            } => {
-                start.commit(commands, root);
-                wall.commit(commands, root);
-                end.commit(commands, root);
-
-                *self = WallAction::SelectEnd { start: end };
+            WallAction::PreviewEnd { end, .. } => {
+                map.commit()?;
+                *self = WallAction::SelectEnd { start: end }
             }
         }
+
+        Ok(())
     }
 }
 
-impl SelectedVertex {
-    pub fn spawn(commands: &mut Commands, parent: Entity, pos: Vec2) -> Self {
-        let id = commands
-            .spawn((VertexBundle::new(pos), Blueprint, ChildOf(parent)))
-            .id();
-
-        SelectedVertex {
-            id,
-            pos,
-            spawned: true,
-            split: None,
-        }
+impl MapParam<'_, '_> {
+    fn id(&self) -> Entity {
+        self.visible_map.id().expect("map should be visible")
     }
 
-    pub fn existing(id: Entity, pos: Vec2) -> Self {
-        SelectedVertex {
-            id,
-            pos,
-            spawned: false,
-            split: None,
-        }
+    fn source(&self) -> Entity {
+        self.visible_map.source().expect("map should be visible")
     }
 
-    pub fn split(
-        commands: &mut Commands,
-        wall_map: &mut WallMap,
-        parent: Entity,
-        wall: Entity,
-        pos: Vec2,
-        start: Entity,
-        start_pos: Vec2,
-        end: Entity,
-        end_pos: Vec2,
-    ) -> Self {
-        let vertex = SelectedVertex::spawn(commands, parent, pos);
-        let split = SplitWall::spawn(
-            commands,
-            wall_map,
-            parent,
-            wall,
-            SelectedVertex::existing(start, start_pos),
-            SelectedVertex::existing(end, end_pos),
-            vertex,
-        );
-
-        SelectedVertex {
-            split: Some(split),
-            ..vertex
-        }
+    fn reset(&mut self) -> Result {
+        let [source, mut map] = self.map_q.get_many_mut([self.source(), self.id()])?;
+        map.clone_from(&mut self.map_queries.commands, &source);
+        Ok(())
     }
 
-    pub fn update_spawned(&mut self, commands: &mut Commands, parent: Entity, pos: Vec2) -> bool {
-        self.unsplit(commands);
-        if self.spawned {
-            self.pos = pos;
-            commands.queue(try_modify_component(
-                self.id,
-                move |mut transform: Mut<Transform>| {
-                    transform.translation = pos.extend(0.);
-                },
-            ));
-            false
-        } else {
-            *self = SelectedVertex::spawn(commands, parent, pos);
-            true
-        }
+    fn insert_corner(&mut self, corner: CornerDef) -> Result {
+        let mut map = self.map_q.get_mut(self.id())?;
+        map.insert_corner(&mut self.map_queries, corner)?;
+        Ok(())
     }
 
-    pub fn update_existing(&mut self, commands: &mut Commands, id: Entity, pos: Vec2) -> bool {
-        self.unsplit(commands);
-        if self.id != id {
-            self.despawn(commands);
-            *self = SelectedVertex::existing(id, pos);
-            true
-        } else {
-            false
-        }
+    fn insert_wall(&mut self, start: CornerDef, end: CornerDef) -> Result {
+        let mut map = self.map_q.get_mut(self.id())?;
+        map.insert_wall(&mut self.map_queries, start, end)?;
+        Ok(())
     }
 
-    pub fn update_split(
-        &mut self,
-        commands: &mut Commands,
-        wall_map: &mut WallMap,
-        parent: Entity,
-        wall: Entity,
-        pos: Vec2,
-        start: Entity,
-        start_pos: Vec2,
-        end: Entity,
-        end_pos: Vec2,
-    ) -> bool {
-        if self.spawned {
-            self.pos = pos;
-            commands.queue(try_modify_component(
-                self.id,
-                move |mut transform: Mut<Transform>| {
-                    transform.translation = pos.extend(0.);
-                },
-            ));
-
-            if let Some(split) = &mut self.split {
-                split.update(
-                    commands,
-                    SelectedVertex::existing(start, start_pos),
-                    SelectedVertex::existing(end, end_pos),
-                    SelectedVertex::existing(self.id, self.pos),
-                );
-            } else {
-                self.split = Some(SplitWall::spawn(
-                    commands,
-                    wall_map,
-                    parent,
-                    wall,
-                    SelectedVertex::existing(start, start_pos),
-                    SelectedVertex::existing(end, end_pos),
-                    SelectedVertex::existing(self.id, self.pos),
-                ));
-            }
-
-            false
-        } else {
-            *self = SelectedVertex::split(
-                commands, wall_map, parent, wall, pos, start, start_pos, end, end_pos,
-            );
-            true
-        }
-    }
-
-    pub fn despawn(&self, commands: &mut Commands) {
-        if self.spawned {
-            commands.entity(self.id).despawn();
-        }
-        if let Some(split) = self.split {
-            split.despawn(commands);
-        }
-    }
-
-    pub fn commit(&mut self, commands: &mut Commands, root: Entity) {
-        if self.spawned {
-            commands
-                .entity(self.id)
-                .set_parent_in_place(root)
-                .remove::<Blueprint>();
-            self.spawned = false;
-        }
-        if let Some(split) = self.split.take() {
-            split.commit(commands, root);
-        }
-    }
-
-    pub fn unsplit(&mut self, commands: &mut Commands) {
-        if let Some(split) = self.split.take() {
-            split.despawn(commands);
-        }
-    }
-}
-
-impl SelectedWall {
-    pub fn spawn(
-        commands: &mut Commands,
-        wall_map: &mut WallMap,
-        parent: Entity,
-        start: SelectedVertex,
-        end: SelectedVertex,
-    ) -> Self {
-        if let Some(mut entity) = wall_map.insert(commands, start.id, end.id) {
-            let id = entity
-                .insert((
-                    Wall::transform(start.pos, end.pos),
-                    Blueprint,
-                    ChildOf(parent),
-                ))
-                .id();
-
-            SelectedWall { id: Some(id) }
-        } else {
-            SelectedWall { id: None }
-        }
-    }
-
-    pub fn replace(
-        &mut self,
-        commands: &mut Commands,
-        wall_map: &mut WallMap,
-        parent: Entity,
-        start: SelectedVertex,
-        end: SelectedVertex,
-    ) {
-        self.despawn(commands);
-        *self = SelectedWall::spawn(commands, wall_map, parent, start, end);
-    }
-
-    pub fn update(&mut self, commands: &mut Commands, start: SelectedVertex, end: SelectedVertex) {
-        if let Some(id) = self.id {
-            commands.queue(try_modify_component(
-                id,
-                move |mut transform: Mut<Transform>| {
-                    transform.set_if_neq(Wall::transform(start.pos, end.pos));
-                },
-            ));
-        }
-    }
-
-    pub fn despawn(&self, commands: &mut Commands) {
-        if let Some(id) = self.id {
-            commands.entity(id).despawn();
-        }
-    }
-
-    pub fn commit(&self, commands: &mut Commands, root: Entity) {
-        if let Some(id) = self.id {
-            commands
-                .entity(id)
-                .insert(ChildOf(root))
-                .remove::<Blueprint>();
-        }
-    }
-}
-
-impl SplitWall {
-    pub fn spawn(
-        commands: &mut Commands,
-        wall_map: &mut WallMap,
-        parent: Entity,
-        prev: Entity,
-        start: SelectedVertex,
-        end: SelectedVertex,
-        mid: SelectedVertex,
-    ) -> Self {
-        commands.entity(prev).insert(Hidden);
-
-        SplitWall {
-            start: SelectedWall::spawn(commands, wall_map, parent, start, mid),
-            end: SelectedWall::spawn(commands, wall_map, parent, mid, end),
-            prev,
-        }
-    }
-
-    pub fn update(
-        &mut self,
-        commands: &mut Commands,
-        start: SelectedVertex,
-        end: SelectedVertex,
-        mid: SelectedVertex,
-    ) {
-        self.start.update(commands, start, mid);
-        self.end.update(commands, mid, end);
-    }
-
-    pub fn commit(&self, commands: &mut Commands, root: Entity) {
-        self.start.commit(commands, root);
-        self.end.commit(commands, root);
-        commands.entity(self.prev).despawn();
-    }
-
-    pub fn despawn(&self, commands: &mut Commands) {
-        self.start.despawn(commands);
-        self.end.despawn(commands);
-        commands.entity(self.prev).remove::<Hidden>();
+    fn commit(&mut self) -> Result {
+        let [mut source, mut map] = self.map_q.get_many_mut([self.source(), self.id()])?;
+        map.clone_into(&mut self.map_queries, &mut source);
+        Ok(())
     }
 }

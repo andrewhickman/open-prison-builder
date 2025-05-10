@@ -22,15 +22,15 @@ pub(crate) struct Theme {
     pub tile_icon_size_px: f32,
 }
 
-pub fn init(mut commands: Commands, assets: Res<AssetHandles>) {
-    let text = Srgba::hex("dedcdf").unwrap().into();
+pub fn init(mut commands: Commands, assets: Res<AssetHandles>) -> Result {
+    let text = Srgba::hex("dedcdf")?.into();
 
     commands.insert_resource(Theme {
-        background: Srgba::hex("192a28").unwrap().into(),
+        background: Srgba::hex("192a28")?.into(),
         text,
-        panel: Srgba::hex("5f4754").unwrap().into(),
-        accent: Srgba::hex("b45627").unwrap().into(),
-        error: Srgba::hex("f2200d").unwrap().into(),
+        panel: Srgba::hex("5f4754")?.into(),
+        accent: Srgba::hex("b45627")?.into(),
+        error: Srgba::hex("f2200d")?.into(),
         gutter: Val::Px(8.),
         outline: Outline {
             color: text,
@@ -61,6 +61,7 @@ pub fn init(mut commands: Commands, assets: Res<AssetHandles>) {
         large_icon_size_px: 26.,
         tile_icon_size_px: 36.,
     });
+    Ok(())
 }
 
 impl Theme {

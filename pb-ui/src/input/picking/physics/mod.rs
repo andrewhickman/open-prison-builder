@@ -22,7 +22,6 @@ pub enum PhysicsPickingState {
     Wall,
 }
 
-/// Queries for collider intersections with pointers using [`PhysicsPickingSettings`] and sends [`PointerHits`] events.
 pub fn update_hits(
     camera_q: Query<(&Camera, &Projection)>,
     ray_map: Res<RayMap>,

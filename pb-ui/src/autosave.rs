@@ -1,10 +1,7 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use pb_engine::{
-    EngineState,
-    save::{SaveParam, save},
-};
+use pb_engine::{EngineState, save::SaveParam};
 use pb_store::Store;
 use pb_util::{callback::CallbackSender, spawn_io};
 
@@ -26,25 +23,14 @@ pub fn run_condition(
     timer.just_finished()
 }
 
-pub fn run(
-    world: &World,
-    save_p: SaveParam,
-    state: Res<State<EngineState>>,
-    store: Res<Store>,
-    callback: Res<CallbackSender>,
-) {
-    let EngineState::Running(root) = *state.get() else {
-        error!("Failed to autosave: not running");
-        return;
-    };
-
-    let scene = save(world, &save_p, root);
+pub fn run(save_p: SaveParam, store: Res<Store>, callback: Res<CallbackSender>) -> Result {
+    let scene = save_p.save()?;
 
     let store = store.clone();
     let callback = callback.clone();
     spawn_io(async move {
         let res = store.set("saves/autosave.json", scene).await;
-        callback.send_oneshot_system_with_input(on_save_complete, res);
+        callback.run_system_cached_with(on_save_complete, res);
     });
 
     fn on_save_complete(In(res): In<Result<()>>, mut message_e: EventWriter<Message>) {
@@ -58,4 +44,6 @@ pub fn run(
             }
         }
     }
+
+    Ok(())
 }

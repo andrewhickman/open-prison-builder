@@ -3,7 +3,7 @@ mod saves;
 use bevy::{app::AppExit, prelude::*};
 
 use pb_assets::AssetHandles;
-use pb_engine::{EngineState, root::RootBundle};
+use pb_engine::{EngineState, map::Map, root::Root};
 
 use crate::{
     UiState,
@@ -193,7 +193,7 @@ fn new_prison_button(
     mut ui_state: ResMut<NextState<UiState>>,
     mut engine_state: ResMut<NextState<EngineState>>,
 ) -> Result {
-    let parent = commands.spawn(RootBundle::default()).id();
+    let parent = commands.spawn((Root::bundle(), children![Map::new()])).id();
 
     ui_state.set(UiState::Game);
     engine_state.set(EngineState::Running(parent));

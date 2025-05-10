@@ -1,6 +1,6 @@
 use bevy::{
     diagnostic::{
-        EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin,
+        EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
         SystemInformationDiagnosticsPlugin,
     },
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
@@ -18,7 +18,6 @@ impl Plugin for DiagnosticsPlugin {
             EntityCountDiagnosticsPlugin,
             SystemInformationDiagnosticsPlugin,
             RenderDiagnosticsPlugin,
-            LogDiagnosticsPlugin::default(),
             RemotePlugin::default(),
             RemoteHttpPlugin::default(),
         ));

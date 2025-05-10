@@ -1,6 +1,5 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
-pub mod build;
 pub mod map;
 pub mod pawn;
 pub mod picking;
@@ -13,11 +12,8 @@ use avian2d::{
     prelude::*,
 };
 use bevy::prelude::*;
-use build::Blueprint;
-use map::{Map, MapLayer};
 use pawn::{Pawn, ai::path::PathQueryConfig};
 use root::Root;
-use wall::{Vertex, Wall, WallMap};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum EngineState {
@@ -30,34 +26,23 @@ pub struct PbEnginePlugin;
 
 impl Plugin for PbEnginePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<WallMap>();
-
-        app.register_type::<Root>()
-            .register_type::<Map>()
-            .register_type::<MapLayer>()
-            .register_type::<Blueprint>()
-            .register_type::<Pawn>()
-            .register_type::<Wall>()
-            .register_type::<Vertex>();
+        app.register_type::<Root>().register_type::<Pawn>();
 
         app.init_state::<EngineState>();
 
-        app.add_plugins((
-            PhysicsPlugins::default(),
-            // NavmeshUpdaterPlugin::<Collider, Wall>::default(),
-        ));
+        app.add_plugins(PhysicsPlugins::default());
 
         app.insert_resource(Gravity::ZERO);
 
         app.init_resource::<PathQueryConfig>();
 
-        app.add_observer(wall::wall_added)
-            .add_observer(wall::wall_removed)
-            .add_observer(map::map_added)
+        app.add_observer(map::map_inserted)
+            .add_observer(map::corner_removed)
+            .add_observer(map::wall_removed)
             .add_observer(pawn::ai::task_added)
             .add_observer(pawn::ai::task_removed)
             .add_observer(pawn::ai::actor_removed)
-            .add_systems(Update, wall::add_colliders)
+            .add_systems(FixedPreUpdate, wall::add_colliders)
             .add_systems(
                 SubstepSchedule,
                 pawn::clamp_velocity

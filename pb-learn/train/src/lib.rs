@@ -4,7 +4,10 @@ use std::{collections::VecDeque, f32::consts::PI, time::Duration};
 
 use avian2d::prelude::*;
 use bevy::{
-    ecs::system::SystemState, prelude::*, scene::ScenePlugin, state::app::StatesPlugin,
+    ecs::{system::SystemState, world::CommandQueue},
+    prelude::*,
+    scene::ScenePlugin,
+    state::app::StatesPlugin,
     time::TimeUpdateStrategy,
 };
 use pb_engine::{
@@ -13,11 +16,10 @@ use pb_engine::{
         MAX_ANGULAR_VELOCITY, MAX_VELOCITY, PawnBundle,
         ai::path::{PathObservation, PathQuery},
     },
-    save::{LoadSeed, Save, load},
+    save::SaveModel,
 };
 use pyo3::prelude::*;
 use rand::{Rng, SeedableRng, rngs::SmallRng};
-use serde::de::DeserializeSeed;
 
 #[pymodule(name = "pb_learn_env")]
 pub fn pb_learn(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -83,12 +85,8 @@ impl Environment {
         app.cleanup();
         app.update();
 
-        let type_registry = app.world().get_resource::<AppTypeRegistry>().unwrap();
-        let seed = LoadSeed::new(type_registry.0.clone());
-        let saved_walls = save_from_json(seed, include_str!("walls.json")).unwrap();
-
-        let mut load_state = SystemState::new(app.world_mut());
-        load(app.world_mut(), &mut load_state, &saved_walls).unwrap();
+        let saved_walls = serde_json::from_str(include_str!("empty.json")).unwrap();
+        spawn_save(app.world_mut(), saved_walls);
 
         let path_q = SystemState::new(app.world_mut());
 
@@ -115,20 +113,14 @@ impl Environment {
 
         let (position, path) = loop {
             let mut position: Vec2 = self.rng.random::<[f32; 2]>().into();
-            position = (position - Vec2::splat(0.5)) * 10.;
+            position = (position - Vec2::splat(0.5)) * 8.;
 
             let mut target: Vec2 = self.rng.random::<[f32; 2]>().into();
             if self.rng.random_bool(0.3) {
                 target = position + (target - Vec2::splat(0.5)) * 1.;
             } else {
-                target = (target - Vec2::splat(0.5)) * 10.;
+                target = (target - Vec2::splat(0.5)) * 8.;
             }
-
-            let mut offset: Vec2 = self.rng.random::<[f32; 2]>().into();
-            offset = (offset - Vec2::splat(0.5)) * 5.;
-
-            position += offset;
-            target += offset;
 
             if let Some(steps) = self.path(position, target) {
                 break (position, steps);
@@ -215,8 +207,8 @@ impl Environment {
             .unwrap()
     }
 
-    fn path(&mut self, _from: Vec2, _to: Vec2) -> Option<Vec<Vec2>> {
-        todo!()
+    fn path(&mut self, _from: Vec2, to: Vec2) -> Option<Vec<Vec2>> {
+        Some(vec![to])
     }
 }
 
@@ -240,28 +232,21 @@ impl Default for Environment {
     }
 }
 
-fn save_from_json(seed: LoadSeed, json: &str) -> Result<Save, serde_json::Error> {
-    let mut de = serde_json::Deserializer::from_str(json);
-    let value = seed.deserialize(&mut de)?;
-    de.end()?;
-    Ok(value)
-}
-
 // HACK
 unsafe impl Send for Environment {}
 
 unsafe impl Sync for Environment {}
 
+fn spawn_save(world: &mut World, save: SaveModel) {
+    let mut commands = CommandQueue::default();
+    save.spawn(&mut Commands::new(&mut commands, world));
+    commands.apply(world);
+}
+
 #[test]
 fn test() {
     let mut env = Environment::new();
 
-    let obs = env.reset(None);
-    println!("{:?}", obs);
-    let obs = env.step([0.0, 1.0, 0.0]);
-    println!("{:?}", obs);
-    let obs = env.step([0.0, 1.0, 0.0]);
-    println!("{:?}", obs);
-
-    assert!(env.path.is_empty());
+    env.reset(None);
+    env.step([0.0, 1.0, 0.0]);
 }

@@ -4,7 +4,11 @@
 mod diagnostic;
 mod window;
 
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::{
+    asset::AssetMetaCheck,
+    ecs::error::{GLOBAL_ERROR_HANDLER, error},
+    prelude::*,
+};
 
 use pb_assets::PbAssetsPlugin;
 use pb_engine::PbEnginePlugin;
@@ -14,6 +18,10 @@ use pb_ui::PbUiPlugin;
 use pb_util::CallbackPlugin;
 
 fn main() -> AppExit {
+    if cfg!(not(debug_assertions)) {
+        GLOBAL_ERROR_HANDLER.set(error).unwrap();
+    }
+
     let mut app = App::new();
 
     app.add_plugins(DefaultPlugins.set(window::plugin()).set(AssetPlugin {
