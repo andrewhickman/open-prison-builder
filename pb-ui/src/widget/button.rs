@@ -124,7 +124,7 @@ impl<'w> UiBuilder<'w, '_> {
         container.spawn((
             ImageNode::new(icon),
             Node {
-                width: Val::Auto,
+                width: theme.tile_icon_size(),
                 height: theme.tile_icon_size(),
                 aspect_ratio: Some(1.),
                 ..default()
@@ -132,8 +132,16 @@ impl<'w> UiBuilder<'w, '_> {
             Pickable::IGNORE,
         ));
         container.spawn((
+            Node {
+                max_width: Val::Px(60.),
+                ..default()
+            },
             Text::new(title),
             theme.button_text.clone(),
+            TextLayout {
+                justify: JustifyText::Center,
+                linebreak: LineBreak::WordBoundary,
+            },
             Pickable::IGNORE,
         ));
 

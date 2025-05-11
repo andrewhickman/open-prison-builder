@@ -1,5 +1,5 @@
-use bevy::{ecs::system::SystemParam, prelude::*};
-use pb_engine::map::{CornerDef, Map, MapQueries};
+use bevy::prelude::*;
+use pb_engine::map::{CornerDef, Map};
 use pb_render::map::VisibleMap;
 
 use crate::{
@@ -14,9 +14,10 @@ use crate::{
             point::{CancelPoint, ClickPoint, SelectPoint, grid::Grid},
         },
     },
+    ribbon::architect::wall::MapParam,
 };
 
-pub fn wall(
+pub fn add_wall(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     mut visible_map: ResMut<VisibleMap>,
@@ -30,7 +31,7 @@ pub fn wall(
 
     let id = commands
         .spawn((
-            WallAction::default(),
+            AddWallAction::default(),
             children![
                 Grid::default(),
                 Observer::new(select_point),
@@ -48,8 +49,8 @@ pub fn wall(
 }
 
 #[derive(Default, Debug, Component, TypePath)]
-#[require(Action, Cancellable, PhysicsPickingState = PhysicsPickingState::Wall, Transform, Visibility, Name = Name::new(WallAction::type_path()))]
-pub enum WallAction {
+#[require(Action, Cancellable, PhysicsPickingState = PhysicsPickingState::Wall, Transform, Visibility, Name = Name::new(AddWallAction::type_path()))]
+pub enum AddWallAction {
     #[default]
     SelectStart,
     SelectEnd {
@@ -57,16 +58,9 @@ pub enum WallAction {
     },
 }
 
-#[derive(SystemParam)]
-struct MapParam<'w, 's> {
-    map_queries: MapQueries<'w, 's>,
-    visible_map: Res<'w, VisibleMap>,
-    map_q: Query<'w, 's, &'static mut Map>,
-}
-
 fn select_point(
     trigger: Trigger<SelectPoint>,
-    mut action: Single<&mut WallAction>,
+    mut action: Single<&mut AddWallAction>,
     mut map: MapParam,
 ) -> Result {
     action.select_corner(&mut map, CornerDef::Position(trigger.point))
@@ -74,7 +68,7 @@ fn select_point(
 
 fn cancel_point(
     _: Trigger<CancelPoint>,
-    mut action: Single<&mut WallAction>,
+    mut action: Single<&mut AddWallAction>,
     mut map: MapParam,
 ) -> Result {
     action.cancel(&mut map)
@@ -82,7 +76,7 @@ fn cancel_point(
 
 fn click_point(
     trigger: Trigger<ClickPoint>,
-    mut action: Single<&mut WallAction>,
+    mut action: Single<&mut AddWallAction>,
     mut map: MapParam,
 ) -> Result {
     action.click(&mut map, CornerDef::Position(trigger.point))
@@ -90,22 +84,22 @@ fn click_point(
 
 fn select_wall(
     trigger: Trigger<SelectWall>,
-    mut action: Single<&mut WallAction>,
+    mut action: Single<&mut AddWallAction>,
     mut map: MapParam,
 ) -> Result {
     match trigger.kind {
         WallPickKind::Corner { corner, .. } => {
             action.select_corner(&mut map, CornerDef::Corner(corner))
         }
-        WallPickKind::Wall { wall, position, .. } => {
-            action.select_corner(&mut map, CornerDef::Wall(wall, position))
+        WallPickKind::Wall { position, .. } => {
+            action.select_corner(&mut map, CornerDef::Wall(trigger.wall, position))
         }
     }
 }
 
 fn cancel_wall(
     _: Trigger<CancelWall>,
-    mut action: Single<&mut WallAction>,
+    mut action: Single<&mut AddWallAction>,
     mut map: MapParam,
 ) -> Result {
     action.cancel(&mut map)
@@ -113,28 +107,26 @@ fn cancel_wall(
 
 fn click_wall(
     trigger: Trigger<ClickWall>,
-    mut action: Single<&mut WallAction>,
+    mut action: Single<&mut AddWallAction>,
     mut map: MapParam,
 ) -> Result {
     match trigger.kind {
         WallPickKind::Corner { corner, .. } => action.click(&mut map, CornerDef::Corner(corner)),
-        WallPickKind::Wall { wall, position, .. } => {
-            action.click(&mut map, CornerDef::Wall(wall, position))
+        WallPickKind::Wall { position, .. } => {
+            action.click(&mut map, CornerDef::Wall(trigger.wall, position))
         }
     }
 }
 
-pub fn cancel(_: Trigger<OnRemove, WallAction>) {}
-
-impl WallAction {
+impl AddWallAction {
     fn select_corner(&mut self, map: &mut MapParam, corner: CornerDef) -> Result {
         map.reset()?;
 
         match *self {
-            WallAction::SelectStart => {
+            AddWallAction::SelectStart => {
                 map.insert_corner(corner)?;
             }
-            WallAction::SelectEnd { start } => {
+            AddWallAction::SelectEnd { start } => {
                 map.insert_wall(start, corner)?;
             }
         }
@@ -146,14 +138,14 @@ impl WallAction {
         map.reset()?;
 
         match *self {
-            WallAction::SelectStart => {
+            AddWallAction::SelectStart => {
                 map.insert_corner(corner)?;
-                *self = WallAction::SelectEnd { start: corner }
+                *self = AddWallAction::SelectEnd { start: corner }
             }
-            WallAction::SelectEnd { start } => {
+            AddWallAction::SelectEnd { start } => {
                 if let Some((_, end)) = map.insert_wall(start, corner)? {
                     map.commit()?;
-                    *self = WallAction::SelectEnd {
+                    *self = AddWallAction::SelectEnd {
                         start: CornerDef::Corner(end),
                     }
                 }
@@ -165,43 +157,5 @@ impl WallAction {
 
     fn cancel(&mut self, map: &mut MapParam) -> Result {
         map.reset()
-    }
-}
-
-impl MapParam<'_, '_> {
-    fn id(&self) -> Entity {
-        self.visible_map.id().expect("map should be visible")
-    }
-
-    fn source(&self) -> Entity {
-        self.visible_map.source().expect("map should be visible")
-    }
-
-    fn reset(&mut self) -> Result {
-        let [source, mut map] = self.map_q.get_many_mut([self.source(), self.id()])?;
-        map.clone_from(&mut self.map_queries.commands, &source);
-        Ok(())
-    }
-
-    fn insert_corner(&mut self, corner: CornerDef) -> Result<Entity> {
-        self.map_q
-            .get_mut(self.id())?
-            .insert_corner(&mut self.map_queries, corner)
-    }
-
-    fn insert_wall(
-        &mut self,
-        start: CornerDef,
-        end: CornerDef,
-    ) -> Result<Option<(Entity, Entity)>> {
-        self.map_q
-            .get_mut(self.id())?
-            .insert_wall(&mut self.map_queries, start, end)
-    }
-
-    fn commit(&mut self) -> Result {
-        let [mut source, mut map] = self.map_q.get_many_mut([self.source(), self.id()])?;
-        map.clone_into(&mut self.map_queries, &mut source);
-        Ok(())
     }
 }

@@ -36,8 +36,6 @@ impl Plugin for PbEnginePlugin {
         app.init_resource::<PathQueryConfig>();
 
         app.add_observer(map::map_inserted)
-            .add_observer(map::corner_removed)
-            .add_observer(map::wall_removed)
             .add_observer(pawn::ai::task_added)
             .add_observer(pawn::ai::task_removed)
             .add_observer(pawn::ai::actor_removed)

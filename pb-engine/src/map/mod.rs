@@ -117,48 +117,6 @@ pub fn map_inserted(
     Ok(())
 }
 
-pub fn corner_removed(
-    trigger: Trigger<OnRemove, Corner>,
-    parent_q: Query<&ChildOf>,
-    mut queries: MapQueries,
-    mut map_q: Query<&mut Map>,
-) -> Result {
-    let parent = parent_q.get(trigger.target())?;
-    let corner = queries.corner_q.get(trigger.target())?;
-    let Ok(mut map) = map_q.get_mut(parent.parent()) else {
-        return Ok(());
-    };
-
-    if !map.children.contains(&trigger.target()) {
-        return Ok(());
-    }
-
-    map.triangulation.remove(corner.vertex);
-    map.sync(&mut queries);
-    Ok(())
-}
-
-pub fn wall_removed(
-    trigger: Trigger<OnRemove, Wall>,
-    parent_q: Query<&ChildOf>,
-    mut queries: MapQueries,
-    mut map_q: Query<&mut Map>,
-) -> Result {
-    let parent = parent_q.get(trigger.target())?;
-    let wall = queries.wall_q.get(trigger.target())?;
-    let Ok(mut map) = map_q.get_mut(parent.parent()) else {
-        return Ok(());
-    };
-
-    if !map.children.contains(&trigger.target()) {
-        return Ok(());
-    }
-
-    map.triangulation.remove_constraint_edge(wall.edge);
-    map.sync(&mut queries);
-    Ok(())
-}
-
 impl Map {
     pub fn new() -> Self {
         Map::default()
@@ -381,7 +339,7 @@ impl Map {
         self.triangulation
             .vertex(corner.vertex)
             .out_edges()
-            .filter(|edge| edge.as_undirected().data().is_constraint_edge())
+            .filter(|edge| edge.is_constraint_edge())
             .map(|edge| {
                 (
                     edge.as_undirected().data().data().wall.unwrap().id(),
@@ -400,6 +358,13 @@ impl Map {
             .corner
             .unwrap()
             .id())
+    }
+
+    pub fn remove_corner(&mut self, queries: &mut MapQueries, corner: Entity) -> Result {
+        let vertex = queries.corner_q.get(corner)?.vertex;
+        self.triangulation.remove(vertex);
+        self.sync(queries);
+        Ok(())
     }
 
     pub fn insert_wall(
@@ -426,6 +391,13 @@ impl Map {
                 self.triangulation.vertex(end).data().corner.unwrap().id(),
             )))
         }
+    }
+
+    pub fn remove_wall(&mut self, queries: &mut MapQueries, wall: Entity) -> Result {
+        let edge = queries.wall_q.get(wall)?.edge;
+        self.triangulation.remove_constraint_edge(edge);
+        self.sync(queries);
+        Ok(())
     }
 
     fn get_or_insert_vertex(
@@ -483,10 +455,8 @@ impl Map {
         for vertex in self.triangulation.fixed_vertices() {
             let vertex = self.triangulation.vertex(vertex);
             let vertex_data = vertex.data();
-            let is_corner = vertex_data.standalone
-                || vertex
-                    .out_edges()
-                    .any(|e| e.as_undirected().data().is_constraint_edge());
+            let is_corner =
+                vertex_data.standalone || vertex.out_edges().any(|e| e.is_constraint_edge());
             let vertex = vertex.fix();
 
             if is_corner {
@@ -550,7 +520,7 @@ impl Map {
         for edge in self.triangulation.fixed_undirected_edges() {
             let edge = self.triangulation.undirected_edge(edge);
             let edge_data = *edge.data().data();
-            let is_wall = edge.data().is_constraint_edge();
+            let is_wall = edge.is_constraint_edge();
 
             if is_wall {
                 let directed1 = edge.as_directed();
@@ -600,7 +570,7 @@ impl Map {
                 .face(inner_face)
                 .adjacent_edges()
                 .into_iter()
-                .filter(|edge| !edge.as_undirected().is_constraint_edge())
+                .filter(|edge| !edge.is_constraint_edge())
                 .map(|edge| edge.rev().face())
             {
                 f(adjacent_face);
@@ -609,7 +579,7 @@ impl Map {
             for adjacent_face in self
                 .triangulation
                 .convex_hull()
-                .filter(|edge| !edge.as_undirected().is_constraint_edge())
+                .filter(|edge| !edge.is_constraint_edge())
                 .map(|edge| edge.rev().face())
             {
                 f(adjacent_face);

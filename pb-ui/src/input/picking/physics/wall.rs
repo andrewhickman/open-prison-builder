@@ -6,6 +6,7 @@ use crate::input::picking::point::grid::Grid;
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct SelectWall {
+    pub wall: Entity,
     pub kind: WallPickKind,
 }
 
@@ -14,13 +15,14 @@ pub struct CancelWall;
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct ClickWall {
+    pub wall: Entity,
     pub kind: WallPickKind,
 }
 
 #[derive(Event, Debug, Clone, Copy)]
 pub enum WallPickKind {
     Corner { corner: Entity },
-    Wall { wall: Entity, position: Vec2 },
+    Wall { position: Vec2 },
 }
 
 pub fn wall_added(trigger: Trigger<OnAdd, Wall>, mut commands: Commands) {
@@ -49,9 +51,9 @@ fn over(
     let [start, end] = corner_q.get_many(wall.corners())?;
 
     commands.trigger(SelectWall {
+        wall: trigger.target(),
         kind: WallPickKind::new(
             pos.xy(),
-            trigger.target(),
             wall.corners()[0],
             start.translation.xy(),
             wall.corners()[1],
@@ -80,9 +82,9 @@ fn moved(
     let [start, end] = vertex_q.get_many(wall.corners())?;
 
     commands.trigger(SelectWall {
+        wall: trigger.target(),
         kind: WallPickKind::new(
             pos.xy(),
-            trigger.target(),
             wall.corners()[0],
             start.translation.xy(),
             wall.corners()[1],
@@ -117,9 +119,9 @@ fn click(
     let [start, end] = vertex_q.get_many(wall.corners())?;
 
     commands.trigger(ClickWall {
+        wall: trigger.target(),
         kind: WallPickKind::new(
             pos.xy(),
-            trigger.target(),
             wall.corners()[0],
             start.translation.xy(),
             wall.corners()[1],
@@ -134,7 +136,6 @@ fn click(
 impl WallPickKind {
     pub fn new(
         hit_pos: Vec2,
-        wall: Entity,
         start: Entity,
         start_pos: Vec2,
         end: Entity,
@@ -163,10 +164,7 @@ impl WallPickKind {
 
             let closest = start_pos + t * wall_dir;
 
-            WallPickKind::Wall {
-                wall,
-                position: closest,
-            }
+            WallPickKind::Wall { position: closest }
         }
     }
 }

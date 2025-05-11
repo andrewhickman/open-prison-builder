@@ -134,8 +134,15 @@ impl<'w> UiBuilder<'w, '_> {
         });
 
         icon_grid
-            .tile_button(theme, "Wall", assets.ribbon_button_wall_image.clone())
-            .on_click(architect::wall::wall);
+            .tile_button(theme, "Build wall", assets.ribbon_button_wall_image.clone())
+            .on_click(architect::wall::add::add_wall);
+        icon_grid
+            .tile_button(
+                theme,
+                "Remove wall",
+                assets.ribbon_button_wall_image.clone(),
+            )
+            .on_click(architect::wall::remove::remove_wall);
         icon_grid
             .tile_button(theme, "Pawn", assets.pawn_image.clone())
             .on_click(architect::pawn::pawn);

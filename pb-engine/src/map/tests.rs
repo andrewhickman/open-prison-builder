@@ -215,8 +215,6 @@ fn test_split_room() {
 fn create_map() -> (World, Entity) {
     let mut world = World::new();
     world.add_observer(map::map_inserted);
-    world.add_observer(map::corner_removed);
-    world.add_observer(map::wall_removed);
     let map = world.spawn(Map::new()).id();
     (world, map)
 }
@@ -275,10 +273,7 @@ fn assert_consistency(world: &World) {
     }
 
     for edge in map.triangulation.undirected_edges() {
-        assert_eq!(
-            edge.data().is_constraint_edge(),
-            edge.data().data().wall.is_some()
-        );
+        assert_eq!(edge.is_constraint_edge(), edge.data().data().wall.is_some());
 
         let directed_edge = edge.as_directed();
         if let Some(wall) = edge.data().data().wall {
@@ -307,9 +302,7 @@ fn assert_consistency(world: &World) {
 
         if let Some(inner_face) = face.as_inner() {
             for edge in inner_face.adjacent_edges() {
-                if !edge.as_undirected().data().is_constraint_edge()
-                    && !edge.rev().face().is_outer()
-                {
+                if !edge.as_undirected().is_constraint_edge() && !edge.rev().face().is_outer() {
                     assert_eq!(
                         face.data().room.unwrap().id(),
                         edge.rev().face().data().room.unwrap().id()
@@ -334,7 +327,7 @@ fn assert_consistency(world: &World) {
         .filter_map(|e| e.get::<Wall>().map(|w| (e.id(), w)))
     {
         let edge = map.triangulation.undirected_edge(wall.edge);
-        assert!(edge.data().is_constraint_edge());
+        assert!(edge.is_constraint_edge());
         assert_eq!(edge.data().data().wall, Some(MapEntity::Owned(wall_id)));
     }
 
