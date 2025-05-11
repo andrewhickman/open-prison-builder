@@ -19,17 +19,8 @@ pub struct ClickWall {
 
 #[derive(Event, Debug, Clone, Copy)]
 pub enum WallPickKind {
-    Corner {
-        corner: Entity,
-    },
-    Wall {
-        wall: Entity,
-        position: Vec2,
-        start: Entity,
-        start_position: Vec2,
-        end: Entity,
-        end_position: Vec2,
-    },
+    Corner { corner: Entity },
+    Wall { wall: Entity, position: Vec2 },
 }
 
 pub fn wall_added(trigger: Trigger<OnAdd, Wall>, mut commands: Commands) {
@@ -175,10 +166,6 @@ impl WallPickKind {
             WallPickKind::Wall {
                 wall,
                 position: closest,
-                start,
-                start_position: start_pos,
-                end,
-                end_position: end_pos,
             }
         }
     }

@@ -52,15 +52,8 @@ pub fn wall(
 pub enum WallAction {
     #[default]
     SelectStart,
-    PreviewStart {
-        start: CornerDef,
-    },
     SelectEnd {
         start: CornerDef,
-    },
-    PreviewEnd {
-        start: CornerDef,
-        end: CornerDef,
     },
 }
 
@@ -92,37 +85,21 @@ fn click_point(
     mut action: Single<&mut WallAction>,
     mut map: MapParam,
 ) -> Result {
-    action.select_corner(&mut map, CornerDef::Position(trigger.point))?;
-    action.click(&mut map)?;
-    Ok(())
+    action.click(&mut map, CornerDef::Position(trigger.point))
 }
 
 fn select_wall(
     trigger: Trigger<SelectWall>,
-    mut action: Single<(Entity, &mut WallAction)>,
+    mut action: Single<&mut WallAction>,
     mut map: MapParam,
 ) -> Result {
-    let (_, ref mut action) = *action;
     match trigger.kind {
         WallPickKind::Corner { corner, .. } => {
             action.select_corner(&mut map, CornerDef::Corner(corner))
         }
-        WallPickKind::Wall {
-            wall,
-            position,
-            start,
-            start_position,
-            end,
-            end_position,
-        } => action.select_wall(
-            &mut map,
-            wall,
-            position,
-            start,
-            start_position,
-            end,
-            end_position,
-        ),
+        WallPickKind::Wall { wall, position, .. } => {
+            action.select_corner(&mut map, CornerDef::Wall(wall, position))
+        }
     }
 }
 
@@ -140,28 +117,9 @@ fn click_wall(
     mut map: MapParam,
 ) -> Result {
     match trigger.kind {
-        WallPickKind::Corner { corner, .. } => {
-            action.select_corner(&mut map, CornerDef::Corner(corner))?;
-            action.click(&mut map)
-        }
-        WallPickKind::Wall {
-            wall,
-            position,
-            start,
-            start_position,
-            end,
-            end_position,
-        } => {
-            action.select_wall(
-                &mut map,
-                wall,
-                position,
-                start,
-                start_position,
-                end,
-                end_position,
-            )
-            // action.click(&mut commands, &engine_state)
+        WallPickKind::Corner { corner, .. } => action.click(&mut map, CornerDef::Corner(corner)),
+        WallPickKind::Wall { wall, position, .. } => {
+            action.click(&mut map, CornerDef::Wall(wall, position))
         }
     }
 }
@@ -175,40 +133,31 @@ impl WallAction {
         match *self {
             WallAction::SelectStart => {
                 map.insert_corner(corner)?;
-                *self = WallAction::PreviewStart { start: corner }
-            }
-            WallAction::PreviewStart { ref mut start } => {
-                map.insert_corner(corner)?;
-                *start = corner;
             }
             WallAction::SelectEnd { start } => {
                 map.insert_wall(start, corner)?;
-                *self = WallAction::PreviewEnd { start, end: corner };
-            }
-            WallAction::PreviewEnd { start, ref mut end } => {
-                map.insert_wall(start, corner)?;
-                *end = corner;
             }
         }
 
         Ok(())
     }
 
-    fn select_wall(
-        &mut self,
-        _param: &mut MapParam,
-        _prev_wall: Entity,
-        _pos: Vec2,
-        _wall_start: Entity,
-        _wall_start_pos: Vec2,
-        _wall_end: Entity,
-        _wall_end_pos: Vec2,
-    ) -> Result {
+    fn click(&mut self, map: &mut MapParam, corner: CornerDef) -> Result {
+        map.reset()?;
+
         match *self {
-            WallAction::SelectStart => {}
-            WallAction::PreviewStart { .. } => {}
-            WallAction::SelectEnd { .. } => {}
-            WallAction::PreviewEnd { .. } => {}
+            WallAction::SelectStart => {
+                map.insert_corner(corner)?;
+                *self = WallAction::SelectEnd { start: corner }
+            }
+            WallAction::SelectEnd { start } => {
+                if let Some((_, end)) = map.insert_wall(start, corner)? {
+                    map.commit()?;
+                    *self = WallAction::SelectEnd {
+                        start: CornerDef::Corner(end),
+                    }
+                }
+            }
         }
 
         Ok(())
@@ -216,20 +165,6 @@ impl WallAction {
 
     fn cancel(&mut self, map: &mut MapParam) -> Result {
         map.reset()
-    }
-
-    fn click(&mut self, map: &mut MapParam) -> Result {
-        match *self {
-            WallAction::SelectStart => {}
-            WallAction::PreviewStart { start } => *self = WallAction::SelectEnd { start },
-            WallAction::SelectEnd { .. } => {}
-            WallAction::PreviewEnd { end, .. } => {
-                map.commit()?;
-                *self = WallAction::SelectEnd { start: end }
-            }
-        }
-
-        Ok(())
     }
 }
 
@@ -248,16 +183,20 @@ impl MapParam<'_, '_> {
         Ok(())
     }
 
-    fn insert_corner(&mut self, corner: CornerDef) -> Result {
-        let mut map = self.map_q.get_mut(self.id())?;
-        map.insert_corner(&mut self.map_queries, corner)?;
-        Ok(())
+    fn insert_corner(&mut self, corner: CornerDef) -> Result<Entity> {
+        self.map_q
+            .get_mut(self.id())?
+            .insert_corner(&mut self.map_queries, corner)
     }
 
-    fn insert_wall(&mut self, start: CornerDef, end: CornerDef) -> Result {
-        let mut map = self.map_q.get_mut(self.id())?;
-        map.insert_wall(&mut self.map_queries, start, end)?;
-        Ok(())
+    fn insert_wall(
+        &mut self,
+        start: CornerDef,
+        end: CornerDef,
+    ) -> Result<Option<(Entity, Entity)>> {
+        self.map_q
+            .get_mut(self.id())?
+            .insert_wall(&mut self.map_queries, start, end)
     }
 
     fn commit(&mut self) -> Result {

@@ -75,7 +75,7 @@ pub struct MapQueries<'w, 's> {
 pub enum CornerDef {
     Corner(Entity),
     Position(Vec2),
-    // Split wall
+    Wall(Entity, Vec2),
 }
 
 /// Where an entity referenced by a map came from.
@@ -407,7 +407,7 @@ impl Map {
         queries: &mut MapQueries,
         start: CornerDef,
         end: CornerDef,
-    ) -> Result {
+    ) -> Result<Option<(Entity, Entity)>> {
         let start = self.get_or_insert_vertex(queries, start)?;
         let end = self.get_or_insert_vertex(queries, end)?;
         self.triangulation
@@ -417,7 +417,15 @@ impl Map {
         self.triangulation.vertex_data_mut(end).standalone = false;
 
         self.sync(queries);
-        Ok(())
+
+        if start == end {
+            Ok(None)
+        } else {
+            Ok(Some((
+                self.triangulation.vertex(start).data().corner.unwrap().id(),
+                self.triangulation.vertex(end).data().corner.unwrap().id(),
+            )))
+        }
     }
 
     fn get_or_insert_vertex(
@@ -435,6 +443,25 @@ impl Map {
                 })?;
 
                 Ok(vertex)
+            }
+            CornerDef::Wall(wall, position) => {
+                let wall = queries.wall_q.get(wall)?;
+                let edge = self.triangulation.undirected_edge(wall.edge);
+                let [start, end] = edge.vertices().map(|v| v.fix());
+                self.triangulation.remove_constraint_edge(edge.fix());
+
+                let mid = self.triangulation.insert(VertexData {
+                    corner: None,
+                    position,
+                    standalone: false,
+                })?;
+
+                self.triangulation
+                    .add_constraint_and_split(start, mid, VertexData::from);
+                self.triangulation
+                    .add_constraint_and_split(mid, end, VertexData::from);
+
+                Ok(mid)
             }
         }
     }
