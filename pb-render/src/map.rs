@@ -9,7 +9,7 @@ use bevy::{
     math::{Affine2, FloatOrd},
     prelude::*,
     render::{
-        mesh::{Indices, MeshAabb, PrimitiveTopology},
+        mesh::{Indices, MeshAabb, PrimitiveTopology, VertexAttributeValues},
         primitives::Aabb,
         render_asset::RenderAssetUsages,
     },
@@ -54,7 +54,6 @@ enum CornerGeometryPointKind {
 #[derive(Debug, Default, Component, PartialEq)]
 pub struct WallGeometry {
     points: [Vec2; 6],
-    lens: [f32; 6],
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -473,17 +472,7 @@ impl WallGeometry {
             wall_inv_isometry * end3,
         ];
 
-        Ok(WallGeometry {
-            points,
-            lens: [
-                points[0].project_onto(points[1]).length(),
-                points[1].length(),
-                points[2].project_onto(points[1]).length(),
-                points[3].project_onto(points[4]).length(),
-                points[4].length(),
-                points[5].project_onto(points[4]).length(),
-            ],
-        })
+        Ok(WallGeometry { points })
     }
 
     fn mesh(&self) -> Mesh {
@@ -493,18 +482,18 @@ impl WallGeometry {
         )
         .with_inserted_attribute(
             Mesh::ATTRIBUTE_POSITION,
-            self.points.iter().map(|p| p.extend(0.)).collect::<Vec<_>>(),
+            VertexAttributeValues::Float32x3(self.points.map(|p| [p.x, p.y, 0.]).to_vec()),
         )
         .with_inserted_attribute(
             Mesh::ATTRIBUTE_UV_0,
-            vec![
-                Vec2::new(-self.lens[0], TEXTURE_BOTTOM),
-                Vec2::new(-self.lens[1], TEXTURE_TOP),
-                Vec2::new(-self.lens[2], TEXTURE_BOTTOM),
-                Vec2::new(self.lens[3], TEXTURE_BOTTOM),
-                Vec2::new(self.lens[4], TEXTURE_TOP),
-                Vec2::new(self.lens[5], TEXTURE_BOTTOM),
-            ],
+            VertexAttributeValues::Float32x2(vec![
+                [self.points[0].x, TEXTURE_BOTTOM],
+                [self.points[1].x, TEXTURE_TOP],
+                [self.points[2].x, TEXTURE_BOTTOM],
+                [self.points[3].x, TEXTURE_BOTTOM],
+                [self.points[4].x, TEXTURE_TOP],
+                [self.points[5].x, TEXTURE_BOTTOM],
+            ]),
         )
         .with_inserted_indices(Indices::U16(vec![0, 1, 5, 1, 5, 4, 1, 2, 4, 2, 4, 3]))
     }
