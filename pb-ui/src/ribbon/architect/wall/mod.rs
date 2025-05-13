@@ -3,7 +3,7 @@ pub mod remove;
 
 use bevy::{ecs::system::SystemParam, prelude::*};
 use pb_engine::map::{CornerDef, Map, MapQueries};
-use pb_render::map::VisibleMap;
+use pb_render::wall::VisibleMap;
 
 #[derive(SystemParam)]
 struct MapParam<'w, 's> {

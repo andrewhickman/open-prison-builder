@@ -11,7 +11,9 @@ pub struct SelectWall {
 }
 
 #[derive(Event, Debug, Clone, Copy)]
-pub struct CancelWall;
+pub struct CancelWall {
+    pub wall: Entity,
+}
 
 #[derive(Event, Debug, Clone, Copy)]
 pub struct ClickWall {
@@ -99,7 +101,9 @@ fn moved(
 fn out(mut trigger: Trigger<Pointer<Out>>, mut commands: Commands) {
     trigger.propagate(false);
 
-    commands.trigger(CancelWall);
+    commands.trigger(CancelWall {
+        wall: trigger.target(),
+    });
 }
 
 fn click(

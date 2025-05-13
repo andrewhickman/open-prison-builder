@@ -6,14 +6,17 @@ use std::{
 use bevy::{
     asset::weak_handle,
     ecs::entity::{EntityHashMap, EntityHashSet},
-    math::{Affine2, FloatOrd},
+    math::FloatOrd,
     prelude::*,
     render::{
-        mesh::{Indices, MeshAabb, PrimitiveTopology, VertexAttributeValues},
+        mesh::{
+            Indices, MeshAabb, MeshVertexBufferLayoutRef, PrimitiveTopology, VertexAttributeValues,
+        },
         primitives::Aabb,
         render_asset::RenderAssetUsages,
+        render_resource::{AsBindGroup, RenderPipelineDescriptor, ShaderRef},
     },
-    sprite::AlphaMode2d,
+    sprite::{Material2d, Material2dKey},
 };
 use pb_assets::AssetHandles;
 use pb_engine::{
@@ -56,43 +59,64 @@ pub struct WallGeometry {
     points: [Vec2; 6],
 }
 
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct WallMaterial {
+    #[uniform(0)]
+    color: LinearRgba,
+    #[texture(1)]
+    #[sampler(2)]
+    pub texture: Handle<Image>,
+}
+
 #[derive(Copy, Clone, Debug)]
-enum MapRenderMode {
+pub enum MapRenderMode {
     Added,
     Visible,
     Removed,
     Hidden,
 }
 
-pub const DEFAULT_MATERIAL: Handle<ColorMaterial> =
+pub const DEFAULT_MATERIAL: Handle<WallMaterial> =
     weak_handle!("9644d394-94cd-4fd8-972a-c76026f4d08a");
-pub const ADDED_MATERIAL: Handle<ColorMaterial> =
+pub const ADDED_MATERIAL: Handle<WallMaterial> =
     weak_handle!("8562bf14-56d0-4fa8-ac4a-325b5e2eddef");
-pub const REMOVED_MATERIAL: Handle<ColorMaterial> =
+pub const REMOVED_MATERIAL: Handle<WallMaterial> =
     weak_handle!("202d16ae-02f2-4584-a77c-7882a55db5fa");
 
-pub fn startup(mut materials: ResMut<Assets<ColorMaterial>>, assets: Res<AssetHandles>) -> Result {
+const WALL_SHADER_HANDLE: Handle<Shader> = weak_handle!("ac4fc4ae-cc6c-408f-87f2-a75b44bc01b7");
+
+pub fn startup(
+    mut materials: ResMut<Assets<WallMaterial>>,
+    mut shaders: ResMut<Assets<Shader>>,
+    assets: Res<AssetHandles>,
+) -> Result {
     materials.insert(
         &DEFAULT_MATERIAL,
-        ColorMaterial::from(assets.brick_image.clone()),
+        WallMaterial {
+            color: LinearRgba::WHITE,
+            texture: assets.brick_image.clone(),
+        },
     );
     materials.insert(
         &ADDED_MATERIAL,
-        ColorMaterial {
-            color: Color::WHITE.with_alpha(0.38),
-            alpha_mode: AlphaMode2d::Blend,
-            texture: Some(assets.brick_image.clone()),
-            uv_transform: Affine2::IDENTITY,
+        WallMaterial {
+            color: Srgba::hex("aaaaaa")?.into(),
+            texture: assets.brick_image.clone(),
         },
     );
     materials.insert(
         &REMOVED_MATERIAL,
-        ColorMaterial {
-            color: Srgba::hex("f2200d")?.with_alpha(0.38).into(),
-            alpha_mode: AlphaMode2d::Blend,
-            texture: Some(assets.brick_image.clone()),
-            uv_transform: Affine2::IDENTITY,
+        WallMaterial {
+            color: Srgba::hex("ffaaaa")?.into(),
+            texture: assets.brick_image.clone(),
         },
+    );
+    shaders.insert(
+        WALL_SHADER_HANDLE.id(),
+        Shader::from_wgsl(
+            include_str!("../../assets/shaders/wall.wgsl"),
+            "assets/shaders/wall.wgsl",
+        ),
     );
     Ok(())
 }
@@ -162,7 +186,7 @@ pub fn update_visibility(
     map_q: Query<Ref<Map>>,
     wall_q: Query<&Wall>,
     children_q: Query<&Children>,
-    mut render_mode_q: Query<(&mut Visibility, &mut MeshMaterial2d<ColorMaterial>)>,
+    mut render_mode_q: Query<(&mut Visibility, &mut MeshMaterial2d<WallMaterial>)>,
 ) -> Result {
     if engine_state.is_changed() {
         match *engine_state.get() {
@@ -186,17 +210,10 @@ pub fn update_visibility(
     {
         let mut render_modes = EntityHashMap::default();
         for map in &map_q {
-            if visible_maps.id() != Some(map.id()) && visible_maps.source() != Some(map.id()) {
+            if visible_maps.id() != Some(map.id()) {
                 for entity in children_q.iter_descendants(map.id()) {
                     render_modes.insert(entity, MapRenderMode::Hidden);
                 }
-            }
-        }
-
-        if let Some(source) = visible_maps.source() {
-            let source = map_q.get(source)?;
-            for entity in children_q.iter_descendants(source.id()) {
-                render_modes.insert(entity, MapRenderMode::Removed);
             }
         }
 
@@ -434,7 +451,7 @@ impl VisibleMap {
 }
 
 impl MapRenderMode {
-    pub fn material(self) -> MeshMaterial2d<ColorMaterial> {
+    pub fn material(self) -> MeshMaterial2d<WallMaterial> {
         match self {
             MapRenderMode::Added => MeshMaterial2d(ADDED_MATERIAL.clone()),
             MapRenderMode::Visible => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
@@ -520,6 +537,25 @@ impl CornerGeometryPoint {
 
     fn to_vec3(self) -> Vec3 {
         self.point.extend(0.)
+    }
+}
+
+impl Material2d for WallMaterial {
+    fn fragment_shader() -> ShaderRef {
+        ShaderRef::Handle(WALL_SHADER_HANDLE)
+    }
+
+    fn specialize(
+        descriptor: &mut RenderPipelineDescriptor,
+        _: &MeshVertexBufferLayoutRef,
+        _: Material2dKey<Self>,
+    ) -> Result<(), bevy::render::render_resource::SpecializedMeshPipelineError> {
+        descriptor
+            .depth_stencil
+            .as_mut()
+            .expect("no depth stencil for Mesh2d pipeline")
+            .depth_write_enabled = true;
+        Ok(())
     }
 }
 

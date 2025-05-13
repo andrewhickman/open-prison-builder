@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use pb_engine::map::{CornerDef, Map};
-use pb_render::map::VisibleMap;
+use pb_render::wall::VisibleMap;
 
 use crate::{
     action::Action,
@@ -49,7 +49,14 @@ pub fn add_wall(
 }
 
 #[derive(Default, Debug, Component, TypePath)]
-#[require(Action, Cancellable, PhysicsPickingState = PhysicsPickingState::Wall, Transform, Visibility, Name = Name::new(AddWallAction::type_path()))]
+#[require(
+    Action,
+    Cancellable,
+    Name = Name::new(AddWallAction::type_path()),
+    PhysicsPickingState = PhysicsPickingState::Wall,
+    Transform,
+    Visibility,
+)]
 pub enum AddWallAction {
     #[default]
     SelectStart,

@@ -17,7 +17,7 @@ struct VertexOutput {
     world_position: vec2<f32>,
     @location(1)
     scale: vec2<f32>,
-};
+}
 
 @vertex
 fn vertex(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
