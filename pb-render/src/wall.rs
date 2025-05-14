@@ -293,8 +293,8 @@ pub fn update_geometry(
 
         let mut updated_walls = EntityHashSet::default();
 
-        for id in map.corners() {
-            let Ok((corner, mut info, mut mesh, mut aabb)) = corner_q.get_mut(id.id()) else {
+        for entity in map.corners() {
+            let Ok((corner, mut info, mut mesh, mut aabb)) = corner_q.get_mut(entity.id()) else {
                 continue;
             };
 
@@ -325,11 +325,11 @@ pub fn update_geometry(
             }
         }
 
-        for id in updated_walls {
-            let (wall, mut info, mut mesh, mut aabb) = wall_q.get_mut(id)?;
+        for entity in map.walls() {
+            let (wall, mut info, mut mesh, mut aabb) = wall_q.get_mut(entity.id())?;
             let [(_, start_info, _, _), (_, end_info, _, _)] = corner_q.get_many(wall.corners())?;
 
-            let new_info = WallGeometry::new(id, wall, start_info, end_info)?;
+            let new_info = WallGeometry::new(entity.id(), wall, start_info, end_info)?;
             if info.set_if_neq(new_info) {
                 let new_mesh = info.mesh();
                 *aabb = new_mesh.compute_aabb().unwrap_or_default();

@@ -53,7 +53,7 @@ pub fn add_wall(
     Action,
     Cancellable,
     Name = Name::new(AddWallAction::type_path()),
-    PhysicsPickingState = PhysicsPickingState::Wall,
+    PhysicsPickingState = PhysicsPickingState::SnapWall,
     Transform,
     Visibility,
 )]

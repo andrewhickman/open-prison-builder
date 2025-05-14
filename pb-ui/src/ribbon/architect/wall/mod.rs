@@ -18,7 +18,10 @@ impl MapParam<'_, '_> {
     }
 
     fn source(&self) -> Result<Entity> {
-        Ok(self.visible_map.source().ok_or("map should be visible")?)
+        Ok(self
+            .visible_map
+            .source()
+            .ok_or("visible map should have source")?)
     }
 
     fn reset(&mut self) -> Result {

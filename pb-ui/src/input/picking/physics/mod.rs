@@ -20,6 +20,7 @@ pub enum PhysicsPickingState {
     #[default]
     Default,
     Wall,
+    SnapWall,
 }
 
 pub fn update_hits(
@@ -86,7 +87,12 @@ impl PhysicsPickingState {
             PhysicsPickingState::Default => {
                 query.point_intersections_callback(position, &SpatialQueryFilter::DEFAULT, callback)
             }
-            PhysicsPickingState::Wall => query.shape_intersections_callback(
+            PhysicsPickingState::Wall => query.point_intersections_callback(
+                position,
+                &SpatialQueryFilter::from_mask(Layer::Wall),
+                callback,
+            ),
+            PhysicsPickingState::SnapWall => query.shape_intersections_callback(
                 &Collider::circle(PHYSICS_PICKING_THRESHOLD * scale),
                 position,
                 0.,
