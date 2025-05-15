@@ -335,7 +335,7 @@ fn assert_consistency(world: &World) {
     {
         assert!(
             map.triangulation
-                .all_faces()
+                .inner_faces()
                 .any(|face| face.data().room == Some(MapEntity::Owned(room_id)))
         );
     }

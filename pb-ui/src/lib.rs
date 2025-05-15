@@ -68,8 +68,8 @@ impl Plugin for PbUiPlugin {
                     widget::input::update.after(TextInputSystem),
                 ),
             )
-            .add_observer(input::cancel::on_add)
-            .add_observer(input::cancel::on_remove);
+            .add_observer(input::cancel::cancellable_added)
+            .add_observer(input::cancel::cancellable_removed);
 
         app.add_computed_state::<LoadingState>()
             .add_systems(OnEnter(LoadingState::Shown), loading::show)
@@ -116,7 +116,7 @@ impl Plugin for PbUiPlugin {
             .add_observer(input::pause::input)
             .add_observer(input::picking::point::grid::input)
             .add_observer(input::picking::point::root_added)
-            .add_observer(input::picking::point::grid::on_add)
+            .add_observer(input::picking::point::grid::grid_added)
             .add_observer(input::picking::physics::pawn::pawn_added)
             .add_observer(input::picking::physics::wall::wall_added)
             .add_observer(action::action_added)

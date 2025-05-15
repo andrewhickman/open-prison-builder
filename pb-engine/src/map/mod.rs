@@ -290,7 +290,7 @@ impl Map {
             }
         }
 
-        for face in self.triangulation.fixed_all_faces() {
+        for face in self.triangulation.fixed_inner_faces() {
             let room = self.triangulation.face(face).data().room.unwrap();
             self.triangulation.face_data_mut(face).room = Some(room.cloned());
             source.triangulation.face_data_mut(face).room = Some(room.to_owned());
@@ -338,7 +338,7 @@ impl Map {
 
     pub fn rooms(&self) -> impl Iterator<Item = MapEntity> + '_ {
         self.triangulation
-            .all_faces()
+            .inner_faces()
             .filter_map(|face| face.data().room)
     }
 

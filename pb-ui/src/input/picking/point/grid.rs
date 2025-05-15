@@ -18,7 +18,7 @@ pub struct Grid {
     level: i32,
 }
 
-pub fn on_add(
+pub fn grid_added(
     trigger: Trigger<OnAdd, Grid>,
     mut commands: Commands,
     theme: Res<Theme>,

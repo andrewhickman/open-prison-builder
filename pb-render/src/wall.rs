@@ -5,7 +5,7 @@ use std::{
 
 use bevy::{
     asset::weak_handle,
-    ecs::entity::{EntityHashMap, EntityHashSet},
+    ecs::entity::EntityHashMap,
     math::FloatOrd,
     prelude::*,
     render::{
@@ -291,8 +291,6 @@ pub fn update_geometry(
             continue;
         }
 
-        let mut updated_walls = EntityHashSet::default();
-
         for entity in map.corners() {
             let Ok((corner, mut info, mut mesh, mut aabb)) = corner_q.get_mut(entity.id()) else {
                 continue;
@@ -320,8 +318,6 @@ pub fn update_geometry(
                 } else {
                     default()
                 };
-
-                updated_walls.extend(map.corner_walls(corner).map(|(wall, _)| wall));
             }
         }
 

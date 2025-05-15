@@ -11,11 +11,14 @@ pub struct CancelStack {
 #[derive(Default, Copy, Clone, Component)]
 pub struct Cancellable;
 
-pub fn on_add(trigger: Trigger<OnAdd, Cancellable>, mut stack: ResMut<CancelStack>) {
+pub fn cancellable_added(trigger: Trigger<OnAdd, Cancellable>, mut stack: ResMut<CancelStack>) {
     stack.entities.push(trigger.target());
 }
 
-pub fn on_remove(trigger: Trigger<OnRemove, Cancellable>, mut stack: ResMut<CancelStack>) {
+pub fn cancellable_removed(
+    trigger: Trigger<OnRemove, Cancellable>,
+    mut stack: ResMut<CancelStack>,
+) {
     if let Some(pos) = stack.entities.iter().position(|&e| e == trigger.target()) {
         stack.entities.remove(pos);
     }

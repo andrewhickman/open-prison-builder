@@ -12,6 +12,7 @@ use avian2d::{
 };
 use bevy::prelude::*;
 use pawn::{Pawn, ai::path::PathQueryConfig};
+use pb_util::event::AddComponentEvents;
 use root::Root;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
@@ -36,10 +37,15 @@ impl Plugin for PbEnginePlugin {
         app.init_resource::<PathQueryConfig>();
 
         app.add_observer(map::map_inserted)
+            .add_inserted_event::<map::Wall>()
+            .add_inserted_event::<map::Room>()
             .add_observer(pawn::ai::task_added)
             .add_observer(pawn::ai::task_removed)
             .add_observer(pawn::ai::actor_removed)
-            .add_systems(FixedPreUpdate, map::wall::add_colliders)
+            .add_systems(
+                FixedPreUpdate,
+                (map::wall::add_colliders, map::room::update_mesh),
+            )
             .add_systems(
                 SubstepSchedule,
                 pawn::clamp_velocity
