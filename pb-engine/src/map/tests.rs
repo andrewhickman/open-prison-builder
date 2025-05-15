@@ -286,28 +286,26 @@ fn assert_consistency(world: &World) {
 
             assert_eq!(wall.corners(), [corner1, corner2]);
             assert_eq!(wall.rooms(), [room1, room2]);
-        } else {
+        } else if !directed_edge.face().is_outer() && !directed_edge.rev().face().is_outer() {
             let room1 = directed_edge.face().data().room.unwrap().id();
             let room2 = directed_edge.rev().face().data().room.unwrap().id();
             assert_eq!(room1, room2);
         }
     }
 
-    for face in map.triangulation.all_faces() {
+    for face in map.triangulation.inner_faces() {
         let room = world
             .entity(face.data().room.unwrap().id())
             .get::<Room>()
             .unwrap();
         assert!(room.faces.contains(&face.fix()));
 
-        if let Some(inner_face) = face.as_inner() {
-            for edge in inner_face.adjacent_edges() {
-                if !edge.as_undirected().is_constraint_edge() && !edge.rev().face().is_outer() {
-                    assert_eq!(
-                        face.data().room.unwrap().id(),
-                        edge.rev().face().data().room.unwrap().id()
-                    );
-                }
+        for edge in face.adjacent_edges() {
+            if !edge.as_undirected().is_constraint_edge() && !edge.rev().face().is_outer() {
+                assert_eq!(
+                    face.data().room.unwrap().id(),
+                    edge.rev().face().data().room.unwrap().id()
+                );
             }
         }
     }

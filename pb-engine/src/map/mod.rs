@@ -14,15 +14,15 @@ use bevy::{
     prelude::*,
 };
 use spade::{
-    CdtEdge, ConstrainedDelaunayTriangulation, HasPosition, HierarchyHintGenerator, Point2,
-    Triangulation,
+    ConstrainedDelaunayTriangulation, HasPosition, HierarchyHintGenerator, Point2, Triangulation,
     handles::{
-        FaceHandle, FixedFaceHandle, FixedUndirectedEdgeHandle, FixedVertexHandle, OUTER_FACE,
-        PossiblyOuterTag,
+        FixedFaceHandle, FixedUndirectedEdgeHandle, FixedVertexHandle, InnerTag, OUTER_FACE,
     },
 };
 
 use crate::save::MapModel;
+
+pub const GRID_SIZE: f32 = 16.0;
 
 #[derive(Component)]
 #[require(Transform, Visibility)]
@@ -30,6 +30,7 @@ pub struct Map {
     id: Entity,
     source: Option<Entity>,
     children: EntityHashSet,
+    size: u32,
     triangulation: ConstrainedDelaunayTriangulation<
         VertexData,
         (),
@@ -60,7 +61,7 @@ pub struct Wall {
 #[derive(Clone, Debug, Component)]
 #[require(Transform, Visibility)]
 pub struct Room {
-    faces: Vec<FixedFaceHandle<PossiblyOuterTag>>,
+    faces: Vec<FixedFaceHandle<InnerTag>>,
 }
 
 #[derive(SystemParam)]
@@ -140,10 +141,11 @@ impl Map {
             model
                 .corners
                 .iter()
-                .map(|corner| VertexData {
-                    position: corner.position,
-                    corner: Some(MapEntity::Owned(entity_map.get_mapped(corner.id))),
-                    standalone: false,
+                .map(|corner| {
+                    VertexData::corner(
+                        corner.position,
+                        MapEntity::Owned(entity_map.get_mapped(corner.id)),
+                    )
                 })
                 .collect(),
             model
@@ -187,12 +189,19 @@ impl Map {
             room @ None => *room = Some(MapEntity::Owned(outer_room)),
         }
 
-        Ok(Map {
+        let mut map = Map {
             id: Entity::PLACEHOLDER,
             source: None,
             triangulation,
             children: EntityHashSet::default(),
-        })
+            size: 0,
+        };
+
+        for corner in &model.corners {
+            map.expand_size(corner.position)?;
+        }
+
+        Ok(map)
     }
 
     pub fn cloned(&self) -> Self {
@@ -249,6 +258,7 @@ impl Map {
         }
 
         self.source = Some(source.id());
+        self.size = source.size;
     }
 
     pub fn clone_into(&mut self, queries: &mut MapQueries, source: &mut Map) {
@@ -298,6 +308,8 @@ impl Map {
         }
         source.children = new_children;
         self.children.clear();
+
+        source.size = self.size;
     }
 
     pub fn id(&self) -> Entity {
@@ -408,11 +420,11 @@ impl Map {
         match target {
             CornerDef::Corner(corner) => Ok(queries.corner_q.get(corner)?.vertex),
             CornerDef::Position(position) => {
-                let vertex = self.triangulation.insert(VertexData {
-                    corner: None,
-                    position,
-                    standalone: true,
-                })?;
+                self.expand_size(position)?;
+
+                let vertex = self
+                    .triangulation
+                    .insert(VertexData::standalone(position))?;
 
                 Ok(vertex)
             }
@@ -422,11 +434,7 @@ impl Map {
                 let [start, end] = edge.vertices().map(|v| v.fix());
                 self.triangulation.remove_constraint_edge(edge.fix());
 
-                let mid = self.triangulation.insert(VertexData {
-                    corner: None,
-                    position,
-                    standalone: false,
-                })?;
+                let mid = self.triangulation.insert(VertexData::new(position))?;
 
                 self.triangulation
                     .add_constraint_and_split(start, mid, VertexData::from);
@@ -436,6 +444,40 @@ impl Map {
                 Ok(mid)
             }
         }
+    }
+
+    fn expand_size(&mut self, point: Vec2) -> Result {
+        let max_dim = point.x.abs().max(point.y.abs());
+
+        while (self.size as f32 * GRID_SIZE) <= max_dim {
+            let new_size = self.size + 1;
+            let new_size_f = new_size as f32 * GRID_SIZE;
+
+            for i in 0..new_size {
+                let pos_f = i as f32 * GRID_SIZE;
+
+                self.triangulation
+                    .insert(VertexData::new(Vec2::new(new_size_f, new_size_f - pos_f)))?;
+                self.triangulation
+                    .insert(VertexData::new(Vec2::new(new_size_f, -pos_f)))?;
+                self.triangulation
+                    .insert(VertexData::new(Vec2::new(new_size_f - pos_f, -new_size_f)))?;
+                self.triangulation
+                    .insert(VertexData::new(Vec2::new(-pos_f, -new_size_f)))?;
+                self.triangulation
+                    .insert(VertexData::new(Vec2::new(-new_size_f, pos_f - new_size_f)))?;
+                self.triangulation
+                    .insert(VertexData::new(Vec2::new(-new_size_f, pos_f)))?;
+                self.triangulation
+                    .insert(VertexData::new(Vec2::new(pos_f - new_size_f, new_size_f)))?;
+                self.triangulation
+                    .insert(VertexData::new(Vec2::new(pos_f, new_size_f)))?;
+            }
+
+            self.size = new_size;
+        }
+
+        Ok(())
     }
 
     fn sync(&mut self, queries: &mut MapQueries) {
@@ -476,7 +518,7 @@ impl Map {
         let mut visited_faces = HashSet::new();
         let mut visited_rooms = EntityHashSet::default();
 
-        for face in self.triangulation.fixed_all_faces() {
+        for face in self.triangulation.fixed_inner_faces() {
             if !visited_faces.insert(face) {
                 continue;
             }
@@ -486,9 +528,16 @@ impl Map {
             let mut room = None;
 
             while let Some(face) = open.pop() {
-                self.for_each_adjacent_face(face, |adjacent_face| {
+                for adjacent_face in self
+                    .triangulation
+                    .face(face)
+                    .adjacent_edges()
+                    .into_iter()
+                    .filter(|edge| !edge.is_constraint_edge())
+                    .flat_map(|edge| edge.rev().face().as_inner())
+                {
                     if !visited_faces.insert(adjacent_face.fix()) {
-                        return;
+                        continue;
                     }
 
                     open.push(adjacent_face.fix());
@@ -501,7 +550,7 @@ impl Map {
                             }
                         }
                     }
-                });
+                }
             }
 
             faces.sort_unstable();
@@ -553,36 +602,6 @@ impl Map {
                     .undirected_edge_data_mut(edge.fix())
                     .data_mut()
                     .wall = None;
-            }
-        }
-    }
-
-    fn for_each_adjacent_face(
-        &self,
-        face: FixedFaceHandle<PossiblyOuterTag>,
-        mut f: impl FnMut(
-            FaceHandle<PossiblyOuterTag, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
-        ),
-    ) {
-        if let Some(inner_face) = face.as_inner() {
-            for adjacent_face in self
-                .triangulation
-                .face(inner_face)
-                .adjacent_edges()
-                .into_iter()
-                .filter(|edge| !edge.is_constraint_edge())
-                .map(|edge| edge.rev().face())
-            {
-                f(adjacent_face);
-            }
-        } else {
-            for adjacent_face in self
-                .triangulation
-                .convex_hull()
-                .filter(|edge| !edge.is_constraint_edge())
-                .map(|edge| edge.rev().face())
-            {
-                f(adjacent_face);
             }
         }
     }
@@ -651,7 +670,7 @@ impl Map {
         &self,
         queries: &mut MapQueries,
         room: Option<MapEntity>,
-        faces: &[FixedFaceHandle<PossiblyOuterTag>],
+        faces: &[FixedFaceHandle<InnerTag>],
     ) -> MapEntity {
         if let Some(room) = room {
             match queries.room(room.id()) {
@@ -680,6 +699,7 @@ impl Default for Map {
             source: None,
             children: EntityHashSet::default(),
             triangulation: Default::default(),
+            size: 0,
         }
     }
 }
@@ -773,12 +793,7 @@ impl Wall {
 }
 
 impl Room {
-    pub fn is_outer(&self) -> bool {
-        debug_assert!(self.faces.is_sorted());
-        self.faces.first().is_some_and(|face| face.is_outer())
-    }
-
-    fn bundle(faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> impl Bundle {
+    fn bundle(faces: Vec<FixedFaceHandle<InnerTag>>) -> impl Bundle {
         Room { faces }
     }
 }
@@ -864,14 +879,40 @@ impl MapQueries<'_, '_> {
             .insert(Wall::bundle(edge, corners, positions, rooms));
     }
 
-    fn spawn_room(&mut self, map: Entity, faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> Entity {
+    fn spawn_room(&mut self, map: Entity, faces: Vec<FixedFaceHandle<InnerTag>>) -> Entity {
         self.commands
             .spawn((Room::bundle(faces), ChildOf(map)))
             .id()
     }
 
-    fn update_room(&mut self, room: Entity, faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) {
+    fn update_room(&mut self, room: Entity, faces: Vec<FixedFaceHandle<InnerTag>>) {
         self.commands.entity(room).insert(Room::bundle(faces));
+    }
+}
+
+impl VertexData {
+    fn new(position: Vec2) -> Self {
+        VertexData {
+            corner: None,
+            position,
+            standalone: false,
+        }
+    }
+
+    fn corner(position: Vec2, corner: MapEntity) -> Self {
+        VertexData {
+            corner: Some(corner),
+            position,
+            standalone: false,
+        }
+    }
+
+    fn standalone(position: Vec2) -> Self {
+        VertexData {
+            corner: None,
+            position,
+            standalone: true,
+        }
     }
 }
 
