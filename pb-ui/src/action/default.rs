@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use pb_engine::pawn::ai::path::PathTaskBundle;
+use pb_engine::pawn::ai::path::PathQuery;
 
 use crate::{
     action::Action,
@@ -43,8 +43,9 @@ fn click_point(
     trigger: Trigger<ClickPoint>,
     mut commands: Commands,
     mut action: Single<&mut DefaultAction>,
+    path_q: PathQuery,
 ) {
-    action.click_point(&mut commands, trigger.point);
+    action.click_point(&mut commands, &path_q, trigger.point);
 }
 
 impl DefaultAction {
@@ -52,12 +53,17 @@ impl DefaultAction {
         *self = DefaultAction::SelectedPawn { pawn };
     }
 
-    fn click_point(&mut self, commands: &mut Commands, to: Vec2) {
+    fn click_point(&mut self, commands: &mut Commands, path_q: &PathQuery, to: Vec2) {
         match *self {
             DefaultAction::Default => (),
             DefaultAction::SelectedPawn { pawn } => {
                 info!("move {pawn} to {to}");
-                commands.spawn(PathTaskBundle::move_to(pawn, to));
+                match path_q.path(pawn, to) {
+                    Some(path) => {
+                        commands.spawn(path);
+                    }
+                    None => warn!("no path found for {pawn} to {to}"),
+                }
             }
         }
     }

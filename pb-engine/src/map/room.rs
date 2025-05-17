@@ -1,6 +1,6 @@
 use bevy::{ecs::entity::EntityHashSet, platform::collections::HashMap, prelude::*};
 use pb_util::event::Inserted;
-use polyanya::{Mesh, Trimesh};
+use polyanya::{Mesh, Path, Trimesh};
 use spade::Triangulation;
 
 use crate::{
@@ -19,7 +19,6 @@ pub struct RoomContents(EntityHashSet);
 
 #[derive(Clone, Debug, Component)]
 pub struct RoomMesh {
-    #[expect(unused)]
     mesh: Mesh,
 }
 
@@ -112,5 +111,11 @@ pub fn debug_draw_room(room_q: Query<&RoomMesh>, mut gizmos: Gizmos) {
                 );
             }
         }
+    }
+}
+
+impl RoomMesh {
+    pub fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
+        self.mesh.path(from, to)
     }
 }
