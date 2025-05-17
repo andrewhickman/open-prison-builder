@@ -1,12 +1,21 @@
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::{ecs::entity::EntityHashSet, platform::collections::HashMap, prelude::*};
 use pb_util::event::Inserted;
 use polyanya::{Mesh, Trimesh};
 use spade::Triangulation;
 
 use crate::{
     map::{Map, Room},
-    root::Root,
+    pawn::Pawn,
+    root::RootQuery,
 };
+
+#[derive(Component, Clone, PartialEq, Eq, Debug)]
+#[relationship(relationship_target = RoomContents)]
+pub struct ContainingRoom(pub Entity);
+
+#[derive(Component, Default, Debug, PartialEq, Eq)]
+#[relationship_target(relationship = ContainingRoom)]
+pub struct RoomContents(EntityHashSet);
 
 #[derive(Clone, Debug, Component)]
 pub struct RoomMesh {
@@ -19,14 +28,12 @@ pub fn update_mesh(
     mut room_e: EventReader<Inserted<Room>>,
     room_q: Query<&Room>,
     map_q: Query<&Map>,
-    parent_q: Query<&ChildOf>,
-    root_q: Query<Has<Root>>,
+    root_q: RootQuery,
 ) -> Result {
     for event in room_e.read() {
-        let root = parent_q.root_ancestor(event.target);
-        if root_q.get(root).unwrap_or_default() {
+        if root_q.is_descendant_of_root(event.target) {
             let room = room_q.get(event.target)?;
-            let map = map_q.get(parent_q.get(event.target)?.parent())?;
+            let map = map_q.get(root_q.parent(event.target)?)?;
 
             let mut vertices = Vec::new();
             let mut triangles = Vec::new();
@@ -49,10 +56,61 @@ pub fn update_mesh(
                 triangles,
             };
 
-            let mesh = Mesh::try_from(trimesh)?;
+            let mut mesh = Mesh::try_from(trimesh)?;
+            mesh.merge_polygons();
+            mesh.bake();
 
             commands.entity(event.target).insert(RoomMesh { mesh });
         }
     }
     Ok(())
+}
+
+pub fn room_replaced(trigger: Trigger<OnReplace, Room>, mut commands: Commands) {
+    commands
+        .entity(trigger.target())
+        .try_remove::<RoomContents>();
+}
+
+pub fn update_containing_room(
+    mut commands: Commands,
+    root_q: RootQuery,
+    map_q: Query<(Entity, &Map)>,
+    item_q: Query<(Entity, &Transform), (With<Pawn>, Without<ContainingRoom>)>,
+) -> Result {
+    'outer: for (item, transform) in &item_q {
+        if root_q.is_descendant_of_root(item) {
+            for (map_id, map) in &map_q {
+                if root_q.is_descendant_of_root(map_id) {
+                    if let Some(room) = map.containing_room(transform.translation.xy()) {
+                        info!("found containing room {room}");
+                        commands.entity(item).insert(ContainingRoom(room));
+                        continue 'outer;
+                    }
+                }
+            }
+
+            warn!("no containing room found for {item}");
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "dev")]
+pub fn debug_draw_room(room_q: Query<&RoomMesh>, mut gizmos: Gizmos) {
+    for room in &room_q {
+        for layer in &room.mesh.layers {
+            for polygon in &layer.polygons {
+                gizmos.linestrip(
+                    polygon
+                        .vertices
+                        .iter()
+                        .cycle()
+                        .take(polygon.vertices.len() + 1)
+                        .map(|&index| layer.vertices[index as usize].coords.extend(0.)),
+                    bevy::color::palettes::tailwind::GREEN_300,
+                );
+            }
+        }
+    }
 }

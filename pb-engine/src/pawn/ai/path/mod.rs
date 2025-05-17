@@ -11,7 +11,7 @@ use bevy::{
 use tokio::sync::oneshot;
 
 use crate::{
-    map::Wall,
+    map::{Map, Wall},
     pawn::{MAX_ANGULAR_VELOCITY, MAX_VELOCITY, Pawn, VISION_RADIUS, ai::Task},
     picking::Layer,
 };
@@ -31,7 +31,7 @@ pub enum PathTask {
 }
 
 #[derive(SystemParam)]
-pub struct PathQuery<'w, 's> {
+pub struct MovementQuery<'w, 's> {
     spatial_query: SpatialQuery<'w, 's>,
     pawn_q: Query<
         'w,
@@ -59,6 +59,12 @@ pub struct PathQuery<'w, 's> {
         ),
     >,
     config: Res<'w, PathQueryConfig>,
+}
+
+#[derive(SystemParam)]
+pub struct PathQuery<'w, 's> {
+    pawn_q: Query<'w, 's, &'static Position>,
+    map_q: Query<'w, 's, &'static Map>,
 }
 
 #[derive(Resource)]
@@ -96,7 +102,7 @@ impl PathTaskBundle {
 pub fn update(
     mut commands: Commands,
     mut task_q: Query<(Entity, &Task, &mut PathTask)>,
-    mut path_q: PathQuery,
+    mut path_q: MovementQuery,
 ) -> Result {
     for (id, task, mut path) in &mut task_q {
         let Some(steps) = path.poll() else {
@@ -119,7 +125,7 @@ pub fn update(
     Ok(())
 }
 
-impl PathQuery<'_, '_> {
+impl MovementQuery<'_, '_> {
     pub fn observe(
         &self,
         entity: Entity,

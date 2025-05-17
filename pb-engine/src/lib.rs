@@ -37,6 +37,7 @@ impl Plugin for PbEnginePlugin {
         app.init_resource::<PathQueryConfig>();
 
         app.add_observer(map::map_inserted)
+            .add_observer(map::room::room_replaced)
             .add_inserted_event::<map::Wall>()
             .add_inserted_event::<map::Room>()
             .add_observer(pawn::ai::task_added)
@@ -44,7 +45,11 @@ impl Plugin for PbEnginePlugin {
             .add_observer(pawn::ai::actor_removed)
             .add_systems(
                 FixedPreUpdate,
-                (map::wall::add_colliders, map::room::update_mesh),
+                (
+                    map::wall::add_colliders,
+                    map::room::update_mesh,
+                    map::room::update_containing_room,
+                ),
             )
             .add_systems(
                 SubstepSchedule,
@@ -58,7 +63,10 @@ impl Plugin for PbEnginePlugin {
             );
 
         #[cfg(feature = "dev")]
-        app.add_systems(Update, pawn::ai::path::debug_draw_path);
+        app.add_systems(
+            Update,
+            (pawn::ai::path::debug_draw_path, map::room::debug_draw_room),
+        );
 
         #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());

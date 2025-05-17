@@ -14,7 +14,8 @@ use bevy::{
     prelude::*,
 };
 use spade::{
-    ConstrainedDelaunayTriangulation, HasPosition, HierarchyHintGenerator, Point2, Triangulation,
+    ConstrainedDelaunayTriangulation, HasPosition, HierarchyHintGenerator, Point2,
+    PositionInTriangulation, Triangulation,
     handles::{
         FixedFaceHandle, FixedUndirectedEdgeHandle, FixedVertexHandle, InnerTag, OUTER_FACE,
     },
@@ -358,6 +359,26 @@ impl Map {
                     edge.to().data().corner.unwrap().id(),
                 )
             })
+    }
+
+    pub fn containing_room(&self, position: Vec2) -> Option<Entity> {
+        match self
+            .triangulation
+            .locate(Point2::new(position.x, position.y))
+        {
+            PositionInTriangulation::OnVertex(vertex) => self
+                .triangulation
+                .vertex(vertex)
+                .out_edge()
+                .and_then(|edge| edge.face().data().room),
+            PositionInTriangulation::OnEdge(edge) => {
+                self.triangulation.directed_edge(edge).face().data().room
+            }
+            PositionInTriangulation::OnFace(face) => self.triangulation.face(face).data().room,
+            PositionInTriangulation::OutsideOfConvexHull(_)
+            | PositionInTriangulation::NoTriangulation => None,
+        }
+        .map(|entity| entity.id())
     }
 
     pub fn insert_corner(&mut self, queries: &mut MapQueries, corner: CornerDef) -> Result<Entity> {
