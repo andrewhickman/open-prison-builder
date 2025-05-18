@@ -11,10 +11,7 @@ use bevy::{
 use tokio::sync::oneshot;
 
 use crate::{
-    map::{
-        Wall,
-        room::{ContainingRoom, RoomMesh},
-    },
+    map::{Wall, mesh::MapMesh, room::ContainingRoom},
     pawn::{MAX_ANGULAR_VELOCITY, MAX_VELOCITY, Pawn, VISION_RADIUS, ai::Task},
     picking::Layer,
 };
@@ -67,7 +64,7 @@ pub struct MovementQuery<'w, 's> {
 #[derive(SystemParam)]
 pub struct PathQuery<'w, 's> {
     pawn_q: Query<'w, 's, (&'static Position, &'static ContainingRoom)>,
-    room_q: Query<'w, 's, &'static RoomMesh>,
+    mesh_q: Query<'w, 's, &'static MapMesh>,
 }
 
 #[derive(Resource)]
@@ -130,13 +127,16 @@ pub fn update(
 
 impl PathQuery<'_, '_> {
     pub fn path(&self, entity: Entity, to: Vec2) -> Option<PathTaskBundle> {
-        let (pos, room) = self.pawn_q.get(entity).ok()?;
-        let room = self.room_q.get(room.0).ok()?;
-        let path = room.path(pos.0, to)?;
-        Some(PathTaskBundle {
-            task: Task::new(entity),
-            path: PathTask::Running(path.path.into_iter().collect()),
-        })
+        let (pos, _) = self.pawn_q.get(entity).ok()?;
+        for mesh in &self.mesh_q {
+            if let Some(path) = mesh.path(pos.0, to) {
+                return Some(PathTaskBundle {
+                    task: Task::new(entity),
+                    path: PathTask::Running(path.path.into_iter().collect()),
+                });
+            }
+        }
+        None
     }
 }
 

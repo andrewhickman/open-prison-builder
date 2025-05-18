@@ -6,7 +6,7 @@ use bevy::{
     prelude::*,
 };
 use polyanya::{
-    Mesh, Triangulation,
+    Mesh, Path, Triangulation,
     geo::{Coord, LineString, Polygon},
 };
 use smallvec::SmallVec;
@@ -15,14 +15,17 @@ use spade::{
     handles::{DirectedEdgeHandle, FixedDirectedEdgeHandle, FixedVertexHandle},
 };
 
-use crate::map::{Corner, FaceData, Map, UndirectedEdgeData, VertexData, wall};
+use crate::{
+    map::{Corner, FaceData, Map, UndirectedEdgeData, VertexData, wall},
+    pawn,
+};
 
 #[derive(Debug, Default, Component)]
 pub struct MapMesh {
     mesh: Mesh,
 }
 
-const RADIUS: f32 = wall::RADIUS/* + pawn::RADIUS*/;
+const RADIUS: f32 = wall::RADIUS + pawn::RADIUS;
 
 #[derive(Debug)]
 struct CornerGeometry {
@@ -98,6 +101,12 @@ pub fn update_mesh(
     Ok(())
 }
 
+impl MapMesh {
+    pub fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
+        self.mesh.path(from, to)
+    }
+}
+
 #[cfg(feature = "dev")]
 pub fn debug_draw_map_mesh(map_q: Query<&MapMesh>, mut gizmos: Gizmos) {
     for map in &map_q {
@@ -132,29 +141,33 @@ fn interior_polygon(
     let mut coords = Vec::new();
 
     let mut current = triangulation.directed_edge(start);
-    coords.push(edge_position(current, corner_geos));
     loop {
-        current = next_edge(current);
-        coords.push(edge_position(current, corner_geos));
+        let next = next_edge(current);
+        add_corner_coords(&mut coords, current, next, corner_geos);
 
-        if !edges.remove(&current.fix()) {
-            debug_assert_eq!(current.fix(), start);
+        if !edges.remove(&next.fix()) {
+            debug_assert_eq!(next.fix(), start);
             break;
         }
+
+        current = next;
     }
 
     Ok(LineString::new(coords))
 }
 
-fn edge_position(
-    edge: DirectedEdgeHandle<'_, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
+fn add_corner_coords(
+    coords: &mut Vec<Coord<f32>>,
+    start: DirectedEdgeHandle<'_, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
+    end: DirectedEdgeHandle<'_, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
     corner_geos: &HashMap<FixedVertexHandle, CornerGeometry>,
-) -> Coord<f32> {
-    corner_geos[&edge.to().fix()]
-        .wall_intersection(edge.as_undirected().data().data().wall.unwrap().id())
-        .unwrap()
-        .to_array()
-        .into()
+) {
+    assert_eq!(start.to(), end.from());
+    let corner = &corner_geos[&start.to().fix()];
+    let start_wall = start.as_undirected().data().data().wall.unwrap().id();
+    let end_wall = end.as_undirected().data().data().wall.unwrap().id();
+
+    corner.wall_intersections(coords, start_wall, end_wall);
 }
 
 fn next_edge<'a>(
@@ -207,13 +220,23 @@ impl CornerGeometry {
         CornerGeometry { pos: start, points }
     }
 
-    fn wall_intersection(&self, wall: Entity) -> Option<Vec2> {
-        let index = self
+    fn wall_intersections(&self, result: &mut Vec<Coord<f32>>, start: Entity, end: Entity) {
+        let start = self
             .points
             .iter()
-            .position(|p| p.kind == CornerGeometryPointKind::Edge(wall))?;
+            .position(|p| p.kind == CornerGeometryPointKind::Edge(start))
+            .unwrap();
+        let end = self
+            .points
+            .iter()
+            .position(|p| p.kind == CornerGeometryPointKind::Edge(end))
+            .unwrap();
 
-        Some(self.pos + wrapping_idx(&self.points, index, 1).point)
+        let mut i = (start + 1) % self.points.len();
+        while i != end {
+            result.push((self.pos + self.points[i].point).to_array().into());
+            i = (i + 1) % self.points.len();
+        }
     }
 }
 

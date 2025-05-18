@@ -1,5 +1,4 @@
 use bevy::{ecs::entity::EntityHashSet, prelude::*};
-use polyanya::{Mesh, Path};
 
 use crate::{
     map::{Map, Room},
@@ -14,11 +13,6 @@ pub struct ContainingRoom(pub Entity);
 #[derive(Component, Default, Debug, PartialEq, Eq)]
 #[relationship_target(relationship = ContainingRoom)]
 pub struct RoomContents(EntityHashSet);
-
-#[derive(Clone, Debug, Component)]
-pub struct RoomMesh {
-    mesh: Mesh,
-}
 
 pub fn room_replaced(trigger: Trigger<OnReplace, Room>, mut commands: Commands) {
     commands
@@ -48,10 +42,4 @@ pub fn update_containing_room(
         }
     }
     Ok(())
-}
-
-impl RoomMesh {
-    pub fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
-        self.mesh.path(from, to)
-    }
 }
