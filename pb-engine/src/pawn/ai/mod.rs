@@ -13,8 +13,12 @@ pub struct Actor {
 }
 
 impl Task {
-    fn new(actor: Entity) -> Self {
+    pub fn new(actor: Entity) -> Self {
         Task { actor }
+    }
+
+    pub fn actor(&self) -> Entity {
+        self.actor
     }
 }
 

@@ -105,24 +105,9 @@ impl MapMesh {
     pub fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
         self.mesh.path(from, to)
     }
-}
 
-#[cfg(feature = "dev")]
-pub fn debug_draw_map_mesh(map_q: Query<&MapMesh>, mut gizmos: Gizmos) {
-    for map in &map_q {
-        for layer in &map.mesh.layers {
-            for polygon in &layer.polygons {
-                gizmos.linestrip(
-                    polygon
-                        .vertices
-                        .iter()
-                        .cycle()
-                        .take(polygon.vertices.len() + 1)
-                        .map(|&index| layer.vertices[index as usize].coords.extend(0.)),
-                    bevy::color::palettes::tailwind::GREEN_300,
-                );
-            }
-        }
+    pub fn mesh(&self) -> &Mesh {
+        &self.mesh
     }
 }
 

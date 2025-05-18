@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
+pub mod dev;
 pub mod map;
 pub mod pawn;
 pub mod picking;
@@ -11,6 +12,7 @@ use avian2d::{
     prelude::*,
 };
 use bevy::prelude::*;
+use dev::DevSettings;
 use pawn::{Pawn, ai::path::PathQueryConfig};
 use pb_util::event::AddComponentEvents;
 use root::Root;
@@ -34,7 +36,8 @@ impl Plugin for PbEnginePlugin {
 
         app.insert_resource(Gravity::ZERO);
 
-        app.init_resource::<PathQueryConfig>();
+        app.init_resource::<PathQueryConfig>()
+            .init_resource::<DevSettings>();
 
         app.add_observer(map::map_inserted)
             .add_observer(map::room::room_replaced)
@@ -52,24 +55,22 @@ impl Plugin for PbEnginePlugin {
                 ),
             )
             .add_systems(
+                FixedUpdate,
+                (pawn::ai::path::update, pawn::movement).chain(),
+            )
+            .add_systems(
                 SubstepSchedule,
                 pawn::clamp_velocity
                     .after(SubstepSolverSet::SolveConstraints)
                     .before(IntegrationSet::Position),
             )
             .add_systems(
-                FixedUpdate,
-                (pawn::ai::path::update, pawn::movement).chain(),
+                Update,
+                (
+                    dev::draw_paths.run_if(dev::draw_paths_condition),
+                    dev::draw_meshes.run_if(dev::draw_meshes_condition),
+                ),
             );
-
-        #[cfg(feature = "dev")]
-        app.add_systems(
-            Update,
-            (
-                pawn::ai::path::debug_draw_path,
-                map::mesh::debug_draw_map_mesh,
-            ),
-        );
 
         #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());
