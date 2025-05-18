@@ -15,17 +15,14 @@ use spade::{
     handles::{DirectedEdgeHandle, FixedDirectedEdgeHandle, FixedVertexHandle},
 };
 
-use crate::{
-    map::{Corner, FaceData, Map, UndirectedEdgeData, VertexData, wall},
-    pawn,
-};
+use crate::map::{Corner, FaceData, Map, UndirectedEdgeData, VertexData, wall};
 
 #[derive(Debug, Default, Component)]
 pub struct MapMesh {
     mesh: Mesh,
 }
 
-const RADIUS: f32 = wall::RADIUS + pawn::RADIUS;
+const RADIUS: f32 = wall::RADIUS/* + pawn::RADIUS*/;
 
 #[derive(Debug)]
 struct CornerGeometry {
@@ -45,7 +42,7 @@ enum CornerGeometryPointKind {
     Corner,
 }
 
-pub fn update_geometry(
+pub fn update_mesh(
     mut map_q: Query<(&Map, &mut MapMesh), Changed<Map>>,
     corner_q: Query<&Corner>,
 ) -> Result {
@@ -99,6 +96,25 @@ pub fn update_geometry(
     }
 
     Ok(())
+}
+
+#[cfg(feature = "dev")]
+pub fn debug_draw_map_mesh(map_q: Query<&MapMesh>, mut gizmos: Gizmos) {
+    for map in &map_q {
+        for layer in &map.mesh.layers {
+            for polygon in &layer.polygons {
+                gizmos.linestrip(
+                    polygon
+                        .vertices
+                        .iter()
+                        .cycle()
+                        .take(polygon.vertices.len() + 1)
+                        .map(|&index| layer.vertices[index as usize].coords.extend(0.)),
+                    bevy::color::palettes::tailwind::GREEN_300,
+                );
+            }
+        }
+    }
 }
 
 fn interior_polygon(

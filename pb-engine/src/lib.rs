@@ -47,7 +47,7 @@ impl Plugin for PbEnginePlugin {
                 FixedPreUpdate,
                 (
                     map::wall::add_colliders,
-                    map::room::update_mesh,
+                    map::mesh::update_mesh,
                     map::room::update_containing_room,
                 ),
             )
@@ -65,7 +65,10 @@ impl Plugin for PbEnginePlugin {
         #[cfg(feature = "dev")]
         app.add_systems(
             Update,
-            (pawn::ai::path::debug_draw_path, map::room::debug_draw_room),
+            (
+                pawn::ai::path::debug_draw_path,
+                map::mesh::debug_draw_map_mesh,
+            ),
         );
 
         #[cfg(feature = "dev")]
