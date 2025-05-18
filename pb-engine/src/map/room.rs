@@ -1,11 +1,12 @@
+use avian2d::parry::shape::Capsule;
 use bevy::{ecs::entity::EntityHashSet, platform::collections::HashMap, prelude::*};
 use pb_util::event::Inserted;
-use polyanya::{Mesh, Path, Trimesh};
-use spade::Triangulation;
+use polyanya::{Mesh, Path, Triangulation, Trimesh};
+use spade::Triangulation as _;
 
 use crate::{
-    map::{Map, Room},
-    pawn::Pawn,
+    map::{Map, Room, wall},
+    pawn::{self, Pawn},
     root::RootQuery,
 };
 
@@ -55,7 +56,30 @@ pub fn update_mesh(
                 triangles,
             };
 
-            let mut mesh = Mesh::try_from(trimesh)?;
+            let mesh = Mesh::try_from(trimesh)?;
+            let mut triangulation = Triangulation::from_mesh(&mesh, 0);
+
+            triangulation.set_agent_radius(wall::RADIUS + pawn::RADIUS);
+            // triangulation.set_agent_radius_simplification(0.05);
+            triangulation.set_agent_radius_segments(3);
+
+            triangulation.add_obstacles(
+                room.faces
+                    .iter()
+                    .flat_map(|&face| map.triangulation.face(face).adjacent_edges())
+                    .filter(|edge| edge.is_constraint_edge())
+                    .map(|edge| {
+                        let start = edge.from().data().position;
+                        let end = edge.to().data().position;
+                        Capsule::new(start.into(), end.into(), wall::RADIUS)
+                            .to_polyline(5)
+                            .into_iter()
+                            .map(Vec2::from)
+                    }),
+            );
+
+            let mut mesh = triangulation.as_navmesh();
+
             mesh.merge_polygons();
             mesh.bake();
 

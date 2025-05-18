@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     EngineState,
-    map::{Corner, Map, Room, Wall},
+    map::{Corner, Map, Room, Wall, mesh::MapMesh},
     pawn::{Pawn, PawnBundle},
     root::Root,
 };
@@ -186,7 +186,7 @@ impl SaveModel {
 
                 world
                     .entity_mut(map_id)
-                    .insert(Map::from_model(map, &mut entity_map)?);
+                    .insert((Map::from_model(map, &mut entity_map)?, MapMesh::default()));
             }
 
             Ok(())

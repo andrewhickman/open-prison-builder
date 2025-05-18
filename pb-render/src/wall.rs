@@ -337,6 +337,46 @@ pub fn update_geometry(
     Ok(())
 }
 
+impl VisibleMap {
+    pub fn id(&self) -> Option<Entity> {
+        self.id
+    }
+
+    pub fn source(&self) -> Option<Entity> {
+        self.source
+    }
+
+    pub fn set(&mut self, id: Entity, source: Option<Entity>) {
+        self.id = Some(id);
+        self.source = source;
+    }
+
+    pub fn clear(&mut self) {
+        self.id = None;
+        self.source = None;
+    }
+}
+
+impl MapRenderMode {
+    pub fn material(self) -> MeshMaterial2d<WallMaterial> {
+        match self {
+            MapRenderMode::Added => MeshMaterial2d(ADDED_MATERIAL.clone()),
+            MapRenderMode::Visible => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
+            MapRenderMode::Removed => MeshMaterial2d(REMOVED_MATERIAL.clone()),
+            MapRenderMode::Hidden => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
+        }
+    }
+
+    pub fn visibility(self) -> Visibility {
+        match self {
+            MapRenderMode::Added | MapRenderMode::Visible | MapRenderMode::Removed => {
+                Visibility::Visible
+            }
+            MapRenderMode::Hidden => Visibility::Hidden,
+        }
+    }
+}
+
 impl CornerGeometry {
     fn new<'a>(start: &Corner, walls: impl Iterator<Item = (Entity, &'a Corner)>) -> Self {
         let start = start.position();
@@ -422,46 +462,6 @@ impl CornerGeometry {
                 .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
                 .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs),
             )
-        }
-    }
-}
-
-impl VisibleMap {
-    pub fn id(&self) -> Option<Entity> {
-        self.id
-    }
-
-    pub fn source(&self) -> Option<Entity> {
-        self.source
-    }
-
-    pub fn set(&mut self, id: Entity, source: Option<Entity>) {
-        self.id = Some(id);
-        self.source = source;
-    }
-
-    pub fn clear(&mut self) {
-        self.id = None;
-        self.source = None;
-    }
-}
-
-impl MapRenderMode {
-    pub fn material(self) -> MeshMaterial2d<WallMaterial> {
-        match self {
-            MapRenderMode::Added => MeshMaterial2d(ADDED_MATERIAL.clone()),
-            MapRenderMode::Visible => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
-            MapRenderMode::Removed => MeshMaterial2d(REMOVED_MATERIAL.clone()),
-            MapRenderMode::Hidden => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
-        }
-    }
-
-    pub fn visibility(self) -> Visibility {
-        match self {
-            MapRenderMode::Added | MapRenderMode::Visible | MapRenderMode::Removed => {
-                Visibility::Visible
-            }
-            MapRenderMode::Hidden => Visibility::Hidden,
         }
     }
 }

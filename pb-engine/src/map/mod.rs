@@ -1,5 +1,4 @@
-#![allow(clippy::type_complexity, clippy::too_many_arguments)]
-
+pub mod mesh;
 pub mod room;
 pub mod wall;
 
@@ -23,7 +22,7 @@ use spade::{
 
 use crate::save::MapModel;
 
-pub const GRID_SIZE: f32 = 16.0;
+pub const GRID_SIZE: f32 = 4.0;
 
 #[derive(Component)]
 #[require(Transform, Visibility)]

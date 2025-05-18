@@ -1,0 +1,256 @@
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, SQRT_2, TAU};
+
+use bevy::{
+    math::FloatOrd,
+    platform::collections::{HashMap, HashSet},
+    prelude::*,
+};
+use polyanya::{
+    Mesh, Triangulation,
+    geo::{Coord, LineString, Polygon},
+};
+use smallvec::SmallVec;
+use spade::{
+    CdtEdge, ConstrainedDelaunayTriangulation, HierarchyHintGenerator, Triangulation as _,
+    handles::{DirectedEdgeHandle, FixedDirectedEdgeHandle, FixedVertexHandle},
+};
+
+use crate::{
+    map::{Corner, FaceData, Map, UndirectedEdgeData, VertexData, wall},
+    pawn,
+};
+
+#[derive(Debug, Default, Component)]
+pub struct MapMesh {
+    mesh: Mesh,
+}
+
+const RADIUS: f32 = wall::RADIUS + pawn::RADIUS;
+
+#[derive(Debug)]
+struct CornerGeometry {
+    pos: Vec2,
+    points: SmallVec<[CornerGeometryPoint; 4]>,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+struct CornerGeometryPoint {
+    kind: CornerGeometryPointKind,
+    point: Vec2,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum CornerGeometryPointKind {
+    Edge(Entity),
+    Corner,
+}
+
+pub fn update_geometry(
+    mut map_q: Query<(&Map, &mut MapMesh), Changed<Map>>,
+    corner_q: Query<&Corner>,
+) -> Result {
+    for (map, mut map_mesh) in &mut map_q {
+        let corner_geos: HashMap<FixedVertexHandle, CornerGeometry> = map
+            .corners()
+            .map(|entity| {
+                let corner = corner_q.get(entity.id())?;
+                let geometry = CornerGeometry::new(
+                    corner,
+                    map.corner_walls(corner).filter_map(|(wall, end_corner)| {
+                        corner_q
+                            .get(end_corner)
+                            .ok()
+                            .map(|end_corner| (wall, end_corner))
+                    }),
+                );
+
+                Ok((corner.vertex, geometry))
+            })
+            .collect::<Result<_>>()?;
+
+        let mut edges: HashSet<FixedDirectedEdgeHandle> = map
+            .triangulation
+            .directed_edges()
+            .filter(|edge| edge.is_constraint_edge())
+            .map(|edge| edge.fix())
+            .collect();
+
+        let exterior: LineString<f32> = map
+            .triangulation
+            .convex_hull()
+            .map(|edge| edge.from().data().position.to_array())
+            .collect();
+        let mut interiors = Vec::new();
+
+        while let Some(&start) = edges.iter().next() {
+            edges.remove(&start);
+            interiors.push(interior_polygon(
+                &mut edges,
+                &map.triangulation,
+                &corner_geos,
+                start,
+            )?);
+        }
+
+        let poly = Polygon::new(exterior, interiors);
+        let triangulation = Triangulation::from_geo_polygon(poly);
+        let mesh = triangulation.as_navmesh();
+        map_mesh.mesh = mesh;
+    }
+
+    Ok(())
+}
+
+fn interior_polygon(
+    edges: &mut HashSet<FixedDirectedEdgeHandle>,
+    triangulation: &ConstrainedDelaunayTriangulation<
+        VertexData,
+        (),
+        UndirectedEdgeData,
+        FaceData,
+        HierarchyHintGenerator<f32>,
+    >,
+    corner_geos: &HashMap<FixedVertexHandle, CornerGeometry>,
+    start: FixedDirectedEdgeHandle,
+) -> Result<LineString<f32>> {
+    let mut coords = Vec::new();
+
+    let mut current = triangulation.directed_edge(start);
+    coords.push(edge_position(current, corner_geos));
+    loop {
+        current = next_edge(current);
+        coords.push(edge_position(current, corner_geos));
+
+        if !edges.remove(&current.fix()) {
+            debug_assert_eq!(current.fix(), start);
+            break;
+        }
+    }
+
+    Ok(LineString::new(coords))
+}
+
+fn edge_position(
+    edge: DirectedEdgeHandle<'_, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
+    corner_geos: &HashMap<FixedVertexHandle, CornerGeometry>,
+) -> Coord<f32> {
+    corner_geos[&edge.to().fix()]
+        .wall_intersection(edge.as_undirected().data().data().wall.unwrap().id())
+        .unwrap()
+        .to_array()
+        .into()
+}
+
+fn next_edge<'a>(
+    start: DirectedEdgeHandle<'a, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
+) -> DirectedEdgeHandle<'a, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData> {
+    let mut iter = start.rev();
+    loop {
+        iter = iter.ccw();
+        if iter.is_constraint_edge() {
+            return iter;
+        }
+    }
+}
+
+impl CornerGeometry {
+    fn new<'a>(start: &Corner, walls: impl Iterator<Item = (Entity, &'a Corner)>) -> Self {
+        let start = start.position();
+
+        let mut angles: SmallVec<[(Option<Entity>, f32); 4]> = walls
+            .map(|(id, end)| (Some(id), (end.position() - start).to_angle()))
+            .collect();
+        angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
+
+        let mut points: SmallVec<[CornerGeometryPoint; 4]> = default();
+        for (index, &(wall, a2)) in angles.iter().enumerate() {
+            if index == 0 {
+                let a1 = wrapping_idx(&angles, index, -1).1;
+                points.extend(corner_intersections(a1, a2).map(CornerGeometryPoint::corner));
+            }
+
+            if let Some(wall) = wall {
+                points.push(CornerGeometryPoint::wall(wall));
+            }
+
+            if index != (angles.len() - 1) {
+                let a3 = wrapping_idx(&angles, index, 1).1;
+                points.extend(corner_intersections(a2, a3).map(CornerGeometryPoint::corner));
+            }
+        }
+
+        if points.is_empty() {
+            points.extend_from_slice(&[
+                CornerGeometryPoint::corner(right_angle_intersection(FRAC_PI_4)),
+                CornerGeometryPoint::corner(right_angle_intersection(3. * FRAC_PI_4)),
+                CornerGeometryPoint::corner(right_angle_intersection(5. * FRAC_PI_4)),
+                CornerGeometryPoint::corner(right_angle_intersection(7. * FRAC_PI_4)),
+            ]);
+        }
+
+        CornerGeometry { pos: start, points }
+    }
+
+    fn wall_intersection(&self, wall: Entity) -> Option<Vec2> {
+        let index = self
+            .points
+            .iter()
+            .position(|p| p.kind == CornerGeometryPointKind::Edge(wall))?;
+
+        Some(self.pos + wrapping_idx(&self.points, index, 1).point)
+    }
+}
+
+impl CornerGeometryPoint {
+    fn wall(wall: Entity) -> Self {
+        CornerGeometryPoint {
+            point: Vec2::ZERO,
+            kind: CornerGeometryPointKind::Edge(wall),
+        }
+    }
+
+    fn corner(point: Vec2) -> Self {
+        CornerGeometryPoint {
+            point,
+            kind: CornerGeometryPointKind::Corner,
+        }
+    }
+}
+
+fn corner_intersections(a1: f32, a2: f32) -> impl Iterator<Item = Vec2> {
+    let da = angle_delta(a1, a2);
+
+    let mut result = SmallVec::<[Vec2; 2]>::new();
+
+    if da > 3. * FRAC_PI_2 {
+        result.extend_from_slice(&[
+            right_angle_intersection(a1 + 3. * FRAC_PI_4),
+            right_angle_intersection(a2 - 3. * FRAC_PI_4),
+        ]);
+    } else {
+        let mid = a1 + da / 2.;
+        result.push(angle_intersection(mid, da / 2.));
+    }
+
+    result.into_iter()
+}
+
+fn right_angle_intersection(a: f32) -> Vec2 {
+    Vec2::from_angle(a) * RADIUS * SQRT_2
+}
+
+fn angle_intersection(mid: f32, da: f32) -> Vec2 {
+    Vec2::from_angle(mid) * RADIUS / f32::sin(da)
+}
+
+fn angle_delta(a1: f32, a2: f32) -> f32 {
+    if a1 == a2 {
+        TAU
+    } else {
+        (a2 - a1).rem_euclid(TAU)
+    }
+}
+
+fn wrapping_idx<T>(slice: &[T], index: usize, offset: isize) -> &T {
+    &slice[(index as isize + offset).rem_euclid(slice.len() as isize) as usize]
+}
