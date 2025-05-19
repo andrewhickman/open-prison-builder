@@ -171,8 +171,8 @@ impl CornerGeometry {
     fn new<'a>(start: &Corner, walls: impl Iterator<Item = (Entity, &'a Corner)>) -> Self {
         let start = start.position();
 
-        let mut angles: SmallVec<[(Option<Entity>, f32); 4]> = walls
-            .map(|(id, end)| (Some(id), (end.position() - start).to_angle()))
+        let mut angles: SmallVec<[(Entity, f32); 4]> = walls
+            .map(|(id, end)| (id, (end.position() - start).to_angle()))
             .collect();
         angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
 
@@ -183,9 +183,7 @@ impl CornerGeometry {
                 points.extend(corner_intersections(a1, a2).map(CornerGeometryPoint::corner));
             }
 
-            if let Some(wall) = wall {
-                points.push(CornerGeometryPoint::wall(wall));
-            }
+            points.push(CornerGeometryPoint::wall(wall));
 
             if index != (angles.len() - 1) {
                 let a3 = wrapping_idx(&angles, index, 1).1;
