@@ -13,10 +13,11 @@ use bevy::{
     prelude::*,
 };
 use spade::{
-    ConstrainedDelaunayTriangulation, HasPosition, HierarchyHintGenerator, Point2,
+    CdtEdge, ConstrainedDelaunayTriangulation, HasPosition, HierarchyHintGenerator, Point2,
     PositionInTriangulation, Triangulation,
     handles::{
-        FixedFaceHandle, FixedUndirectedEdgeHandle, FixedVertexHandle, InnerTag, OUTER_FACE,
+        FaceHandle, FixedFaceHandle, FixedUndirectedEdgeHandle, FixedVertexHandle, OUTER_FACE,
+        PossiblyOuterTag,
     },
 };
 
@@ -61,7 +62,7 @@ pub struct Wall {
 #[derive(Clone, Debug, Component)]
 #[require(Transform, Visibility)]
 pub struct Room {
-    faces: Vec<FixedFaceHandle<InnerTag>>,
+    faces: Vec<FixedFaceHandle<PossiblyOuterTag>>,
 }
 
 #[derive(SystemParam)]
@@ -338,7 +339,7 @@ impl Map {
 
     pub fn rooms(&self) -> impl Iterator<Item = MapEntity> + '_ {
         self.triangulation
-            .inner_faces()
+            .all_faces()
             .filter_map(|face| face.data().room)
     }
 
@@ -538,7 +539,7 @@ impl Map {
         let mut visited_faces = HashSet::new();
         let mut visited_rooms = EntityHashSet::default();
 
-        for face in self.triangulation.fixed_inner_faces() {
+        for face in self.triangulation.fixed_all_faces() {
             if !visited_faces.insert(face) {
                 continue;
             }
@@ -548,16 +549,9 @@ impl Map {
             let mut room = None;
 
             while let Some(face) = open.pop() {
-                for adjacent_face in self
-                    .triangulation
-                    .face(face)
-                    .adjacent_edges()
-                    .into_iter()
-                    .filter(|edge| !edge.is_constraint_edge())
-                    .flat_map(|edge| edge.rev().face().as_inner())
-                {
+                self.for_each_adjacent_face(face, |adjacent_face| {
                     if !visited_faces.insert(adjacent_face.fix()) {
-                        continue;
+                        return;
                     }
 
                     open.push(adjacent_face.fix());
@@ -570,7 +564,7 @@ impl Map {
                             }
                         }
                     }
-                }
+                });
             }
 
             faces.sort_unstable();
@@ -622,6 +616,36 @@ impl Map {
                     .undirected_edge_data_mut(edge.fix())
                     .data_mut()
                     .wall = None;
+            }
+        }
+    }
+
+    fn for_each_adjacent_face(
+        &self,
+        face: FixedFaceHandle<PossiblyOuterTag>,
+        mut f: impl FnMut(
+            FaceHandle<PossiblyOuterTag, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
+        ),
+    ) {
+        if let Some(inner_face) = face.as_inner() {
+            for adjacent_face in self
+                .triangulation
+                .face(inner_face)
+                .adjacent_edges()
+                .into_iter()
+                .filter(|edge| !edge.is_constraint_edge())
+                .map(|edge| edge.rev().face())
+            {
+                f(adjacent_face);
+            }
+        } else {
+            for adjacent_face in self
+                .triangulation
+                .convex_hull()
+                .filter(|edge| !edge.is_constraint_edge())
+                .map(|edge| edge.rev().face())
+            {
+                f(adjacent_face);
             }
         }
     }
@@ -690,7 +714,7 @@ impl Map {
         &self,
         queries: &mut MapQueries,
         room: Option<MapEntity>,
-        faces: &[FixedFaceHandle<InnerTag>],
+        faces: &[FixedFaceHandle<PossiblyOuterTag>],
     ) -> MapEntity {
         if let Some(room) = room {
             match queries.room(room.id()) {
@@ -813,7 +837,12 @@ impl Wall {
 }
 
 impl Room {
-    fn bundle(faces: Vec<FixedFaceHandle<InnerTag>>) -> impl Bundle {
+    pub fn is_outer(&self) -> bool {
+        debug_assert!(self.faces.is_sorted());
+        self.faces.first().is_some_and(|face| face.is_outer())
+    }
+
+    fn bundle(faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> impl Bundle {
         Room { faces }
     }
 }
@@ -899,13 +928,13 @@ impl MapQueries<'_, '_> {
             .insert(Wall::bundle(edge, corners, positions, rooms));
     }
 
-    fn spawn_room(&mut self, map: Entity, faces: Vec<FixedFaceHandle<InnerTag>>) -> Entity {
+    fn spawn_room(&mut self, map: Entity, faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> Entity {
         self.commands
             .spawn((Room::bundle(faces), ChildOf(map)))
             .id()
     }
 
-    fn update_room(&mut self, room: Entity, faces: Vec<FixedFaceHandle<InnerTag>>) {
+    fn update_room(&mut self, room: Entity, faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) {
         self.commands.entity(room).insert(Room::bundle(faces));
     }
 }
