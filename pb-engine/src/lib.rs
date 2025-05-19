@@ -67,8 +67,8 @@ impl Plugin for PbEnginePlugin {
             .add_systems(
                 Update,
                 (
-                    dev::draw_paths.run_if(dev::draw_paths_condition),
                     dev::draw_meshes.run_if(dev::draw_meshes_condition),
+                    dev::draw_paths.run_if(dev::draw_paths_condition),
                 ),
             );
 

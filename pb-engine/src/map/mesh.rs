@@ -7,7 +7,10 @@ use bevy::{
 };
 use polyanya::{
     Mesh, Path, Triangulation,
-    geo::{Coord, LineString, Polygon},
+    geo::{
+        Coord, LineString, Polygon,
+        winding_order::{Winding, WindingOrder},
+    },
 };
 use smallvec::SmallVec;
 use spade::{
@@ -75,27 +78,46 @@ pub fn update_mesh(
             .map(|edge| edge.fix())
             .collect();
 
-        let exterior: LineString<f32> = map
-            .triangulation
-            .convex_hull()
-            .map(|edge| edge.from().data().position.to_array())
-            .collect();
-        let mut interiors = Vec::new();
+        let mut polygons: HashMap<Vec<Entity>, (Option<LineString<f32>>, Vec<LineString<f32>>)> =
+            default();
 
         while let Some(&start) = edges.iter().next() {
             edges.remove(&start);
-            interiors.push(interior_polygon(
-                &mut edges,
-                &map.triangulation,
-                &corner_geos,
-                start,
-            )?);
+
+            let (line_string, rooms) =
+                interior_polygon(&mut edges, &map.triangulation, &corner_geos, start)?;
+
+            let (exterior, interior) = polygons.entry(rooms).or_default();
+            match line_string.winding_order().unwrap() {
+                WindingOrder::CounterClockwise => interior.push(line_string),
+                WindingOrder::Clockwise => {
+                    assert!(exterior.is_none());
+                    *exterior = Some(line_string);
+                }
+            }
         }
 
-        let poly = Polygon::new(exterior, interiors);
-        let triangulation = Triangulation::from_geo_polygon(poly);
-        let mesh = triangulation.as_navmesh();
-        map_mesh.mesh = mesh;
+        let layers = polygons
+            .into_values()
+            .map(|(exterior, interiors)| {
+                let exterior = match exterior {
+                    Some(exterior) => exterior,
+                    None => map
+                        .triangulation
+                        .convex_hull()
+                        .map(|edge| edge.from().data().position.to_array())
+                        .collect(),
+                };
+
+                let polygon = Polygon::new(exterior, interiors);
+                let triangulation = Triangulation::from_geo_polygon(polygon);
+                triangulation.as_layer()
+            })
+            .collect();
+        map_mesh.mesh = Mesh {
+            layers,
+            ..default()
+        };
     }
 
     Ok(())
@@ -122,13 +144,16 @@ fn interior_polygon(
     >,
     corner_geos: &HashMap<FixedVertexHandle, CornerGeometry>,
     start: FixedDirectedEdgeHandle,
-) -> Result<LineString<f32>> {
+) -> Result<(LineString<f32>, Vec<Entity>)> {
     let mut coords = Vec::new();
+    let mut rooms = Vec::new();
 
     let mut current = triangulation.directed_edge(start);
+    rooms.push(current.rev().face().data().room.unwrap().id());
     loop {
         let next = next_edge(current);
         add_corner_coords(&mut coords, current, next, corner_geos);
+        rooms.push(next.rev().face().data().room.unwrap().id());
 
         if !edges.remove(&next.fix()) {
             debug_assert_eq!(next.fix(), start);
@@ -138,7 +163,13 @@ fn interior_polygon(
         current = next;
     }
 
-    Ok(LineString::new(coords))
+    rooms.sort_unstable();
+    rooms.dedup();
+
+    let mut line_string = LineString::new(coords);
+    line_string.close();
+
+    Ok((line_string, rooms))
 }
 
 fn add_corner_coords(
@@ -189,15 +220,6 @@ impl CornerGeometry {
                 let a3 = wrapping_idx(&angles, index, 1).1;
                 points.extend(corner_intersections(a2, a3).map(CornerGeometryPoint::corner));
             }
-        }
-
-        if points.is_empty() {
-            points.extend_from_slice(&[
-                CornerGeometryPoint::corner(right_angle_intersection(FRAC_PI_4)),
-                CornerGeometryPoint::corner(right_angle_intersection(3. * FRAC_PI_4)),
-                CornerGeometryPoint::corner(right_angle_intersection(5. * FRAC_PI_4)),
-                CornerGeometryPoint::corner(right_angle_intersection(7. * FRAC_PI_4)),
-            ]);
         }
 
         CornerGeometry { pos: start, points }
