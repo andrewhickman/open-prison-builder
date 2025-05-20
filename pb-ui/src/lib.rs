@@ -1,7 +1,6 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
 mod action;
-mod assets;
 mod autosave;
 mod input;
 mod layout;
@@ -9,6 +8,7 @@ mod loading;
 mod menu;
 mod message;
 mod ribbon;
+mod startup;
 mod theme;
 mod widget;
 
@@ -21,7 +21,6 @@ use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
 use input::{camera::CameraState, cancel::CancelStack};
 use loading::LoadingState;
-use pb_util::set_state;
 use ribbon::RibbonState;
 
 use crate::{menu::MenuState, message::Message};
@@ -42,12 +41,7 @@ impl Plugin for PbUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TextInputPlugin);
 
-        app.init_state::<UiState>()
-            .add_systems(PostStartup, set_state(UiState::LoadingAssets))
-            .add_systems(
-                PreUpdate,
-                assets::update.run_if(in_state(UiState::LoadingAssets)),
-            );
+        app.init_state::<UiState>();
 
         app.add_systems(
             Startup,
@@ -55,9 +49,9 @@ impl Plugin for PbUiPlugin {
                 theme::init.after(pb_assets::load),
                 layout::init.after(theme::init),
                 input::camera::init.after(theme::init),
-                input::settings::init,
             ),
-        );
+        )
+        .add_systems(PostStartup, startup::init);
 
         app.init_resource::<CancelStack>()
             .add_systems(

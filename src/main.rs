@@ -15,7 +15,7 @@ use pb_engine::PbEnginePlugin;
 use pb_render::PbRenderPlugin;
 use pb_store::PbStorePlugin;
 use pb_ui::PbUiPlugin;
-use pb_util::CallbackPlugin;
+use pb_util::callback::CallbackPlugin;
 
 fn main() -> AppExit {
     if cfg!(not(debug_assertions)) {

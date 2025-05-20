@@ -13,7 +13,7 @@ use pb_engine::{
 use pb_store::{Metadata, Store};
 
 use pb_assets::AssetHandles;
-use pb_util::{callback::CallbackSender, spawn_io};
+use pb_util::callback::{CallbackSender, spawn_io};
 use smol_str::SmolStr;
 
 use crate::{

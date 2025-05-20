@@ -7,7 +7,7 @@ use bevy::{
     prelude::*,
 };
 
-#[derive(Resource)]
+#[derive(Clone, Resource)]
 pub struct AssetHandles {
     pub font_graduate: Handle<Font>,
     pub font_tomorrow: Handle<Font>,
@@ -71,6 +71,14 @@ impl AssetHandles {
                 | (_, LoadState::NotLoaded | LoadState::Loading) => LoadState::Loading,
                 (LoadState::Loaded, LoadState::Loaded) => LoadState::Loaded,
             })
+    }
+
+    pub async fn wait_for_load(&self, server: &AssetServer) -> Result {
+        for id in self.asset_ids() {
+            server.wait_for_asset_id(id).await?;
+        }
+
+        Ok(())
     }
 
     fn asset_ids(&self) -> impl Iterator<Item = UntypedAssetId> + '_ {

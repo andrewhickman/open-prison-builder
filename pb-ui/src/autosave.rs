@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use pb_engine::{EngineState, save::SaveParam};
 use pb_store::Store;
-use pb_util::{callback::CallbackSender, spawn_io};
+use pb_util::callback::{CallbackSender, spawn_io};
 
 use crate::message::Message;
 

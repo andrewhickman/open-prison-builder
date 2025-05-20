@@ -1,32 +1,10 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use pb_store::Store;
-use pb_util::{callback::CallbackSender, spawn_io};
 use serde::{Deserialize, Serialize};
 
 use crate::input::Input;
 
 pub const KEY: &str = "settings";
-
-pub fn init(store: Res<Store>, callback: Res<CallbackSender>) {
-    let store = store.clone();
-    let callback = callback.clone();
-    spawn_io(async move {
-        let res = store.try_get::<SettingsModel>(KEY).await;
-        let settings = match res {
-            Ok(Some(settings)) => Settings::from(settings),
-            Ok(None) => {
-                info!("No settings file found, using default settings");
-                Settings::default()
-            }
-            Err(error) => {
-                error!("Failed to load settings: {error}");
-                Settings::default()
-            }
-        };
-
-        callback.send(|world: &mut World| world.insert_resource(settings));
-    });
-}
 
 #[derive(Resource)]
 pub struct Settings {
@@ -55,6 +33,21 @@ impl Settings {
     pub fn empty() -> Self {
         Settings {
             binds: HashMap::default(),
+        }
+    }
+
+    pub async fn load(store: &Store) -> Self {
+        let res = store.try_get::<SettingsModel>(KEY).await;
+        match res {
+            Ok(Some(settings)) => Settings::from(settings),
+            Ok(None) => {
+                info!("No settings file found, using default settings");
+                Settings::default()
+            }
+            Err(error) => {
+                error!("Failed to load settings: {error}");
+                Settings::default()
+            }
         }
     }
 
