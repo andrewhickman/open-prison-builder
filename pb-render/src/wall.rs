@@ -337,12 +337,52 @@ pub fn update_geometry(
     Ok(())
 }
 
+impl VisibleMap {
+    pub fn id(&self) -> Option<Entity> {
+        self.id
+    }
+
+    pub fn source(&self) -> Option<Entity> {
+        self.source
+    }
+
+    pub fn set(&mut self, id: Entity, source: Option<Entity>) {
+        self.id = Some(id);
+        self.source = source;
+    }
+
+    pub fn clear(&mut self) {
+        self.id = None;
+        self.source = None;
+    }
+}
+
+impl MapRenderMode {
+    pub fn material(self) -> MeshMaterial2d<WallMaterial> {
+        match self {
+            MapRenderMode::Added => MeshMaterial2d(ADDED_MATERIAL.clone()),
+            MapRenderMode::Visible => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
+            MapRenderMode::Removed => MeshMaterial2d(REMOVED_MATERIAL.clone()),
+            MapRenderMode::Hidden => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
+        }
+    }
+
+    pub fn visibility(self) -> Visibility {
+        match self {
+            MapRenderMode::Added | MapRenderMode::Visible | MapRenderMode::Removed => {
+                Visibility::Visible
+            }
+            MapRenderMode::Hidden => Visibility::Hidden,
+        }
+    }
+}
+
 impl CornerGeometry {
     fn new<'a>(start: &Corner, walls: impl Iterator<Item = (Entity, &'a Corner)>) -> Self {
         let start = start.position();
 
-        let mut angles: SmallVec<[(Option<Entity>, f32); 4]> = walls
-            .map(|(id, end)| (Some(id), (end.position() - start).to_angle()))
+        let mut angles: SmallVec<[(Entity, f32); 4]> = walls
+            .map(|(id, end)| (id, (end.position() - start).to_angle()))
             .collect();
         angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
 
@@ -353,9 +393,7 @@ impl CornerGeometry {
                 points.extend(corner_intersections(a1, a2).map(CornerGeometryPoint::corner));
             }
 
-            if let Some(wall) = wall {
-                points.push(CornerGeometryPoint::wall(wall));
-            }
+            points.push(CornerGeometryPoint::wall(wall));
 
             if index != (angles.len() - 1) {
                 let a3 = wrapping_idx(&angles, index, 1).1;
@@ -422,46 +460,6 @@ impl CornerGeometry {
                 .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
                 .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs),
             )
-        }
-    }
-}
-
-impl VisibleMap {
-    pub fn id(&self) -> Option<Entity> {
-        self.id
-    }
-
-    pub fn source(&self) -> Option<Entity> {
-        self.source
-    }
-
-    pub fn set(&mut self, id: Entity, source: Option<Entity>) {
-        self.id = Some(id);
-        self.source = source;
-    }
-
-    pub fn clear(&mut self) {
-        self.id = None;
-        self.source = None;
-    }
-}
-
-impl MapRenderMode {
-    pub fn material(self) -> MeshMaterial2d<WallMaterial> {
-        match self {
-            MapRenderMode::Added => MeshMaterial2d(ADDED_MATERIAL.clone()),
-            MapRenderMode::Visible => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
-            MapRenderMode::Removed => MeshMaterial2d(REMOVED_MATERIAL.clone()),
-            MapRenderMode::Hidden => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
-        }
-    }
-
-    pub fn visibility(self) -> Visibility {
-        match self {
-            MapRenderMode::Added | MapRenderMode::Visible | MapRenderMode::Removed => {
-                Visibility::Visible
-            }
-            MapRenderMode::Hidden => Visibility::Hidden,
         }
     }
 }

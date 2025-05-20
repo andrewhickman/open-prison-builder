@@ -14,7 +14,7 @@ use pb_engine::{
     PbEnginePlugin,
     pawn::{
         MAX_ANGULAR_VELOCITY, MAX_VELOCITY, PawnBundle,
-        ai::path::{PathObservation, PathQuery},
+        ai::path::{MovementQuery, PathObservation},
     },
     save::SaveModel,
 };
@@ -32,7 +32,7 @@ pub struct Environment {
     app: App,
     rng: SmallRng,
     entity: Entity,
-    path_q: SystemState<PathQuery<'static, 'static>>,
+    path_q: SystemState<MovementQuery<'static, 'static>>,
     step_count: usize,
     path: VecDeque<Vec2>,
 }

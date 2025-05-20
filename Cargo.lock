@@ -3961,6 +3961,7 @@ dependencies = [
  "pb-util",
  "polyanya",
  "serde",
+ "smallvec",
  "spade",
  "tokio",
 ]

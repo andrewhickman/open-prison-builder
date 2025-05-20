@@ -1,57 +1,44 @@
-use bevy::{platform::collections::HashMap, prelude::*};
-use pb_util::event::Inserted;
-use polyanya::{Mesh, Trimesh};
-use spade::Triangulation;
+use bevy::{ecs::entity::EntityHashSet, prelude::*};
 
 use crate::{
     map::{Map, Room},
-    root::Root,
+    pawn::Pawn,
+    root::RootQuery,
 };
 
-#[derive(Clone, Debug, Component)]
-pub struct RoomMesh {
-    #[expect(unused)]
-    mesh: Mesh,
+#[derive(Component, Clone, PartialEq, Eq, Debug)]
+#[relationship(relationship_target = RoomContents)]
+pub struct ContainingRoom(pub Entity);
+
+#[derive(Component, Default, Debug, PartialEq, Eq)]
+#[relationship_target(relationship = ContainingRoom)]
+pub struct RoomContents(EntityHashSet);
+
+pub fn room_replaced(trigger: Trigger<OnReplace, Room>, mut commands: Commands) {
+    commands
+        .entity(trigger.target())
+        .try_remove::<RoomContents>();
 }
 
-pub fn update_mesh(
+pub fn update_containing_room(
     mut commands: Commands,
-    mut room_e: EventReader<Inserted<Room>>,
-    room_q: Query<&Room>,
-    map_q: Query<&Map>,
-    parent_q: Query<&ChildOf>,
-    root_q: Query<Has<Root>>,
+    root_q: RootQuery,
+    map_q: Query<(Entity, &Map)>,
+    item_q: Query<(Entity, &Transform), (With<Pawn>, Without<ContainingRoom>)>,
 ) -> Result {
-    for event in room_e.read() {
-        let root = parent_q.root_ancestor(event.target);
-        if root_q.get(root).unwrap_or_default() {
-            let room = room_q.get(event.target)?;
-            let map = map_q.get(parent_q.get(event.target)?.parent())?;
-
-            let mut vertices = Vec::new();
-            let mut triangles = Vec::new();
-            let mut vertex_indices = HashMap::new();
-            for &face in &room.faces {
-                let face = map.triangulation.face(face);
-                let triangle = face.vertices().map(|vertex| {
-                    *vertex_indices.entry(vertex.fix()).or_insert_with(|| {
-                        let index = vertices.len();
-                        vertices.push(vertex.data().position);
-                        index
-                    })
-                });
-
-                triangles.push(triangle);
+    'outer: for (item, transform) in &item_q {
+        if root_q.is_descendant_of_root(item) {
+            for (map_id, map) in &map_q {
+                if root_q.is_descendant_of_root(map_id) {
+                    if let Some(room) = map.containing_room(transform.translation.xy()) {
+                        info!("found containing room {room}");
+                        commands.entity(item).insert(ContainingRoom(room));
+                        continue 'outer;
+                    }
+                }
             }
 
-            let trimesh = Trimesh {
-                vertices,
-                triangles,
-            };
-
-            let mesh = Mesh::try_from(trimesh)?;
-
-            commands.entity(event.target).insert(RoomMesh { mesh });
+            warn!("no containing room found for {item}");
         }
     }
     Ok(())

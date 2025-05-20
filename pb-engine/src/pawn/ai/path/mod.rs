@@ -5,13 +5,13 @@ use std::{collections::VecDeque, f32::consts::PI};
 
 use avian2d::{collision::collider::contact_query, prelude::*};
 use bevy::{
-    ecs::{query::QueryEntityError, system::SystemParam},
+    ecs::{query::QueryEntityError, relationship::Relationship, system::SystemParam},
     prelude::*,
 };
 use tokio::sync::oneshot;
 
 use crate::{
-    map::Wall,
+    map::{Wall, mesh::RoomMesh, room::ContainingRoom},
     pawn::{MAX_ANGULAR_VELOCITY, MAX_VELOCITY, Pawn, VISION_RADIUS, ai::Task},
     picking::Layer,
 };
@@ -31,7 +31,7 @@ pub enum PathTask {
 }
 
 #[derive(SystemParam)]
-pub struct PathQuery<'w, 's> {
+pub struct MovementQuery<'w, 's> {
     spatial_query: SpatialQuery<'w, 's>,
     pawn_q: Query<
         'w,
@@ -59,6 +59,12 @@ pub struct PathQuery<'w, 's> {
         ),
     >,
     config: Res<'w, PathQueryConfig>,
+}
+
+#[derive(SystemParam)]
+pub struct PathQuery<'w, 's> {
+    pawn_q: Query<'w, 's, (&'static Position, &'static ContainingRoom)>,
+    mesh_q: Query<'w, 's, &'static RoomMesh>,
 }
 
 #[derive(Resource)]
@@ -96,7 +102,7 @@ impl PathTaskBundle {
 pub fn update(
     mut commands: Commands,
     mut task_q: Query<(Entity, &Task, &mut PathTask)>,
-    mut path_q: PathQuery,
+    mut path_q: MovementQuery,
 ) -> Result {
     for (id, task, mut path) in &mut task_q {
         let Some(steps) = path.poll() else {
@@ -120,6 +126,20 @@ pub fn update(
 }
 
 impl PathQuery<'_, '_> {
+    pub fn path(&self, entity: Entity, to: Vec2) -> Option<PathTaskBundle> {
+        let (pos, containing_room) = self.pawn_q.get(entity).ok()?;
+        let room = self.mesh_q.get(containing_room.get()).ok()?;
+        if let Some(path) = room.path(pos.0, to) {
+            return Some(PathTaskBundle {
+                task: Task::new(entity),
+                path: PathTask::Running(path.path.into_iter().collect()),
+            });
+        }
+        None
+    }
+}
+
+impl MovementQuery<'_, '_> {
     pub fn observe(
         &self,
         entity: Entity,
@@ -393,39 +413,10 @@ impl PathTask {
         }
     }
 
-    #[cfg(feature = "dev")]
-    fn steps(&self) -> Option<&VecDeque<Vec2>> {
+    pub fn steps(&self) -> Option<&VecDeque<Vec2>> {
         match self {
             PathTask::Pending(_) => None,
             PathTask::Running(steps) => Some(steps),
-        }
-    }
-}
-
-#[cfg(feature = "dev")]
-pub fn debug_draw_path(
-    task_q: Query<(&Task, &PathTask)>,
-    pos_q: Query<&Position>,
-    mut gizmos: Gizmos,
-) {
-    for (task, path) in &task_q {
-        if let Some(steps) = path.steps() {
-            if let Ok(start) = pos_q.get(task.actor) {
-                if !steps.is_empty() {
-                    gizmos.line_2d(
-                        start.0,
-                        steps[0],
-                        bevy::color::palettes::tailwind::INDIGO_800,
-                    );
-                    for i in 0..(steps.len() - 1) {
-                        gizmos.line_2d(
-                            steps[i],
-                            steps[i + 1],
-                            bevy::color::palettes::tailwind::INDIGO_800,
-                        );
-                    }
-                }
-            }
         }
     }
 }

@@ -19,8 +19,14 @@ pub fn cancellable_removed(
     trigger: Trigger<OnRemove, Cancellable>,
     mut stack: ResMut<CancelStack>,
 ) {
-    if let Some(pos) = stack.entities.iter().position(|&e| e == trigger.target()) {
-        stack.entities.remove(pos);
+    let len = stack.entities.len();
+    if let Some(pos) = stack
+        .entities
+        .iter()
+        .rev()
+        .position(|&e| e == trigger.target())
+    {
+        stack.entities.remove(len - 1 - pos);
     }
 }
 

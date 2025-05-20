@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
+pub mod dev;
 pub mod map;
 pub mod pawn;
 pub mod picking;
@@ -11,6 +12,7 @@ use avian2d::{
     prelude::*,
 };
 use bevy::prelude::*;
+use dev::DevSettings;
 use pawn::{Pawn, ai::path::PathQueryConfig};
 use pb_util::event::AddComponentEvents;
 use root::Root;
@@ -34,9 +36,11 @@ impl Plugin for PbEnginePlugin {
 
         app.insert_resource(Gravity::ZERO);
 
-        app.init_resource::<PathQueryConfig>();
+        app.init_resource::<PathQueryConfig>()
+            .init_resource::<DevSettings>();
 
         app.add_observer(map::map_inserted)
+            .add_observer(map::room::room_replaced)
             .add_inserted_event::<map::Wall>()
             .add_inserted_event::<map::Room>()
             .add_observer(pawn::ai::task_added)
@@ -44,7 +48,15 @@ impl Plugin for PbEnginePlugin {
             .add_observer(pawn::ai::actor_removed)
             .add_systems(
                 FixedPreUpdate,
-                (map::wall::add_colliders, map::room::update_mesh),
+                (
+                    map::wall::add_colliders,
+                    map::mesh::update_mesh,
+                    map::room::update_containing_room,
+                ),
+            )
+            .add_systems(
+                FixedUpdate,
+                (pawn::ai::path::update, pawn::movement).chain(),
             )
             .add_systems(
                 SubstepSchedule,
@@ -53,12 +65,12 @@ impl Plugin for PbEnginePlugin {
                     .before(IntegrationSet::Position),
             )
             .add_systems(
-                FixedUpdate,
-                (pawn::ai::path::update, pawn::movement).chain(),
+                Update,
+                (
+                    dev::draw_meshes.run_if(dev::draw_meshes_condition),
+                    dev::draw_paths.run_if(dev::draw_paths_condition),
+                ),
             );
-
-        #[cfg(feature = "dev")]
-        app.add_systems(Update, pawn::ai::path::debug_draw_path);
 
         #[cfg(feature = "dev")]
         app.add_plugins(PhysicsDebugPlugin::default());
