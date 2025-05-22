@@ -25,6 +25,8 @@ use pb_engine::{
 };
 use smallvec::SmallVec;
 
+use crate::layer;
+
 const CORNER_LOCUS: Vec2 = Vec2::new(0., 0.5 * wall::RADIUS);
 
 const TEXTURE_TOP: f32 = 0.0;
@@ -436,7 +438,7 @@ impl CornerGeometry {
                 continue;
             }
 
-            vertices.extend([i1.to_vec3(), CORNER_LOCUS.extend(0.), i2.to_vec3()]);
+            vertices.extend([i1.to_vec3(), CORNER_LOCUS.extend(layer::WALL), i2.to_vec3()]);
 
             let di = i2.point - i1.point;
             let base_len = di.length();
@@ -493,7 +495,7 @@ impl WallGeometry {
         )
         .with_inserted_attribute(
             Mesh::ATTRIBUTE_POSITION,
-            VertexAttributeValues::Float32x3(self.points.map(|p| [p.x, p.y, 0.]).to_vec()),
+            VertexAttributeValues::Float32x3(self.points.map(|p| [p.x, p.y, layer::WALL]).to_vec()),
         )
         .with_inserted_attribute(
             Mesh::ATTRIBUTE_UV_0,
@@ -530,7 +532,7 @@ impl CornerGeometryPoint {
     }
 
     fn to_vec3(self) -> Vec3 {
-        self.point.extend(0.)
+        self.point.extend(layer::WALL)
     }
 }
 

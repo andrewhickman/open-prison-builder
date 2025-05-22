@@ -4057,6 +4057,7 @@ dependencies = [
  "approx",
  "bevy",
  "crossbeam-channel",
+ "rand 0.9.1",
  "tracing",
 ]
 

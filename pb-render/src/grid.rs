@@ -8,7 +8,7 @@ use bevy::{
     sprite::{AlphaMode2d, Material2d},
 };
 
-use crate::projection::PIXELS_PER_METER;
+use crate::{layer, projection::PIXELS_PER_METER};
 
 pub const GRID_MESH_HANDLE: Handle<Mesh> = weak_handle!("ed4eaa8e-ce4f-4d43-abc6-aeb015e048f7");
 
@@ -86,5 +86,5 @@ fn mesh() -> Mesh {
         RenderAssetUsages::default(),
     )
     .with_inserted_indices(Indices::U32(vec![0, 1, 2]))
-    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vec![[0.0, 0.0, 0.0]; 3])
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vec![[0.0, 0.0, layer::GRID]; 3])
 }

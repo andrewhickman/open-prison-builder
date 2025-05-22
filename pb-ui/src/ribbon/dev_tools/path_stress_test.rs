@@ -2,14 +2,14 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 use pb_engine::pawn::{Pawn, PawnBundle, ai::path::PathTaskBundle};
-use rand::{
-    SeedableRng,
-    distr::{Distribution, Uniform},
-    rngs::SmallRng,
-};
+use pb_util::rng::LocalRng;
+use rand::distr::{Distribution, Uniform};
 
-pub fn spawn_1000_pawns(_: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
-    let mut rng = SmallRng::from_os_rng();
+pub fn spawn_1000_pawns(
+    _: Trigger<Pointer<Click>>,
+    mut commands: Commands,
+    mut rng: LocalRng,
+) -> Result {
     let position_distr = Uniform::new(-100., 100.).unwrap();
     let rotation_distr = Uniform::new(-PI, PI).unwrap();
 
@@ -33,8 +33,8 @@ pub fn create_path_tasks(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     query: Query<Entity, With<Pawn>>,
+    mut rng: LocalRng,
 ) -> Result {
-    let mut rng = SmallRng::from_os_rng();
     let position_distr = Uniform::new(-100., 100.).unwrap();
 
     let tasks: Vec<PathTaskBundle> = query
