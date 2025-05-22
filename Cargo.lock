@@ -4006,6 +4006,7 @@ dependencies = [
  "pb-assets",
  "pb-engine",
  "pb-util",
+ "rand 0.9.1",
  "serde",
  "serde_json",
  "smallvec",

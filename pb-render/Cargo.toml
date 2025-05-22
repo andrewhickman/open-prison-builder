@@ -11,6 +11,7 @@ bevy = { version = "0.16.0", default-features = false }
 pb-assets = { path = "../pb-assets" }
 pb-engine = { path = "../pb-engine" }
 pb-util = { version = "0.1.0", path = "../pb-util" }
+rand = { version = "0.9.1" }
 smallvec = "1.13.2"
 
 [dev-dependencies]

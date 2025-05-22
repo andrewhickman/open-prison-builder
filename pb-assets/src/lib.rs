@@ -18,6 +18,10 @@ pub struct AssetHandles {
     pub bevy_icon: Handle<Image>,
     pub github_icon: Handle<Image>,
     pub pawn_image: Handle<Image>,
+    pub pawn_heads_image: Handle<Image>,
+    pub pawn_heads_layout: Handle<TextureAtlasLayout>,
+    pub pawn_bodies_image: Handle<Image>,
+    pub pawn_bodies_layout: Handle<TextureAtlasLayout>,
     pub close_icon: Handle<Image>,
     pub error_icon: Handle<Image>,
     pub brick_image: Handle<Image>,
@@ -42,20 +46,36 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
         bevy_icon: server.load("image/bevy.png"),
         github_icon: server.load("image/github.png"),
         pawn_image: server.load("image/pawn.png"),
+        pawn_heads_image: server.load("image/pawn_heads.png"),
+        pawn_heads_layout: server.add(TextureAtlasLayout::from_grid(
+            UVec2::splat(64),
+            7,
+            1,
+            None,
+            None,
+        )),
+        pawn_bodies_layout: server.add(TextureAtlasLayout::from_grid(
+            UVec2::splat(64),
+            4,
+            1,
+            None,
+            None,
+        )),
+        pawn_bodies_image: server.load("image/pawn_bodies.png"),
         close_icon: server.load("image/close.png"),
         error_icon: server.load("image/error.png"),
-        brick_image: server.load_with_settings("image/brick.png", |settings: &mut _| {
-            *settings = ImageLoaderSettings {
-                sampler: ImageSampler::Descriptor(ImageSamplerDescriptor {
+        brick_image: server.load_with_settings(
+            "image/brick.png",
+            |settings: &mut ImageLoaderSettings| {
+                settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
                     address_mode_u: ImageAddressMode::Repeat,
                     address_mode_v: ImageAddressMode::ClampToEdge,
                     min_filter: ImageFilterMode::Linear,
                     mag_filter: ImageFilterMode::Linear,
                     ..default()
-                }),
-                ..default()
-            }
-        }),
+                });
+            },
+        ),
     });
 }
 
@@ -92,6 +112,10 @@ impl AssetHandles {
             bevy_icon,
             github_icon,
             pawn_image,
+            pawn_heads_image,
+            pawn_heads_layout,
+            pawn_bodies_image,
+            pawn_bodies_layout,
             close_icon,
             error_icon,
             brick_image,
@@ -107,6 +131,10 @@ impl AssetHandles {
             bevy_icon.into(),
             github_icon.into(),
             pawn_image.into(),
+            pawn_heads_image.into(),
+            pawn_heads_layout.into(),
+            pawn_bodies_image.into(),
+            pawn_bodies_layout.into(),
             close_icon.into(),
             error_icon.into(),
             brick_image.into(),

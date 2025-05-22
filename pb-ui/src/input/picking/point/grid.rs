@@ -52,7 +52,7 @@ pub fn input(
 
 impl Grid {
     pub fn increase_size(&mut self) {
-        self.level = (self.level - 1).max(-4)
+        self.level = (self.level - 1).max(-1)
     }
 
     pub fn decrease_size(&mut self) {
