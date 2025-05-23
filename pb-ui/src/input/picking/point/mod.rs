@@ -109,14 +109,16 @@ fn out(mut trigger: Trigger<Pointer<Out>>, mut commands: Commands) {
 fn click(mut trigger: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
     trigger.propagate(false);
 
-    commands.trigger(ClickPoint {
-        point: trigger
-            .event()
-            .event
-            .hit
-            .position
-            .ok_or("expected hit to have position")?
-            .xy(),
-    });
+    if trigger.button == PointerButton::Primary {
+        commands.trigger(ClickPoint {
+            point: trigger
+                .event()
+                .event
+                .hit
+                .position
+                .ok_or("expected hit to have position")?
+                .xy(),
+        });
+    }
     Ok(())
 }

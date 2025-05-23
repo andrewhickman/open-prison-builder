@@ -122,18 +122,20 @@ fn click(
     let wall = wall_q.get(trigger.target())?;
     let [start, end] = vertex_q.get_many(wall.corners())?;
 
-    commands.trigger(ClickWall {
-        wall: trigger.target(),
-        kind: WallPickKind::new(
-            pos.xy(),
-            wall.corners()[0],
-            start.translation.xy(),
-            wall.corners()[1],
-            end.translation.xy(),
-            &grid_q,
-            projection_q.get(trigger.event().hit.camera)?.scale(),
-        ),
-    });
+    if trigger.button == PointerButton::Primary {
+        commands.trigger(ClickWall {
+            wall: trigger.target(),
+            kind: WallPickKind::new(
+                pos.xy(),
+                wall.corners()[0],
+                start.translation.xy(),
+                wall.corners()[1],
+                end.translation.xy(),
+                &grid_q,
+                projection_q.get(trigger.event().hit.camera)?.scale(),
+            ),
+        });
+    }
     Ok(())
 }
 

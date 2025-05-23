@@ -10,8 +10,13 @@ use rand::{Rng, seq::IndexedRandom};
 
 use crate::layer;
 
+const SPRITE_SIZE: Vec2 = Vec2::splat(pawn::RADIUS * 4.);
+
 #[derive(Default, Copy, Clone, Component)]
 pub struct PawnSprite;
+
+#[derive(Default, Copy, Clone, Component)]
+pub struct PawnHighlight;
 
 pub fn root_added(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
     commands
@@ -36,9 +41,10 @@ pub fn pawn_added(
     commands.spawn((
         PawnSprite,
         Transform::from_xyz(0., 0., layer::PAWN_HEAD),
+        Visibility::Visible,
         Sprite {
             image: assets.pawn_heads_image.clone(),
-            custom_size: Some(Vec2::splat(pawn::RADIUS * 4.)),
+            custom_size: Some(SPRITE_SIZE),
             texture_atlas: Some(TextureAtlas {
                 layout: assets.pawn_heads_layout.clone(),
                 index: head,
@@ -51,23 +57,15 @@ pub fn pawn_added(
     commands.spawn((
         PawnSprite,
         Transform::from_xyz(0., 0., layer::PAWN_BODY),
+        Visibility::Visible,
         Sprite {
             image: assets.pawn_bodies_image.clone(),
-            custom_size: Some(Vec2::splat(pawn::RADIUS * 4.)),
+            custom_size: Some(SPRITE_SIZE),
             texture_atlas: Some(TextureAtlas {
                 layout: assets.pawn_bodies_layout.clone(),
                 index: body,
             }),
             color: uniform,
-            ..default()
-        },
-        ChildOf(trigger.target()),
-    ));
-    commands.spawn((
-        Transform::from_xyz(0., 0., layer::PAWN_ARROW),
-        Sprite {
-            image: assets.pawn_arrow_image.clone(),
-            custom_size: Some(Vec2::splat(pawn::RADIUS * 4.)),
             ..default()
         },
         ChildOf(trigger.target()),
@@ -84,6 +82,22 @@ pub fn clear_rotation(
             transform.rotation = parent_transform.rotation.inverse();
         }
     });
+}
+
+impl PawnHighlight {
+    pub fn bundle(assets: &AssetHandles, pawn: Entity, color: Color) -> impl Bundle {
+        (
+            Transform::from_xyz(0., 0., layer::PAWN_HIGHLIGHT),
+            Visibility::Inherited,
+            Sprite {
+                image: assets.pawn_highlight_image.clone(),
+                custom_size: Some(SPRITE_SIZE),
+                color,
+                ..default()
+            },
+            ChildOf(pawn),
+        )
+    }
 }
 
 fn random_skin_tone(rng: &mut impl Rng) -> Color {
