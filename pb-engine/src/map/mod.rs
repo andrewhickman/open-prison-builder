@@ -341,6 +341,10 @@ impl Map {
         self.rooms().filter(move |&face| unique.insert(face.id()))
     }
 
+    pub fn outer_room(&self) -> MapEntity {
+        self.triangulation.face(OUTER_FACE).data().room.unwrap()
+    }
+
     pub fn corner_walls(&self, corner: &Corner) -> impl Iterator<Item = (Entity, Entity)> + '_ {
         self.triangulation
             .vertex(corner.vertex)

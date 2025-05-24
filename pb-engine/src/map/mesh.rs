@@ -114,6 +114,11 @@ pub fn update_mesh(
             }
         }
 
+        if polygons.is_empty() && map.triangulation.convex_hull_size() > 0 {
+            debug_assert_eq!(map.rooms_deduped().count(), 1);
+            polygons.insert(vec![map.outer_room().id()], default());
+        }
+
         for (rooms, (exterior, interiors)) in polygons {
             let exterior = match exterior {
                 Some(exterior) => exterior,
