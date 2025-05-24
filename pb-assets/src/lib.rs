@@ -50,14 +50,14 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
         pawn_highlight_image: server.load("image/pawn_highlight.png"),
         pawn_heads_image: server.load("image/pawn_heads.png"),
         pawn_heads_layout: server.add(TextureAtlasLayout::from_grid(
-            UVec2::splat(64),
+            UVec2::splat(128),
             7,
             1,
             None,
             None,
         )),
         pawn_bodies_layout: server.add(TextureAtlasLayout::from_grid(
-            UVec2::splat(64),
+            UVec2::splat(128),
             4,
             1,
             None,
