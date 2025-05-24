@@ -140,7 +140,7 @@ impl<'w> UiBuilder<'w, '_> {
             .tile_button(
                 theme,
                 "Remove wall",
-                assets.ribbon_button_wall_image.clone(),
+                assets.ribbon_button_delete_wall_image.clone(),
             )
             .on_click(architect::wall::remove::remove_wall);
         icon_grid
