@@ -9,9 +9,10 @@ use bevy::{
     prelude::*,
 };
 use polyanya::{
-    Mesh, Path, Triangulation,
+    Coords, Mesh, Path, Triangulation,
     geo::{
-        Coord, LineString, Polygon,
+        Closest, ClosestPoint, Coord, LineString, Polygon,
+        geometry::Point,
         winding_order::{Winding, WindingOrder},
     },
 };
@@ -27,9 +28,15 @@ use crate::{
     root::RootQuery,
 };
 
-#[derive(Debug, Default, Component)]
+#[derive(Debug, Component)]
 pub struct RoomMesh {
-    mesh: Arc<Mesh>,
+    inner: Arc<RoomMeshInner>,
+}
+
+#[derive(Debug)]
+struct RoomMeshInner {
+    mesh: Mesh,
+    polygon: Polygon<f32>,
 }
 
 const RADIUS: f32 = wall::RADIUS + pawn::RADIUS;
@@ -118,18 +125,18 @@ pub fn update_mesh(
             };
 
             let polygon = Polygon::new(exterior, interiors);
-            let triangulation = Triangulation::from_geo_polygon(polygon);
+            let triangulation = Triangulation::from_geo_polygon(polygon.clone());
             let mut mesh = triangulation.as_navmesh();
 
             mesh.merge_polygons();
             mesh.bake();
 
-            let mesh = Arc::new(mesh);
+            let inner = Arc::new(RoomMeshInner { mesh, polygon });
 
             for room in rooms {
-                commands
-                    .entity(room)
-                    .insert(RoomMesh { mesh: mesh.clone() });
+                commands.entity(room).insert(RoomMesh {
+                    inner: inner.clone(),
+                });
             }
         }
     }
@@ -139,11 +146,50 @@ pub fn update_mesh(
 
 impl RoomMesh {
     pub fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
-        self.mesh.path(from, to)
+        let from = self.closest_point(from)?;
+        let to = self.closest_point(to)?;
+        self.inner.mesh.path(from, to)
     }
 
     pub fn mesh(&self) -> &Mesh {
-        &self.mesh
+        &self.inner.mesh
+    }
+
+    fn closest_point(&self, point: Vec2) -> Option<Coords> {
+        if let Some(coords) = self.inner.mesh.get_closest_point(point) {
+            return Some(coords);
+        }
+
+        match self
+            .inner
+            .polygon
+            .closest_point(&Point::new(point.x, point.y))
+        {
+            Closest::Intersection(closest) | Closest::SinglePoint(closest) => {
+                if let Some(coords) = self
+                    .inner
+                    .mesh
+                    .get_closest_point(Vec2::new(closest.x(), closest.y()))
+                {
+                    Some(coords)
+                } else if let Some(coords) = self
+                    .inner
+                    .mesh
+                    .get_closest_point_towards(point, Vec2::new(closest.x(), closest.y()))
+                {
+                    Some(coords)
+                } else {
+                    error!(
+                        "closest point {closest:?} for target point {point:?} was not found in the mesh"
+                    );
+                    None
+                }
+            }
+            Closest::Indeterminate => {
+                error!("indeterminate closest point to {point:?} on polygon");
+                None
+            }
+        }
     }
 }
 
