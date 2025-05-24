@@ -767,6 +767,7 @@ impl Corner {
 
     fn bundle(vertex: FixedVertexHandle, position: Vec2) -> impl Bundle {
         (
+            Name::new(format!("corner ({}, {})", position.x, position.y)),
             Corner { vertex, position },
             Transform::from_translation(position.extend(0.)),
         )
@@ -812,6 +813,10 @@ impl Wall {
         let rotation = (position2 - position1).to_angle();
 
         (
+            Name::new(format!(
+                "wall ({}, {}) to ({}, {})",
+                position1.x, position1.y, position2.x, position2.y
+            )),
             Wall {
                 edge,
                 length,
@@ -836,7 +841,7 @@ impl Room {
     }
 
     fn bundle(faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> impl Bundle {
-        Room { faces }
+        (Name::new("room"), Room { faces })
     }
 }
 

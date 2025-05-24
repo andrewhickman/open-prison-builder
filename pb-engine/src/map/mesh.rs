@@ -128,7 +128,8 @@ pub fn update_mesh(
             let triangulation = Triangulation::from_geo_polygon(polygon.clone());
             let mut mesh = triangulation.as_navmesh();
 
-            mesh.merge_polygons();
+            // TODO: https://github.com/vleue/polyanya/issues/99
+            // mesh.merge_polygons();
             mesh.bake();
 
             let inner = Arc::new(RoomMeshInner { mesh, polygon });
