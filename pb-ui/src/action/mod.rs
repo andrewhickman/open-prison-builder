@@ -26,3 +26,13 @@ pub fn action_removed(
         default::spawn(commands);
     }
 }
+
+pub fn enter_game(commands: Commands) {
+    default::spawn(commands);
+}
+
+pub fn exit_game(mut commands: Commands, action_q: Query<Entity, With<Action>>) {
+    for id in &action_q {
+        commands.entity(id).despawn();
+    }
+}

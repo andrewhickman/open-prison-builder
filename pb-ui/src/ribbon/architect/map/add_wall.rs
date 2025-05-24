@@ -14,7 +14,7 @@ use crate::{
             point::{CancelPoint, ClickPoint, SelectPoint, grid::Grid},
         },
     },
-    ribbon::architect::wall::MapParam,
+    ribbon::architect::map::MapParam,
 };
 
 pub fn add_wall(

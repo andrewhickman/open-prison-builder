@@ -135,14 +135,17 @@ impl<'w> UiBuilder<'w, '_> {
 
         icon_grid
             .tile_button(theme, "Build wall", assets.ribbon_button_wall_image.clone())
-            .on_click(architect::wall::add::add_wall);
+            .on_click(architect::map::add_wall::add_wall);
         icon_grid
             .tile_button(
                 theme,
                 "Remove wall",
                 assets.ribbon_button_delete_wall_image.clone(),
             )
-            .on_click(architect::wall::remove::remove_wall);
+            .on_click(architect::map::remove_wall::remove_wall);
+        icon_grid
+            .tile_button(theme, "Build door", assets.ribbon_button_door_image.clone())
+            .on_click(architect::map::add_door::add_door);
         icon_grid
             .tile_button(theme, "Pawn", assets.pawn_image.clone())
             .on_click(architect::pawn::pawn);

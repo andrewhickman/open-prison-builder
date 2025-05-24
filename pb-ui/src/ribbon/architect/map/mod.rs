@@ -1,5 +1,6 @@
-pub mod add;
-pub mod remove;
+pub mod add_door;
+pub mod add_wall;
+pub mod remove_wall;
 
 use bevy::{ecs::system::SystemParam, prelude::*};
 use pb_engine::map::{CornerDef, Map, MapQueries};

@@ -11,7 +11,7 @@ use crate::{
             wall::{CancelWall, ClickWall, SelectWall},
         },
     },
-    ribbon::architect::wall::MapParam,
+    ribbon::architect::map::MapParam,
 };
 
 pub fn remove_wall(_: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {

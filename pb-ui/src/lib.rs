@@ -41,7 +41,9 @@ impl Plugin for PbUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TextInputPlugin);
 
-        app.init_state::<UiState>();
+        app.init_state::<UiState>()
+            .add_systems(OnEnter(UiState::Game), action::enter_game)
+            .add_systems(OnExit(UiState::Game), action::exit_game);
 
         app.add_systems(
             Startup,
