@@ -47,6 +47,17 @@ impl MapParam<'_, '_> {
             .insert_wall(&mut self.map_queries, start, end)
     }
 
+    fn insert_wall_with(
+        &mut self,
+        start: CornerDef,
+        end: CornerDef,
+        bundle: impl Bundle + Clone,
+    ) -> Result<Option<(Entity, Vec<Entity>, Entity)>> {
+        self.map_q
+            .get_mut(self.id()?)?
+            .insert_wall_with(&mut self.map_queries, start, end, bundle)
+    }
+
     fn remove_wall(&mut self, wall: Entity) -> Result {
         self.map_q
             .get_mut(self.id()?)?

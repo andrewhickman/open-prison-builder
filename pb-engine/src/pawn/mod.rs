@@ -11,25 +11,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::picking::Layer;
 
-pub const RADIUS: f32 = 0.16;
-pub const MAX_ACCELERATION: f32 = 0.68;
-pub const MAX_VELOCITY: f32 = 1.5;
-pub const REVERSE_VELOCITY: f32 = 0.7;
-pub const MAX_TORQUE: f32 = TAU;
-pub const MAX_ANGULAR_VELOCITY: f32 = PI;
-pub const VISION_RADIUS: f32 = 10.;
-
 #[derive(Debug, Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
 #[require(
     Actor,
-    RigidBody = RigidBody::Dynamic,
-    Collider = Collider::circle(RADIUS),
-    CollisionLayers = CollisionLayers::new(Layer::Pawn, LayerMask::ALL),
+    RigidBody::Dynamic,
+    Collider::circle(Pawn::RADIUS),
+    CollisionLayers::new(Layer::Pawn, LayerMask::ALL),
     CollidingEntities,
     TranslationInterpolation,
-    LinearDamping = LinearDamping(0.5),
-    AngularDamping = AngularDamping(0.5),
+    LinearDamping(0.5),
+    AngularDamping(0.5)
 )]
 pub struct Pawn {
     pub dir: Vec2,
@@ -46,6 +38,14 @@ pub struct PawnBundle {
 }
 
 impl Pawn {
+    pub const RADIUS: f32 = 0.16;
+    pub const MAX_ACCELERATION: f32 = 0.68;
+    pub const MAX_VELOCITY: f32 = 1.5;
+    pub const REVERSE_VELOCITY: f32 = 0.7;
+    pub const MAX_TORQUE: f32 = TAU;
+    pub const MAX_ANGULAR_VELOCITY: f32 = PI;
+    pub const VISION_RADIUS: f32 = 10.;
+
     pub fn update_movement(&mut self, angle: f32, accel: f32, torque: f32) {
         self.dir = Vec2::from_angle(to_finite_f32_lossy(angle).clamp(-1., 1.) * PI);
         self.accel = to_finite_f32_lossy(accel).clamp(0., 1.);
@@ -82,14 +82,14 @@ pub fn movement(
 
             if relative_ne!(pawn.dir, Vec2::ZERO) {
                 let movement_dir = rotation * pawn.dir;
-                force.set_force(movement_dir.normalize() * pawn.accel * MAX_ACCELERATION);
+                force.set_force(movement_dir.normalize() * pawn.accel * Pawn::MAX_ACCELERATION);
             } else if relative_ne!(linear_velocity.0, Vec2::ZERO) {
-                force.set_force((-linear_velocity.0).normalize() * MAX_ACCELERATION);
+                force.set_force((-linear_velocity.0).normalize() * Pawn::MAX_ACCELERATION);
             }
             if relative_ne!(pawn.torque, 0.) {
-                torque.apply_torque(pawn.torque * MAX_TORQUE);
+                torque.apply_torque(pawn.torque * Pawn::MAX_TORQUE);
             } else if relative_ne!(angular_velocity.0, 0.) {
-                torque.apply_torque((-angular_velocity.0).signum() * MAX_TORQUE);
+                torque.apply_torque((-angular_velocity.0).signum() * Pawn::MAX_TORQUE);
             }
         },
     );
@@ -106,7 +106,7 @@ pub fn clamp_velocity(
             if relative_ne!(velocity, 0.0) {
                 let forward_velocity = rotation.inverse() * linear_velocity.0;
                 let angle_t = forward_velocity.to_angle().abs() / PI;
-                let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., angle_t);
+                let max_velocity = Pawn::MAX_VELOCITY.lerp(Pawn::MAX_VELOCITY / 2., angle_t);
 
                 if velocity > max_velocity {
                     linear_velocity.0 *= max_velocity / velocity;
@@ -115,8 +115,10 @@ pub fn clamp_velocity(
             }
 
             if relative_ne!(angular_velocity.0, 0.0) {
-                let max_angular_velocity =
-                    MAX_ANGULAR_VELOCITY.lerp(MAX_ANGULAR_VELOCITY / 2., velocity / MAX_VELOCITY);
+                let max_angular_velocity = Pawn::MAX_ANGULAR_VELOCITY.lerp(
+                    Pawn::MAX_ANGULAR_VELOCITY / 2.,
+                    velocity / Pawn::MAX_VELOCITY,
+                );
                 angular_velocity.0 =
                     angular_velocity.clamp(-max_angular_velocity, max_angular_velocity);
             }

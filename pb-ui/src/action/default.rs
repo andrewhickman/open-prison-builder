@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(Default, Debug, Component, TypePath)]
-#[require(Action, Name = Name::new(DefaultAction::type_path()))]
+#[require(Action, Name::new(DefaultAction::type_path()))]
 pub struct DefaultAction {
     highlight: Option<Entity>,
     state: DefaultActionState,

@@ -13,7 +13,7 @@ use bevy::{
 use pb_engine::{
     PbEnginePlugin,
     pawn::{
-        MAX_ANGULAR_VELOCITY, MAX_VELOCITY, PawnBundle,
+        Pawn, PawnBundle,
         ai::path::{MovementQuery, PathObservation},
     },
     save::SaveModel,
@@ -130,13 +130,14 @@ impl Environment {
         let rotation = self.rng.random_range(-PI..PI);
 
         let linear_velocity_angle = self.rng.random_range(-PI..PI);
-        let max_velocity = MAX_VELOCITY.lerp(MAX_VELOCITY / 2., linear_velocity_angle.abs() / PI);
+        let max_velocity =
+            Pawn::MAX_VELOCITY.lerp(Pawn::MAX_VELOCITY / 2., linear_velocity_angle.abs() / PI);
         let linear_velocity = Vec2::from_angle(rotation + linear_velocity_angle)
             * self.rng.random_range(0.0..max_velocity);
 
-        let max_angular_velocity = MAX_ANGULAR_VELOCITY.lerp(
-            MAX_ANGULAR_VELOCITY / 2.,
-            linear_velocity.length() / MAX_VELOCITY,
+        let max_angular_velocity = Pawn::MAX_ANGULAR_VELOCITY.lerp(
+            Pawn::MAX_ANGULAR_VELOCITY / 2.,
+            linear_velocity.length() / Pawn::MAX_VELOCITY,
         );
         let angular_velocity = self
             .rng
@@ -178,7 +179,7 @@ impl Environment {
             self.rng.random_range(3.0..6.0) * steps_completed as f32
         } else {
             (prev_observation.target_r - observation.target_r)
-                / (MAX_VELOCITY * TIMESTEP.as_secs_f32())
+                / (Pawn::MAX_VELOCITY * TIMESTEP.as_secs_f32())
         };
 
         let reward = dist_reward

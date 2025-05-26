@@ -12,7 +12,7 @@ pub fn pawn(_: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
 }
 
 #[derive(Default, Debug, Component, TypePath)]
-#[require(Action, Cancellable, Name = Name::new(PawnAction::type_path()))]
+#[require(Action, Cancellable, Name::new(PawnAction::type_path()))]
 pub struct PawnAction;
 
 fn click_point(

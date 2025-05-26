@@ -41,15 +41,17 @@ impl Plugin for PbEnginePlugin {
 
         app.add_observer(map::map_inserted)
             .add_observer(map::room::room_replaced)
-            .add_inserted_event::<map::Wall>()
-            .add_inserted_event::<map::Room>()
+            .add_inserted_event::<map::corner::Corner>()
+            .add_inserted_event::<map::wall::Wall>()
+            .add_inserted_event::<map::door::Door>()
             .add_observer(pawn::ai::task_added)
             .add_observer(pawn::ai::task_removed)
             .add_observer(pawn::ai::actor_removed)
             .add_systems(
                 FixedPreUpdate,
                 (
-                    map::wall::add_colliders,
+                    (map::door::validate, map::wall::add_colliders).chain(),
+                    map::corner::add_colliders,
                     map::mesh::update_mesh,
                     map::room::update_containing_room,
                 ),

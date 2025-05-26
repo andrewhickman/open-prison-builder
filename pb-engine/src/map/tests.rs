@@ -1,7 +1,7 @@
 use bevy::{ecs::system::RunSystemOnce, prelude::*};
 use spade::Triangulation;
 
-use crate::map::{self, Corner, CornerDef, Map, MapEntity, MapQueries, Room, Wall};
+use crate::map::{self, Corner, CornerDef, Map, MapQueries, Room, Wall};
 
 #[test]
 fn test_empty() {
@@ -266,7 +266,7 @@ fn assert_consistency(world: &World) {
     for vertex in map.triangulation.vertices() {
         if let Some(corner) = vertex.data().corner {
             assert_eq!(
-                world.entity(corner.id()).get::<Corner>().unwrap().vertex,
+                world.entity(corner.id()).get::<Corner>().unwrap().vertex(),
                 vertex.fix()
             );
         }
@@ -279,34 +279,25 @@ fn assert_consistency(world: &World) {
         if let Some(wall) = edge.data().data().wall {
             let wall = world.entity(wall.id()).get::<Wall>().unwrap();
 
-            let corner1 = directed_edge.from().data().corner.unwrap().id();
-            let corner2 = directed_edge.to().data().corner.unwrap().id();
-            let room1 = directed_edge.face().data().room.unwrap().id();
-            let room2 = directed_edge.rev().face().data().room.unwrap().id();
+            let corner1 = directed_edge.from().data().corner();
+            let corner2 = directed_edge.to().data().corner();
+            let room1 = directed_edge.face().data().room();
+            let room2 = directed_edge.rev().face().data().room();
 
             assert_eq!(wall.corners(), [corner1, corner2]);
             assert_eq!(wall.rooms(), [room1, room2]);
         } else {
-            let room1 = directed_edge.face().data().room.unwrap().id();
-            let room2 = directed_edge.rev().face().data().room.unwrap().id();
+            let room1 = directed_edge.face().data().room();
+            let room2 = directed_edge.rev().face().data().room();
             assert_eq!(room1, room2);
         }
     }
 
     for face in map.triangulation.all_faces() {
-        let room = world
-            .entity(face.data().room.unwrap().id())
-            .get::<Room>()
-            .unwrap();
-        assert!(room.faces.contains(&face.fix()));
-
         if let Some(inner_face) = face.as_inner() {
             for edge in inner_face.adjacent_edges() {
-                if !edge.as_undirected().is_constraint_edge() && !edge.rev().face().is_outer() {
-                    assert_eq!(
-                        face.data().room.unwrap().id(),
-                        edge.rev().face().data().room.unwrap().id()
-                    );
+                if !edge.as_undirected().is_constraint_edge() && !edge.is_part_of_convex_hull() {
+                    assert_eq!(face.data().room(), edge.rev().face().data().room());
                 }
             }
         }
@@ -317,8 +308,8 @@ fn assert_consistency(world: &World) {
         .filter_map(|e| e.get::<Corner>().map(|c| (e.id(), c)))
     {
         assert_eq!(
-            map.triangulation.vertex(corner.vertex).data().corner,
-            Some(MapEntity::Owned(corner_id))
+            map.triangulation.vertex(corner.vertex()).data().corner(),
+            corner_id
         );
     }
 
@@ -326,9 +317,9 @@ fn assert_consistency(world: &World) {
         .iter_entities()
         .filter_map(|e| e.get::<Wall>().map(|w| (e.id(), w)))
     {
-        let edge = map.triangulation.undirected_edge(wall.edge);
+        let edge = map.triangulation.undirected_edge(wall.edge());
         assert!(edge.is_constraint_edge());
-        assert_eq!(edge.data().data().wall, Some(MapEntity::Owned(wall_id)));
+        assert_eq!(edge.data().data().wall(), wall_id);
     }
 
     for (room_id, _) in world
@@ -338,7 +329,7 @@ fn assert_consistency(world: &World) {
         assert!(
             map.triangulation
                 .all_faces()
-                .any(|face| face.data().room == Some(MapEntity::Owned(room_id)))
+                .any(|face| face.data().room() == room_id)
         );
     }
 }

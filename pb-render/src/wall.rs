@@ -21,13 +21,18 @@ use bevy::{
 use pb_assets::AssetHandles;
 use pb_engine::{
     EngineState,
-    map::{Corner, Map, MapEntity, Wall, wall},
+    map::{
+        Map, MapEntity,
+        corner::Corner,
+        door::{self, Door},
+        wall::Wall,
+    },
 };
 use smallvec::SmallVec;
 
 use crate::layer;
 
-const CORNER_LOCUS: Vec2 = Vec2::new(0., 0.5 * wall::RADIUS);
+const CORNER_LOCUS: Vec2 = Vec2::new(0., 0.5 * Wall::RADIUS);
 
 const TEXTURE_TOP: f32 = 0.0;
 const TEXTURE_BOTTOM: f32 = 1.0;
@@ -59,6 +64,7 @@ enum CornerGeometryPointKind {
 #[derive(Debug, Default, Component, PartialEq)]
 pub struct WallGeometry {
     points: [Vec2; 6],
+    door: bool,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -186,7 +192,6 @@ pub fn update_visibility(
     engine_state: Res<State<EngineState>>,
     mut visible_maps: ResMut<VisibleMap>,
     map_q: Query<Ref<Map>>,
-    wall_q: Query<&Wall>,
     children_q: Query<&Children>,
     mut render_mode_q: Query<(&mut Visibility, &mut MeshMaterial2d<WallMaterial>)>,
 ) -> Result {
@@ -247,11 +252,7 @@ pub fn update_visibility(
                     }
                     MapEntity::Replaced(source, entity) => {
                         render_modes.insert(source, MapRenderMode::Hidden);
-                        if wall_q.get(source)?.corners() == wall_q.get(entity)?.corners() {
-                            render_modes.insert(entity, MapRenderMode::Visible);
-                        } else {
-                            render_modes.insert(entity, MapRenderMode::Added);
-                        }
+                        render_modes.insert(entity, MapRenderMode::Visible);
                     }
                     MapEntity::Owned(entity) => {
                         if map.source().is_some() {
@@ -286,7 +287,16 @@ pub fn update_geometry(
     map_q: Query<Ref<Map>>,
     corner_position_q: Query<&Corner>,
     mut corner_q: Query<(&Corner, &mut CornerGeometry, &mut Mesh2d, &mut Aabb), Without<Wall>>,
-    mut wall_q: Query<(&Wall, &mut WallGeometry, &mut Mesh2d, &mut Aabb), Without<Corner>>,
+    mut wall_q: Query<
+        (
+            &Wall,
+            Option<&Door>,
+            &mut WallGeometry,
+            &mut Mesh2d,
+            &mut Aabb,
+        ),
+        Without<Corner>,
+    >,
 ) -> Result {
     for map in &map_q {
         if !map.is_changed() && !visible_maps.is_changed() {
@@ -309,29 +319,17 @@ pub fn update_geometry(
             );
 
             if info.set_if_neq(new_info) {
-                let new_mesh = info.mesh();
-                *aabb = new_mesh
-                    .as_ref()
-                    .and_then(|m| m.compute_aabb())
-                    .unwrap_or_default();
-
-                mesh.0 = if let Some(new_mesh) = new_mesh {
-                    meshes.add(new_mesh)
-                } else {
-                    default()
-                };
+                update_mesh(&mut meshes, &mut mesh, &mut aabb, info.mesh());
             }
         }
 
         for entity in map.walls() {
-            let (wall, mut info, mut mesh, mut aabb) = wall_q.get_mut(entity.id())?;
+            let (wall, door, mut info, mut mesh, mut aabb) = wall_q.get_mut(entity.id())?;
             let [(_, start_info, _, _), (_, end_info, _, _)] = corner_q.get_many(wall.corners())?;
 
-            let new_info = WallGeometry::new(entity.id(), wall, start_info, end_info)?;
+            let new_info = WallGeometry::new(entity.id(), wall, door, start_info, end_info)?;
             if info.set_if_neq(new_info) {
-                let new_mesh = info.mesh();
-                *aabb = new_mesh.compute_aabb().unwrap_or_default();
-                mesh.0 = meshes.add(new_mesh);
+                update_mesh(&mut meshes, &mut mesh, &mut aabb, info.mesh());
             }
         }
     }
@@ -467,7 +465,13 @@ impl CornerGeometry {
 }
 
 impl WallGeometry {
-    fn new(id: Entity, wall: &Wall, start: &CornerGeometry, end: &CornerGeometry) -> Result<Self> {
+    fn new(
+        id: Entity,
+        wall: &Wall,
+        door: Option<&Door>,
+        start: &CornerGeometry,
+        end: &CornerGeometry,
+    ) -> Result<Self> {
         let (start1, start2, start3) = start
             .wall_intersection(id)
             .ok_or("wall intersection not found")?;
@@ -485,30 +489,93 @@ impl WallGeometry {
             wall_inv_isometry * end3,
         ];
 
-        Ok(WallGeometry { points })
+        Ok(WallGeometry {
+            points,
+            door: door.is_some(),
+        })
     }
 
-    fn mesh(&self) -> Mesh {
-        Mesh::new(
-            PrimitiveTopology::TriangleList,
-            RenderAssetUsages::RENDER_WORLD,
-        )
-        .with_inserted_attribute(
-            Mesh::ATTRIBUTE_POSITION,
-            VertexAttributeValues::Float32x3(self.points.map(|p| [p.x, p.y, layer::WALL]).to_vec()),
-        )
-        .with_inserted_attribute(
-            Mesh::ATTRIBUTE_UV_0,
-            VertexAttributeValues::Float32x2(vec![
-                [self.points[0].x, TEXTURE_BOTTOM],
-                [self.points[1].x, TEXTURE_TOP],
-                [self.points[2].x, TEXTURE_BOTTOM],
-                [self.points[3].x, TEXTURE_BOTTOM],
-                [self.points[4].x, TEXTURE_TOP],
-                [self.points[5].x, TEXTURE_BOTTOM],
-            ]),
-        )
-        .with_inserted_indices(Indices::U16(vec![0, 1, 5, 1, 5, 4, 1, 2, 4, 2, 4, 3]))
+    fn mesh(&self) -> Option<Mesh> {
+        if self.door {
+            let door_points = [
+                Vec2::new(-door::HALF_INNER_WIDTH, self.points[0].y),
+                Vec2::new(-door::HALF_INNER_WIDTH, self.points[1].y),
+                Vec2::new(-door::HALF_INNER_WIDTH, self.points[2].y),
+                Vec2::new(door::HALF_INNER_WIDTH, self.points[3].y),
+                Vec2::new(door::HALF_INNER_WIDTH, self.points[4].y),
+                Vec2::new(door::HALF_INNER_WIDTH, self.points[5].y),
+            ];
+
+            // Vertex layout:
+            // 2 ┌──────────────────────┐ 8    9 ┌──────────────────────┐ 3
+            // 1 ├──────────────────────┤ 7   10 ├──────────────────────┤ 4
+            // 0 └──────────────────────┘ 6   11 └──────────────────────┘ 5
+            Some(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::RENDER_WORLD,
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    VertexAttributeValues::Float32x3(
+                        self.points
+                            .iter()
+                            .chain(&door_points)
+                            .map(|p| [p.x, p.y, layer::WALL])
+                            .collect(),
+                    ),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_UV_0,
+                    VertexAttributeValues::Float32x2(vec![
+                        [self.points[0].x, TEXTURE_BOTTOM],
+                        [self.points[1].x, TEXTURE_TOP],
+                        [self.points[2].x, TEXTURE_BOTTOM],
+                        [self.points[3].x, TEXTURE_BOTTOM],
+                        [self.points[4].x, TEXTURE_TOP],
+                        [self.points[5].x, TEXTURE_BOTTOM],
+                        [door_points[0].x, TEXTURE_BOTTOM],
+                        [door_points[1].x, TEXTURE_TOP],
+                        [door_points[2].x, TEXTURE_BOTTOM],
+                        [door_points[3].x, TEXTURE_BOTTOM],
+                        [door_points[4].x, TEXTURE_TOP],
+                        [door_points[5].x, TEXTURE_BOTTOM],
+                    ]),
+                )
+                .with_inserted_indices(Indices::U16(vec![
+                    0, 6, 1, 6, 1, 7, 1, 7, 2, 7, 2, 8, 11, 5, 10, 5, 10, 4, 10, 4, 9, 4, 9, 3,
+                ])),
+            )
+        } else {
+            // Vertex layout:
+            // 2 ┌──────────────────────┐ 3
+            // 1 ├──────────────────────┤ 4
+            // 0 └──────────────────────┘ 5
+            Some(
+                Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::RENDER_WORLD,
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_POSITION,
+                    VertexAttributeValues::Float32x3(
+                        self.points.map(|p| [p.x, p.y, layer::WALL]).to_vec(),
+                    ),
+                )
+                .with_inserted_attribute(
+                    Mesh::ATTRIBUTE_UV_0,
+                    VertexAttributeValues::Float32x2(vec![
+                        [self.points[0].x, TEXTURE_BOTTOM],
+                        [self.points[1].x, TEXTURE_TOP],
+                        [self.points[2].x, TEXTURE_BOTTOM],
+                        [self.points[3].x, TEXTURE_BOTTOM],
+                        [self.points[4].x, TEXTURE_TOP],
+                        [self.points[5].x, TEXTURE_BOTTOM],
+                    ]),
+                )
+                .with_inserted_indices(Indices::U16(vec![0, 1, 5, 1, 5, 4, 1, 2, 4, 2, 4, 3])),
+            )
+        }
     }
 }
 
@@ -555,6 +622,21 @@ impl Material2d for WallMaterial {
     }
 }
 
+fn update_mesh(
+    meshes: &mut Assets<Mesh>,
+    mesh: &mut Mesh2d,
+    aabb: &mut Aabb,
+    new_mesh: Option<Mesh>,
+) {
+    if let Some(new_mesh) = new_mesh {
+        *aabb = new_mesh.compute_aabb().unwrap_or_default();
+        *mesh = Mesh2d(meshes.add(new_mesh));
+    } else {
+        *aabb = default();
+        *mesh = default();
+    }
+}
+
 fn corner_intersections(a1: f32, a2: f32) -> impl Iterator<Item = Vec2> {
     let da = angle_delta(a1, a2);
 
@@ -574,11 +656,11 @@ fn corner_intersections(a1: f32, a2: f32) -> impl Iterator<Item = Vec2> {
 }
 
 fn right_angle_intersection(a: f32) -> Vec2 {
-    Vec2::from_angle(a) * wall::RADIUS * SQRT_2
+    Vec2::from_angle(a) * Wall::RADIUS * SQRT_2
 }
 
 fn angle_intersection(mid: f32, da: f32) -> Vec2 {
-    Vec2::from_angle(mid) * wall::RADIUS / f32::sin(da)
+    Vec2::from_angle(mid) * Wall::RADIUS / f32::sin(da)
 }
 
 fn angle_delta(a1: f32, a2: f32) -> f32 {

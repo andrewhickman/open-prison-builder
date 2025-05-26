@@ -23,8 +23,8 @@ use spade::{
 };
 
 use crate::{
-    map::{Corner, FaceData, Map, UndirectedEdgeData, VertexData, wall},
-    pawn,
+    map::{Corner, FaceData, Map, UndirectedEdgeData, VertexData, door::Door, wall::Wall},
+    pawn::Pawn,
     root::RootQuery,
 };
 
@@ -39,7 +39,7 @@ struct RoomMeshInner {
     polygon: Polygon<f32>,
 }
 
-const RADIUS: f32 = wall::RADIUS + pawn::RADIUS;
+const RADIUS: f32 = Wall::RADIUS + Pawn::RADIUS;
 
 #[derive(Debug)]
 struct CornerGeometry {
@@ -63,6 +63,7 @@ pub fn update_mesh(
     mut commands: Commands,
     mut map_q: Query<&Map, Changed<Map>>,
     corner_q: Query<&Corner>,
+    door_q: Query<&Door>,
     root_q: RootQuery,
 ) -> Result {
     for map in &mut map_q {
@@ -84,7 +85,7 @@ pub fn update_mesh(
                     }),
                 );
 
-                Ok((corner.vertex, geometry))
+                Ok((corner.vertex(), geometry))
             })
             .collect::<Result<_>>()?;
 
@@ -102,7 +103,7 @@ pub fn update_mesh(
             edges.remove(&start);
 
             let (line_string, rooms) =
-                interior_polygon(&mut edges, &map.triangulation, &corner_geos, start)?;
+                compute_polygon(&mut edges, &map.triangulation, &corner_geos, start, &door_q)?;
 
             let (exterior, interior) = polygons.entry(rooms).or_default();
             match line_string.winding_order().unwrap() {
@@ -199,21 +200,28 @@ impl RoomMesh {
     }
 }
 
-fn interior_polygon(
+fn compute_polygon(
     edges: &mut HashSet<FixedDirectedEdgeHandle>,
     triangulation: &ConstrainedDelaunayTriangulation<VertexData, (), UndirectedEdgeData, FaceData>,
     corner_geos: &HashMap<FixedVertexHandle, CornerGeometry>,
     start: FixedDirectedEdgeHandle,
+    door_q: &Query<&Door>,
 ) -> Result<(LineString<f32>, Vec<Entity>)> {
     let mut coords = Vec::new();
     let mut rooms = Vec::new();
 
     let mut current = triangulation.directed_edge(start);
-    rooms.push(current.rev().face().data().room.unwrap().id());
+    rooms.push(current.rev().face().data().room());
     loop {
+        if door_q.contains(current.as_undirected().data().data().wall()) {
+            add_door_coords(&mut coords, current);
+            rooms.push(current.rev().face().data().room());
+            current = current.rev();
+        }
+
         let next = next_edge(current);
         add_corner_coords(&mut coords, current, next, corner_geos);
-        rooms.push(next.rev().face().data().room.unwrap().id());
+        rooms.push(next.rev().face().data().room());
 
         if !edges.remove(&next.fix()) {
             debug_assert_eq!(next.fix(), start);
@@ -225,6 +233,7 @@ fn interior_polygon(
 
     rooms.sort_unstable();
     rooms.dedup();
+    rooms.shrink_to_fit();
 
     let mut line_string = LineString::new(coords);
     line_string.close();
@@ -246,10 +255,36 @@ fn add_corner_coords(
     corner.wall_intersections(coords, start_wall, end_wall);
 }
 
+fn add_door_coords(
+    coords: &mut Vec<Coord<f32>>,
+    edge: DirectedEdgeHandle<'_, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
+) {
+    let start = edge.from().data().position;
+    let end = edge.to().data().position;
+
+    let wall_half_len = (end - start).length() / 2.;
+    let wall_isometry = Isometry2d {
+        translation: start.midpoint(end),
+        rotation: Dir2::try_from(end - start)
+            .unwrap_or(Dir2::X)
+            .rotation_from_x(),
+    };
+
+    let points = [
+        Vec2::new(-wall_half_len + RADIUS, -RADIUS),
+        Vec2::new(-wall_half_len + RADIUS, RADIUS),
+    ];
+
+    for point in points {
+        coords.push((wall_isometry * point).to_array().into());
+    }
+}
+
 fn next_edge<'a>(
     start: DirectedEdgeHandle<'a, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
 ) -> DirectedEdgeHandle<'a, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData> {
     let mut iter = start.rev();
+
     loop {
         iter = iter.ccw();
         if iter.is_constraint_edge() {

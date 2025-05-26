@@ -41,6 +41,8 @@ impl Plugin for PbUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TextInputPlugin);
 
+        input::picking::physics::register(app);
+
         app.init_state::<UiState>()
             .add_systems(OnEnter(UiState::Game), action::enter_game)
             .add_systems(OnExit(UiState::Game), action::exit_game);
@@ -114,6 +116,7 @@ impl Plugin for PbUiPlugin {
             .add_observer(input::picking::point::root_added)
             .add_observer(input::picking::point::grid::grid_added)
             .add_observer(input::picking::physics::pawn::pawn_added)
+            .add_observer(input::picking::physics::corner::corner_added)
             .add_observer(input::picking::physics::wall::wall_added)
             .add_observer(action::action_added)
             .add_observer(action::action_removed)

@@ -11,12 +11,12 @@ use bevy::{
 use tokio::sync::oneshot;
 
 use crate::{
-    map::{Wall, mesh::RoomMesh, room::ContainingRoom},
-    pawn::{MAX_ANGULAR_VELOCITY, MAX_VELOCITY, Pawn, VISION_RADIUS, ai::Task},
+    map::{mesh::RoomMesh, room::ContainingRoom, wall::Wall},
+    pawn::{Pawn, ai::Task},
     picking::Layer,
 };
 
-const POSITION_EPSILON: f32 = MAX_VELOCITY / 64.;
+const POSITION_EPSILON: f32 = Pawn::MAX_VELOCITY / 64.;
 
 #[derive(Bundle)]
 pub struct PathTaskBundle {
@@ -232,7 +232,7 @@ impl MovementQuery<'_, '_> {
                     collider_shape,
                     *collider_position,
                     *collider_rotation,
-                    VISION_RADIUS,
+                    Pawn::VISION_RADIUS,
                 )
                 .unwrap()
                 {
@@ -247,7 +247,7 @@ impl MovementQuery<'_, '_> {
                         normal: normal.to_angle(),
                         velocity_t: pawn_space_velocity.to_angle(),
                         velocity_r: pawn_space_velocity.length_squared()
-                            / (MAX_VELOCITY * MAX_VELOCITY),
+                            / (Pawn::MAX_VELOCITY * Pawn::MAX_VELOCITY),
                         is_pawn: collider_is_pawn,
                         is_wall: collider_is_wall,
                     };
@@ -289,7 +289,7 @@ impl MovementQuery<'_, '_> {
 impl Default for PathQueryConfig {
     fn default() -> Self {
         Self {
-            collider: Collider::circle(VISION_RADIUS),
+            collider: Collider::circle(Pawn::VISION_RADIUS),
             all_filter: SpatialQueryFilter::DEFAULT,
             wall_filter: SpatialQueryFilter {
                 mask: Layer::Wall.into(),
@@ -314,7 +314,7 @@ impl Default for PathCollision {
     fn default() -> Self {
         Self {
             angle: 1.,
-            distance: VISION_RADIUS,
+            distance: Pawn::VISION_RADIUS,
             normal: 0.,
             velocity_t: 0.,
             velocity_r: 0.,
@@ -345,10 +345,10 @@ impl PathObservation {
         PathObservation {
             linear_velocity_t: pawn_space_linear_velocity.to_angle() / PI,
             linear_velocity_r: pawn_space_linear_velocity.length_squared()
-                / (MAX_VELOCITY * MAX_VELOCITY),
-            angular_velocity: angular_velocity.0 / MAX_ANGULAR_VELOCITY,
+                / (Pawn::MAX_VELOCITY * Pawn::MAX_VELOCITY),
+            angular_velocity: angular_velocity.0 / Pawn::MAX_ANGULAR_VELOCITY,
             target_t: pawn_space_target.to_angle() / PI,
-            target_r: pawn_space_target.length().min(VISION_RADIUS),
+            target_r: pawn_space_target.length().min(Pawn::VISION_RADIUS),
             collision_t: collision.angle / PI,
             collision_r: collision.distance,
             collision_normal_t: collision.normal / PI,

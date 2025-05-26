@@ -1,3 +1,4 @@
+pub mod corner;
 pub mod pawn;
 pub mod wall;
 
@@ -6,14 +7,24 @@ use avian2d::{
     prelude::*,
 };
 use bevy::{
-    math::FloatOrd,
     picking::backend::{HitData, PointerHits, ray::RayMap},
     prelude::*,
 };
-use pb_engine::picking::Layer;
+use pb_engine::{
+    map::{corner::Corner, wall::Wall},
+    pawn::Pawn,
+    picking::Layer,
+};
 use pb_render::projection::ProjectionExt;
 
 use super::PHYSICS_PICKING_THRESHOLD;
+
+#[derive(Clone, Copy, Debug, Component, PartialEq, Eq, PartialOrd, Ord)]
+pub enum PhysicsPickingPriority {
+    Pawn,
+    Corner,
+    Wall,
+}
 
 #[derive(Default, Clone, Copy, Debug, Component)]
 pub enum PhysicsPickingState {
@@ -23,10 +34,23 @@ pub enum PhysicsPickingState {
     SnapWall,
 }
 
+pub fn register(app: &mut App) {
+    app.register_required_components_with::<Pawn, PhysicsPickingPriority>(|| {
+        PhysicsPickingPriority::Pawn
+    });
+    app.register_required_components_with::<Corner, PhysicsPickingPriority>(|| {
+        PhysicsPickingPriority::Corner
+    });
+    app.register_required_components_with::<Wall, PhysicsPickingPriority>(|| {
+        PhysicsPickingPriority::Wall
+    });
+}
+
 pub fn update_hits(
     camera_q: Query<(&Camera, &Projection)>,
     ray_map: Res<RayMap>,
     pickable_q: Query<&Pickable>,
+    priority_q: Query<&PhysicsPickingPriority>,
     spatial_query: SpatialQuery,
     state: Option<Single<&PhysicsPickingState>>,
     mut output_events: EventWriter<PointerHits>,
@@ -61,15 +85,7 @@ pub fn update_hits(
             },
         );
 
-        hits.sort_unstable_by_key(|hit| {
-            FloatOrd(
-                hit.1
-                    .position
-                    .unwrap()
-                    .xy()
-                    .distance_squared(ray.origin.xy()),
-            )
-        });
+        hits.sort_unstable_by_key(|&(hit, _)| priority_q.get(hit).ok());
         hits.truncate(1);
 
         output_events.write(PointerHits::new(ray_id.pointer, hits, camera.order as f32));

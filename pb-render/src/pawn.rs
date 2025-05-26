@@ -1,28 +1,19 @@
 use bevy::prelude::*;
 
 use pb_assets::AssetHandles;
-use pb_engine::{
-    pawn::{self, Pawn},
-    root::Root,
-};
+use pb_engine::pawn::Pawn;
 use pb_util::rng::LocalRng;
 use rand::{Rng, seq::IndexedRandom};
 
 use crate::layer;
 
-const SPRITE_SIZE: Vec2 = Vec2::splat(pawn::RADIUS * 4.);
+const PAWN_SPRITE_SIZE: Vec2 = Vec2::splat(Pawn::RADIUS * 4.);
 
 #[derive(Default, Copy, Clone, Component)]
 pub struct PawnSprite;
 
 #[derive(Default, Copy, Clone, Component)]
 pub struct PawnHighlight;
-
-pub fn root_added(trigger: Trigger<OnAdd, Root>, mut commands: Commands) {
-    commands
-        .entity(trigger.target())
-        .insert(Visibility::default());
-}
 
 pub fn pawn_added(
     trigger: Trigger<OnAdd, Pawn>,
@@ -44,7 +35,7 @@ pub fn pawn_added(
         Visibility::Visible,
         Sprite {
             image: assets.pawn_heads_image.clone(),
-            custom_size: Some(SPRITE_SIZE),
+            custom_size: Some(PAWN_SPRITE_SIZE),
             texture_atlas: Some(TextureAtlas {
                 layout: assets.pawn_heads_layout.clone(),
                 index: head,
@@ -60,7 +51,7 @@ pub fn pawn_added(
         Visibility::Visible,
         Sprite {
             image: assets.pawn_bodies_image.clone(),
-            custom_size: Some(SPRITE_SIZE),
+            custom_size: Some(PAWN_SPRITE_SIZE),
             texture_atlas: Some(TextureAtlas {
                 layout: assets.pawn_bodies_layout.clone(),
                 index: body,
@@ -91,7 +82,7 @@ impl PawnHighlight {
             Visibility::Inherited,
             Sprite {
                 image: assets.pawn_highlight_image.clone(),
-                custom_size: Some(SPRITE_SIZE),
+                custom_size: Some(PAWN_SPRITE_SIZE),
                 color,
                 ..default()
             },

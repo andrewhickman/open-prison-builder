@@ -30,10 +30,10 @@ pub fn remove_wall(_: Trigger<Pointer<Click>>, mut commands: Commands) -> Result
 #[require(
     Action,
     Cancellable,
-    Name = Name::new(RemoveWallAction::type_path()),
-    PhysicsPickingState = PhysicsPickingState::Wall,
+    Name::new(RemoveWallAction::type_path()),
+    PhysicsPickingState::Wall,
     Transform,
-    Visibility,
+    Visibility
 )]
 pub struct RemoveWallAction;
 

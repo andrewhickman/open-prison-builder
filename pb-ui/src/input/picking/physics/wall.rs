@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use pb_engine::map::{Wall, wall};
+use pb_engine::map::wall::Wall;
 use pb_render::projection::ProjectionExt;
 
 use crate::input::picking::point::grid::Grid;
@@ -7,7 +7,7 @@ use crate::input::picking::point::grid::Grid;
 #[derive(Event, Debug, Clone, Copy)]
 pub struct SelectWall {
     pub wall: Entity,
-    pub kind: WallPickKind,
+    pub position: Vec2,
 }
 
 #[derive(Event, Debug, Clone, Copy)]
@@ -18,13 +18,7 @@ pub struct CancelWall {
 #[derive(Event, Debug, Clone, Copy)]
 pub struct ClickWall {
     pub wall: Entity,
-    pub kind: WallPickKind,
-}
-
-#[derive(Event, Debug, Clone, Copy)]
-pub enum WallPickKind {
-    Corner { corner: Entity },
-    Wall { position: Vec2 },
+    pub position: Vec2,
 }
 
 pub fn wall_added(trigger: Trigger<OnAdd, Wall>, mut commands: Commands) {
@@ -52,17 +46,16 @@ fn over(
     let wall = wall_q.get(trigger.target())?;
     let [start, end] = corner_q.get_many(wall.corners())?;
 
+    let position = locate_wall_pick(
+        pos.xy(),
+        start.translation.xy(),
+        end.translation.xy(),
+        &grid_q,
+        projection_q.get(trigger.event().hit.camera)?.scale(),
+    );
     commands.trigger(SelectWall {
         wall: trigger.target(),
-        kind: WallPickKind::new(
-            pos.xy(),
-            wall.corners()[0],
-            start.translation.xy(),
-            wall.corners()[1],
-            end.translation.xy(),
-            &grid_q,
-            projection_q.get(trigger.event().hit.camera)?.scale(),
-        ),
+        position,
     });
     Ok(())
 }
@@ -83,17 +76,16 @@ fn moved(
     let wall = wall_q.get(trigger.target())?;
     let [start, end] = vertex_q.get_many(wall.corners())?;
 
+    let position = locate_wall_pick(
+        pos.xy(),
+        start.translation.xy(),
+        end.translation.xy(),
+        &grid_q,
+        projection_q.get(trigger.event().hit.camera)?.scale(),
+    );
     commands.trigger(SelectWall {
         wall: trigger.target(),
-        kind: WallPickKind::new(
-            pos.xy(),
-            wall.corners()[0],
-            start.translation.xy(),
-            wall.corners()[1],
-            end.translation.xy(),
-            &grid_q,
-            projection_q.get(trigger.event().hit.camera)?.scale(),
-        ),
+        position,
     });
     Ok(())
 }
@@ -123,54 +115,39 @@ fn click(
     let [start, end] = vertex_q.get_many(wall.corners())?;
 
     if trigger.button == PointerButton::Primary {
+        let position = locate_wall_pick(
+            pos.xy(),
+            start.translation.xy(),
+            end.translation.xy(),
+            &grid_q,
+            projection_q.get(trigger.event().hit.camera)?.scale(),
+        );
         commands.trigger(ClickWall {
             wall: trigger.target(),
-            kind: WallPickKind::new(
-                pos.xy(),
-                wall.corners()[0],
-                start.translation.xy(),
-                wall.corners()[1],
-                end.translation.xy(),
-                &grid_q,
-                projection_q.get(trigger.event().hit.camera)?.scale(),
-            ),
+            position,
         });
     }
     Ok(())
 }
 
-impl WallPickKind {
-    pub fn new(
-        hit_pos: Vec2,
-        start: Entity,
-        start_pos: Vec2,
-        end: Entity,
-        end_pos: Vec2,
-        grid_q: &Query<&Grid>,
-        scale: f32,
-    ) -> Self {
-        let hit_dir = hit_pos - start_pos;
-        let wall_dir = end_pos - start_pos;
+fn locate_wall_pick(
+    hit_pos: Vec2,
+    start_pos: Vec2,
+    end_pos: Vec2,
+    grid_q: &Query<&Grid>,
+    scale: f32,
+) -> Vec2 {
+    let hit_dir = hit_pos - start_pos;
+    let wall_dir = end_pos - start_pos;
 
-        let mut t = hit_dir.dot(wall_dir) / wall_dir.length_squared();
+    let mut t = hit_dir.dot(wall_dir) / wall_dir.length_squared();
 
-        if t < 0.0 || (t < 0.5 && (t * wall_dir).length_squared() < (wall::RADIUS * wall::RADIUS)) {
-            WallPickKind::Corner { corner: start }
-        } else if t > 1.0
-            || (((1. - t) * wall_dir).length_squared() < (wall::RADIUS * wall::RADIUS))
-        {
-            WallPickKind::Corner { corner: end }
-        } else {
-            for grid in grid_q {
-                if let Some(grid_t) = grid.line_mark(start_pos, wall_dir, t, scale) {
-                    t = grid_t;
-                    break;
-                }
-            }
-
-            let closest = start_pos + t * wall_dir;
-
-            WallPickKind::Wall { position: closest }
+    for grid in grid_q {
+        if let Some(grid_t) = grid.line_mark(start_pos, wall_dir, t, scale) {
+            t = grid_t;
+            break;
         }
     }
+
+    start_pos + t * wall_dir
 }

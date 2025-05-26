@@ -1,3 +1,5 @@
+pub mod corner;
+pub mod door;
 pub mod mesh;
 pub mod room;
 pub mod wall;
@@ -21,7 +23,10 @@ use spade::{
     },
 };
 
-use crate::save::MapModel;
+use crate::{
+    map::{corner::Corner, door::Door, room::Room, wall::Wall},
+    save::MapModel,
+};
 
 pub const GRID_SIZE: f32 = 4.0;
 
@@ -33,30 +38,6 @@ pub struct Map {
     children: EntityHashSet,
     size: u32,
     triangulation: ConstrainedDelaunayTriangulation<VertexData, (), UndirectedEdgeData, FaceData>,
-}
-
-#[derive(Clone, Debug, Component)]
-#[require(Transform, Visibility)]
-pub struct Corner {
-    vertex: FixedVertexHandle,
-    position: Vec2,
-}
-
-#[derive(Clone, Debug, Component)]
-#[require(Transform, Visibility)]
-pub struct Wall {
-    edge: FixedUndirectedEdgeHandle,
-    length: f32,
-    position: Vec2,
-    rotation: Rot2,
-    corners: [Entity; 2],
-    rooms: [Entity; 2],
-}
-
-#[derive(Clone, Debug, Component)]
-#[require(Transform, Visibility)]
-pub struct Room {
-    faces: Vec<FixedFaceHandle<PossiblyOuterTag>>,
 }
 
 #[derive(SystemParam)]
@@ -136,7 +117,7 @@ impl Map {
                 .corners
                 .iter()
                 .map(|corner| {
-                    VertexData::corner(
+                    VertexData::with_corner(
                         corner.position,
                         MapEntity::Owned(entity_map.get_mapped(corner.id)),
                     )
@@ -347,13 +328,13 @@ impl Map {
 
     pub fn corner_walls(&self, corner: &Corner) -> impl Iterator<Item = (Entity, Entity)> + '_ {
         self.triangulation
-            .vertex(corner.vertex)
+            .vertex(corner.vertex())
             .out_edges()
             .filter(|edge| edge.is_constraint_edge())
             .map(|edge| {
                 (
-                    edge.as_undirected().data().data().wall.unwrap().id(),
-                    edge.to().data().corner.unwrap().id(),
+                    edge.as_undirected().data().data().wall(),
+                    edge.to().data().corner(),
                 )
             })
     }
@@ -381,17 +362,11 @@ impl Map {
     pub fn insert_corner(&mut self, queries: &mut MapQueries, corner: CornerDef) -> Result<Entity> {
         let vertex = self.get_or_insert_vertex(queries, corner)?;
         self.sync(queries);
-        Ok(self
-            .triangulation
-            .vertex(vertex)
-            .data()
-            .corner
-            .unwrap()
-            .id())
+        Ok(self.triangulation.vertex(vertex).data().corner())
     }
 
     pub fn remove_corner(&mut self, queries: &mut MapQueries, corner: Entity) -> Result {
-        let vertex = queries.corner_q.get(corner)?.vertex;
+        let vertex = queries.corner_q.get(corner)?.vertex();
         self.triangulation.remove(vertex);
         self.sync(queries);
         Ok(())
@@ -403,9 +378,9 @@ impl Map {
         start: CornerDef,
         end: CornerDef,
     ) -> Result<Option<(Entity, Entity)>> {
-        let start = self.get_or_insert_vertex(queries, start)?;
-        let end = self.get_or_insert_vertex(queries, end)?;
-        self.triangulation
+        let (start, end) = self.get_or_insert_vertices(queries, start, end)?;
+        let edges = self
+            .triangulation
             .add_constraint_and_split(start, end, VertexData::from);
 
         self.triangulation.vertex_data_mut(start).standalone = false;
@@ -413,21 +388,97 @@ impl Map {
 
         self.sync(queries);
 
-        if start == end {
+        if edges.is_empty() {
             Ok(None)
         } else {
             Ok(Some((
-                self.triangulation.vertex(start).data().corner.unwrap().id(),
-                self.triangulation.vertex(end).data().corner.unwrap().id(),
+                self.triangulation.vertex(start).data().corner(),
+                self.triangulation.vertex(end).data().corner(),
+            )))
+        }
+    }
+
+    pub fn insert_wall_with(
+        &mut self,
+        queries: &mut MapQueries,
+        start: CornerDef,
+        end: CornerDef,
+        bundle: impl Bundle + Clone,
+    ) -> Result<Option<(Entity, Vec<Entity>, Entity)>> {
+        let (start, end) = self.get_or_insert_vertices(queries, start, end)?;
+        let edges = self
+            .triangulation
+            .add_constraint_and_split(start, end, VertexData::from);
+
+        self.triangulation.vertex_data_mut(start).standalone = false;
+        self.triangulation.vertex_data_mut(end).standalone = false;
+
+        let walls: Vec<Entity> = edges
+            .into_iter()
+            .map(|edge| {
+                let edge = edge.as_undirected();
+                let wall = match self.triangulation.undirected_edge(edge).data().data().wall {
+                    Some(wall) => queries.update(self.id, wall, bundle.clone()),
+                    None => queries.spawn(self.id, bundle.clone()),
+                };
+                self.triangulation
+                    .undirected_edge_data_mut(edge)
+                    .data_mut()
+                    .wall = Some(wall);
+                wall.id()
+            })
+            .collect();
+
+        self.sync(queries);
+
+        if walls.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some((
+                self.triangulation.vertex(start).data().corner(),
+                walls,
+                self.triangulation.vertex(end).data().corner(),
             )))
         }
     }
 
     pub fn remove_wall(&mut self, queries: &mut MapQueries, wall: Entity) -> Result {
-        let edge = queries.wall_q.get(wall)?.edge;
+        let edge = queries.wall_q.get(wall)?.edge();
         self.triangulation.remove_constraint_edge(edge);
         self.sync(queries);
         Ok(())
+    }
+
+    fn get_or_insert_vertices(
+        &mut self,
+        queries: &mut MapQueries,
+        target1: CornerDef,
+        target2: CornerDef,
+    ) -> Result<(FixedVertexHandle, FixedVertexHandle)> {
+        match (target1, target2) {
+            (CornerDef::Wall(wall1, position1), CornerDef::Wall(wall2, position2))
+                if wall1 == wall2 =>
+            {
+                let wall = queries.wall_q.get(wall1)?;
+                let edge = self.triangulation.undirected_edge(wall.edge());
+                let [start, end] = edge.vertices().map(|v| v.fix());
+                self.triangulation.remove_constraint_edge(edge.fix());
+
+                let mid1 = self.triangulation.insert(VertexData::new(position1))?;
+                let mid2 = self.triangulation.insert(VertexData::new(position2))?;
+
+                self.triangulation
+                    .add_constraint_and_split(start, mid1, VertexData::from);
+                self.triangulation
+                    .add_constraint_and_split(mid2, end, VertexData::from);
+
+                Ok((mid1, mid2))
+            }
+            _ => Ok((
+                self.get_or_insert_vertex(queries, target1)?,
+                self.get_or_insert_vertex(queries, target2)?,
+            )),
+        }
     }
 
     fn get_or_insert_vertex(
@@ -436,7 +487,7 @@ impl Map {
         target: CornerDef,
     ) -> Result<FixedVertexHandle> {
         match target {
-            CornerDef::Corner(corner) => Ok(queries.corner_q.get(corner)?.vertex),
+            CornerDef::Corner(corner) => Ok(queries.corner_q.get(corner)?.vertex()),
             CornerDef::Position(position) => {
                 self.expand_size(position)?;
 
@@ -448,7 +499,7 @@ impl Map {
             }
             CornerDef::Wall(wall, position) => {
                 let wall = queries.wall_q.get(wall)?;
-                let edge = self.triangulation.undirected_edge(wall.edge);
+                let edge = self.triangulation.undirected_edge(wall.edge());
                 let [start, end] = edge.vertices().map(|v| v.fix());
                 self.triangulation.remove_constraint_edge(edge.fix());
 
@@ -566,7 +617,7 @@ impl Map {
 
             faces.sort_unstable();
 
-            let room = self.update_room(queries, room, &faces);
+            let room = self.update_room(queries, room);
             for face in faces {
                 self.triangulation.face_data_mut(face).room = Some(room);
             }
@@ -585,12 +636,10 @@ impl Map {
             if is_wall {
                 let directed1 = edge.as_directed();
                 let directed2 = directed1.rev();
-                let corners = directed1
-                    .vertices()
-                    .map(|vertex| vertex.data().corner.unwrap().id());
+                let corners = directed1.vertices().map(|vertex| vertex.data().corner());
                 let positions = edge.vertices().map(|vertex| vertex.data().position);
-                let room1 = directed1.face().data().room.unwrap().id();
-                let room2 = directed2.face().data().room.unwrap().id();
+                let room1 = directed1.face().data().room();
+                let room2 = directed2.face().data().room();
                 let edge = edge.fix();
 
                 let wall = self.update_wall(
@@ -656,20 +705,11 @@ impl Map {
     ) -> MapEntity {
         if let Some(corner) = corner {
             match queries.corner(corner.id()) {
-                Some(corner_data) if corner_data.vertex == vertex => corner,
-                _ => {
-                    if let MapEntity::Cloned(source) = corner {
-                        let corner = queries.spawn_corner(self.id, vertex, position);
-                        MapEntity::Replaced(source, corner)
-                    } else {
-                        queries.update_corner(corner.id(), vertex, position);
-                        corner
-                    }
-                }
+                Some(corner_data) if corner_data.vertex() == vertex => corner,
+                _ => queries.update(self.id, corner, Corner::bundle(vertex, position)),
             }
         } else {
-            let corner = queries.spawn_corner(self.id, vertex, position);
-            MapEntity::Owned(corner)
+            queries.spawn(self.id, Corner::bundle(vertex, position))
         }
     }
 
@@ -685,50 +725,27 @@ impl Map {
         if let Some(wall) = wall {
             match queries.wall(wall.id()) {
                 Some(wall_data)
-                    if wall_data.edge == edge
-                        && wall_data.corners == corners
-                        && wall_data.rooms == rooms =>
+                    if wall_data.edge() == edge
+                        && wall_data.corners() == corners
+                        && wall_data.rooms() == rooms =>
                 {
                     wall
                 }
-                _ => {
-                    if let MapEntity::Cloned(source) = wall {
-                        let wall = queries.spawn_wall(self.id, edge, corners, positions, rooms);
-                        MapEntity::Replaced(source, wall)
-                    } else {
-                        queries.update_wall(wall.id(), edge, corners, positions, rooms);
-                        wall
-                    }
-                }
+                _ => queries.update(self.id, wall, Wall::bundle(edge, corners, positions, rooms)),
             }
         } else {
-            let wall = queries.spawn_wall(self.id, edge, corners, positions, rooms);
-            MapEntity::Owned(wall)
+            queries.spawn(self.id, Wall::bundle(edge, corners, positions, rooms))
         }
     }
 
-    fn update_room(
-        &self,
-        queries: &mut MapQueries,
-        room: Option<MapEntity>,
-        faces: &[FixedFaceHandle<PossiblyOuterTag>],
-    ) -> MapEntity {
+    fn update_room(&self, queries: &mut MapQueries, room: Option<MapEntity>) -> MapEntity {
         if let Some(room) = room {
             match queries.room(room.id()) {
-                Some(room_data) if room_data.faces == faces => room,
-                _ => {
-                    if let MapEntity::Cloned(source) = room {
-                        let room: Entity = queries.spawn_room(self.id, faces.to_vec());
-                        MapEntity::Replaced(source, room)
-                    } else {
-                        queries.update_room(room.id(), faces.to_vec());
-                        room
-                    }
-                }
+                Some(_) => room,
+                _ => queries.update(self.id, room, Room::bundle()),
             }
         } else {
-            let room = queries.spawn_room(self.id, faces.to_vec());
-            MapEntity::Owned(room)
+            queries.spawn(self.id, Room::bundle())
         }
     }
 }
@@ -761,91 +778,6 @@ impl fmt::Debug for Map {
                 &self.triangulation.inner_faces().collect::<Vec<_>>(),
             )
             .finish()
-    }
-}
-
-impl Corner {
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    fn bundle(vertex: FixedVertexHandle, position: Vec2) -> impl Bundle {
-        (
-            Name::new(format!("corner ({}, {})", position.x, position.y)),
-            Corner { vertex, position },
-            Transform::from_translation(position.extend(0.)),
-        )
-    }
-}
-
-impl Wall {
-    pub fn length(&self) -> f32 {
-        self.length
-    }
-
-    pub fn corners(&self) -> [Entity; 2] {
-        self.corners
-    }
-
-    pub fn rooms(&self) -> [Entity; 2] {
-        self.rooms
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    pub fn rotation(&self) -> Rot2 {
-        self.rotation
-    }
-
-    pub fn isometry(&self) -> Isometry2d {
-        Isometry2d {
-            translation: self.position,
-            rotation: self.rotation,
-        }
-    }
-
-    fn bundle(
-        edge: FixedUndirectedEdgeHandle,
-        corners: [Entity; 2],
-        [position1, position2]: [Vec2; 2],
-        rooms: [Entity; 2],
-    ) -> impl Bundle {
-        let length = position1.distance(position2);
-        let position = position1.midpoint(position2);
-        let rotation = (position2 - position1).to_angle();
-
-        (
-            Name::new(format!(
-                "wall ({}, {}) to ({}, {})",
-                position1.x, position1.y, position2.x, position2.y
-            )),
-            Wall {
-                edge,
-                length,
-                position,
-                rotation: Rot2::radians(rotation),
-                corners,
-                rooms,
-            },
-            Transform {
-                scale: Vec3::ONE,
-                translation: position.extend(0.),
-                rotation: Quat::from_rotation_z(rotation),
-            },
-        )
-    }
-}
-
-impl Room {
-    pub fn is_outer(&self) -> bool {
-        debug_assert!(self.faces.is_sorted());
-        self.faces.first().is_some_and(|face| face.is_outer())
-    }
-
-    fn bundle(faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> impl Bundle {
-        (Name::new("room"), Room { faces })
     }
 }
 
@@ -892,52 +824,34 @@ impl MapQueries<'_, '_> {
         self.room_q.get(room).ok()
     }
 
-    fn spawn_corner(&mut self, map: Entity, vertex: FixedVertexHandle, position: Vec2) -> Entity {
-        self.commands
-            .spawn((Corner::bundle(vertex, position), ChildOf(map)))
-            .id()
+    fn spawn(&mut self, map: Entity, bundle: impl Bundle) -> MapEntity {
+        MapEntity::Owned(self.commands.spawn((bundle, ChildOf(map))).id())
     }
 
-    fn update_corner(&mut self, corner: Entity, vertex: FixedVertexHandle, position: Vec2) {
-        self.commands
-            .entity(corner)
-            .insert(Corner::bundle(vertex, position));
-    }
-
-    fn spawn_wall(
-        &mut self,
-        map: Entity,
-        edge: FixedUndirectedEdgeHandle,
-        corners: [Entity; 2],
-        positions: [Vec2; 2],
-        rooms: [Entity; 2],
-    ) -> Entity {
-        self.commands
-            .spawn((Wall::bundle(edge, corners, positions, rooms), ChildOf(map)))
-            .id()
-    }
-
-    fn update_wall(
-        &mut self,
-        wall: Entity,
-        edge: FixedUndirectedEdgeHandle,
-        corners: [Entity; 2],
-        positions: [Vec2; 2],
-        rooms: [Entity; 2],
-    ) {
-        self.commands
-            .entity(wall)
-            .insert(Wall::bundle(edge, corners, positions, rooms));
-    }
-
-    fn spawn_room(&mut self, map: Entity, faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> Entity {
-        self.commands
-            .spawn((Room::bundle(faces), ChildOf(map)))
-            .id()
-    }
-
-    fn update_room(&mut self, room: Entity, faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) {
-        self.commands.entity(room).insert(Room::bundle(faces));
+    fn update(&mut self, map: Entity, entity: MapEntity, bundle: impl Bundle) -> MapEntity {
+        match entity {
+            MapEntity::Cloned(source) => {
+                let id = self
+                    .commands
+                    .entity(source)
+                    .clone_and_spawn_with(|options| {
+                        options
+                            .deny_all()
+                            .allow::<Corner>()
+                            .allow::<Wall>()
+                            .allow::<Room>()
+                            .allow::<Door>()
+                            .linked_cloning(false);
+                    })
+                    .insert((bundle, ChildOf(map)))
+                    .id();
+                MapEntity::Replaced(source, id)
+            }
+            MapEntity::Replaced(_, id) | MapEntity::Owned(id) => {
+                self.commands.entity(id).insert(bundle);
+                entity
+            }
+        }
     }
 }
 
@@ -950,7 +864,7 @@ impl VertexData {
         }
     }
 
-    fn corner(position: Vec2, corner: MapEntity) -> Self {
+    fn with_corner(position: Vec2, corner: MapEntity) -> Self {
         VertexData {
             corner: Some(corner),
             position,
@@ -964,6 +878,10 @@ impl VertexData {
             position,
             standalone: true,
         }
+    }
+
+    fn corner(&self) -> Entity {
+        self.corner.expect("expected corner to be populated").id()
     }
 }
 
@@ -982,5 +900,17 @@ impl From<Point2<f32>> for VertexData {
             position: Vec2::new(position.x, position.y),
             standalone: false,
         }
+    }
+}
+
+impl UndirectedEdgeData {
+    fn wall(&self) -> Entity {
+        self.wall.expect("expected wall to be populated").id()
+    }
+}
+
+impl FaceData {
+    fn room(&self) -> Entity {
+        self.room.expect("expected room to be populated").id()
     }
 }

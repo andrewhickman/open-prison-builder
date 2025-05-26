@@ -9,7 +9,8 @@ use crate::{
         picking::{
             physics::{
                 PhysicsPickingState,
-                wall::{CancelWall, ClickWall, SelectWall, WallPickKind},
+                corner::{CancelCorner, ClickCorner, SelectCorner},
+                wall::{CancelWall, ClickWall, SelectWall},
             },
             point::{CancelPoint, ClickPoint, SelectPoint, grid::Grid},
         },
@@ -37,6 +38,9 @@ pub fn add_wall(
                 Observer::new(select_point),
                 Observer::new(cancel_point),
                 Observer::new(click_point),
+                Observer::new(select_corner),
+                Observer::new(cancel_corner),
+                Observer::new(click_corner),
                 Observer::new(select_wall),
                 Observer::new(cancel_wall),
                 Observer::new(click_wall),
@@ -52,10 +56,10 @@ pub fn add_wall(
 #[require(
     Action,
     Cancellable,
-    Name = Name::new(AddWallAction::type_path()),
-    PhysicsPickingState = PhysicsPickingState::SnapWall,
+    Name::new(AddWallAction::type_path()),
+    PhysicsPickingState::SnapWall,
     Transform,
-    Visibility,
+    Visibility
 )]
 pub enum AddWallAction {
     #[default]
@@ -94,14 +98,7 @@ fn select_wall(
     mut action: Single<&mut AddWallAction>,
     mut map: MapParam,
 ) -> Result {
-    match trigger.kind {
-        WallPickKind::Corner { corner, .. } => {
-            action.select_corner(&mut map, CornerDef::Corner(corner))
-        }
-        WallPickKind::Wall { position, .. } => {
-            action.select_corner(&mut map, CornerDef::Wall(trigger.wall, position))
-        }
-    }
+    action.select_corner(&mut map, CornerDef::Wall(trigger.wall, trigger.position))
 }
 
 fn cancel_wall(
@@ -117,12 +114,31 @@ fn click_wall(
     mut action: Single<&mut AddWallAction>,
     mut map: MapParam,
 ) -> Result {
-    match trigger.kind {
-        WallPickKind::Corner { corner, .. } => action.click(&mut map, CornerDef::Corner(corner)),
-        WallPickKind::Wall { position, .. } => {
-            action.click(&mut map, CornerDef::Wall(trigger.wall, position))
-        }
-    }
+    action.click(&mut map, CornerDef::Wall(trigger.wall, trigger.position))
+}
+
+fn select_corner(
+    trigger: Trigger<SelectCorner>,
+    mut action: Single<&mut AddWallAction>,
+    mut map: MapParam,
+) -> Result {
+    action.select_corner(&mut map, CornerDef::Corner(trigger.corner))
+}
+
+fn cancel_corner(
+    _: Trigger<CancelCorner>,
+    mut action: Single<&mut AddWallAction>,
+    mut map: MapParam,
+) -> Result {
+    action.cancel(&mut map)
+}
+
+fn click_corner(
+    trigger: Trigger<ClickCorner>,
+    mut action: Single<&mut AddWallAction>,
+    mut map: MapParam,
+) -> Result {
+    action.click(&mut map, CornerDef::Corner(trigger.corner))
 }
 
 impl AddWallAction {

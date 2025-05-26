@@ -10,9 +10,9 @@ use crate::{
 #[derive(Default, Clone, Copy, Debug, Component)]
 #[require(
     Visibility,
-    Mesh2d = Mesh2d(GRID_MESH_HANDLE),
-    Pickable = Pickable::IGNORE,
-    NoFrustumCulling,
+    Mesh2d(GRID_MESH_HANDLE),
+    Pickable::IGNORE,
+    NoFrustumCulling
 )]
 pub struct Grid {
     level: i32,

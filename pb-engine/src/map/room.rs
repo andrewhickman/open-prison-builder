@@ -1,10 +1,11 @@
 use bevy::{ecs::entity::EntityHashSet, prelude::*};
 
-use crate::{
-    map::{Map, Room},
-    pawn::Pawn,
-    root::RootQuery,
-};
+use crate::{map::Map, pawn::Pawn, root::RootQuery};
+
+#[derive(Clone, Debug, Component)]
+#[require(Transform, Visibility)]
+#[component(immutable)]
+pub struct Room {}
 
 #[derive(Component, Clone, PartialEq, Eq, Debug)]
 #[relationship(relationship_target = RoomContents)]
@@ -42,4 +43,10 @@ pub fn update_containing_room(
         }
     }
     Ok(())
+}
+
+impl Room {
+    pub(crate) fn bundle() -> impl Bundle {
+        (Name::new("room"), Room {})
+    }
 }

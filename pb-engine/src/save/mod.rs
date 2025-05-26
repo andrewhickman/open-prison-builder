@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     EngineState,
-    map::{Corner, Map, Room, Wall},
+    map::{Map, corner::Corner, room::Room, wall::Wall},
     pawn::{Pawn, PawnBundle},
     root::Root,
 };
