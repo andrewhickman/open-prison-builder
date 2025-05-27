@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use pb_util::event::Inserted;
+use pb_util::event::ComponentEvent;
 use spade::handles::FixedVertexHandle;
 
 use crate::{map::wall::Wall, picking::Layer, root::RootQuery};
@@ -15,7 +15,7 @@ pub struct Corner {
 
 pub fn add_colliders(
     mut commands: Commands,
-    mut corner_e: EventReader<Inserted<Corner>>,
+    mut corner_e: EventReader<ComponentEvent<OnInsert, Corner>>,
     root_q: RootQuery,
 ) -> Result {
     for event in corner_e.read() {

@@ -1,5 +1,5 @@
 use bevy::{ecs::query::QueryEntityError, prelude::*};
-use pb_util::event::Inserted;
+use pb_util::event::ComponentEvent;
 
 use crate::map::wall::Wall;
 
@@ -19,7 +19,7 @@ pub struct Door;
 
 pub fn validate(
     mut commands: Commands,
-    mut door_e: EventReader<Inserted<Door>>,
+    mut door_e: EventReader<ComponentEvent<OnInsert, Door>>,
     wall_q: Query<&Wall>,
 ) {
     for door in door_e.read() {

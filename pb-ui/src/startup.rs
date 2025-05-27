@@ -36,10 +36,10 @@ pub fn init(
         if let Err(error) = asset_load_result {
             error!("Failed to load all assets, exiting: {error}");
             exit_e.write(AppExit::error());
+        } else {
+            info!("Finished startup");
+            commands.insert_resource(settings);
+            ui_state.set(UiState::Menu);
         }
-
-        info!("Finished startup");
-        commands.insert_resource(settings);
-        ui_state.set(UiState::Menu);
     }
 }

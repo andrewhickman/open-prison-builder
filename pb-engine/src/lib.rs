@@ -14,7 +14,7 @@ use avian2d::{
 use bevy::prelude::*;
 use dev::DevSettings;
 use pawn::{Pawn, ai::path::PathQueryConfig};
-use pb_util::event::AddComponentEvents;
+use pb_util::event::AddComponentEvent;
 use root::Root;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
@@ -41,9 +41,9 @@ impl Plugin for PbEnginePlugin {
 
         app.add_observer(map::map_inserted)
             .add_observer(map::room::room_replaced)
-            .add_inserted_event::<map::corner::Corner>()
-            .add_inserted_event::<map::wall::Wall>()
-            .add_inserted_event::<map::door::Door>()
+            .add_insert_event::<map::corner::Corner>()
+            .add_insert_event::<map::wall::Wall>()
+            .add_insert_event::<map::door::Door>()
             .add_observer(pawn::ai::task_added)
             .add_observer(pawn::ai::task_removed)
             .add_observer(pawn::ai::actor_removed)

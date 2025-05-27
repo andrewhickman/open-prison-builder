@@ -191,12 +191,16 @@ fn new_prison_button(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     mut ui_state: ResMut<NextState<UiState>>,
-    mut engine_state: ResMut<NextState<EngineState>>,
+    engine_state: Res<State<EngineState>>,
+    mut next_engine_state: ResMut<NextState<EngineState>>,
 ) -> Result {
-    let parent = commands.spawn((Root::bundle(), children![Map::new()])).id();
+    if let &EngineState::Running(root) = engine_state.get() {
+        commands.entity(root).despawn();
+    }
 
+    let root = commands.spawn((Root::bundle(), children![Map::new()])).id();
     ui_state.set(UiState::Game);
-    engine_state.set(EngineState::Running(parent));
+    next_engine_state.set(EngineState::Running(root));
     Ok(())
 }
 

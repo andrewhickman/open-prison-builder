@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use pb_util::event::Inserted;
+use pb_util::event::ComponentEvent;
 use spade::handles::FixedUndirectedEdgeHandle;
 
 use crate::{picking::Layer, root::RootQuery};
@@ -21,7 +21,7 @@ pub struct Wall {
 
 pub fn add_colliders(
     mut commands: Commands,
-    mut wall_e: EventReader<Inserted<Wall>>,
+    mut wall_e: EventReader<ComponentEvent<OnInsert, Wall>>,
     wall_q: Query<(&Wall, Has<Door>)>,
     root_q: RootQuery,
 ) -> Result {
