@@ -39,6 +39,7 @@ pub struct PawnBundle {
 
 impl Pawn {
     pub const RADIUS: f32 = 0.16;
+    pub const AREA: f32 = Self::RADIUS * Self::RADIUS * PI;
     pub const MAX_ACCELERATION: f32 = 0.68;
     pub const MAX_VELOCITY: f32 = 1.5;
     pub const REVERSE_VELOCITY: f32 = 0.7;

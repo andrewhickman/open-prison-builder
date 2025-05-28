@@ -1,12 +1,11 @@
 use avian2d::prelude::*;
 use bevy::{
     color::palettes::tailwind::{GREEN_300, INDIGO_800},
-    platform::collections::HashSet,
     prelude::*,
 };
 
 use crate::{
-    map::mesh::RoomMesh,
+    map::mesh::MapMesh,
     pawn::ai::{Task, path::PathTask},
 };
 
@@ -39,18 +38,8 @@ pub fn draw_meshes_condition(settings: Res<DevSettings>) -> bool {
     settings.draw_meshes
 }
 
-pub fn draw_meshes(
-    map_q: Query<&RoomMesh>,
-    mut gizmos: Gizmos,
-    mut rendered: Local<HashSet<usize>>,
-) {
-    rendered.clear();
-
+pub fn draw_meshes(map_q: Query<&MapMesh>, mut gizmos: Gizmos) {
     for map in &map_q {
-        if !rendered.insert(map.mesh() as *const _ as usize) {
-            continue;
-        }
-
         for layer in &map.mesh().layers {
             for polygon in &layer.polygons {
                 gizmos.linestrip(

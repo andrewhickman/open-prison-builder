@@ -11,7 +11,7 @@ use bevy::{
 use tokio::sync::oneshot;
 
 use crate::{
-    map::{mesh::RoomMesh, room::ContainingRoom, wall::Wall},
+    map::{mesh::MapMesh, room::ContainingRoom, wall::Wall},
     pawn::{Pawn, ai::Task},
     picking::Layer,
 };
@@ -64,7 +64,8 @@ pub struct MovementQuery<'w, 's> {
 #[derive(SystemParam)]
 pub struct PathQuery<'w, 's> {
     pawn_q: Query<'w, 's, (&'static Position, &'static ContainingRoom)>,
-    mesh_q: Query<'w, 's, &'static RoomMesh>,
+    parent_q: Query<'w, 's, &'static ChildOf>,
+    mesh_q: Query<'w, 's, &'static MapMesh>,
 }
 
 #[derive(Resource)]
@@ -128,7 +129,8 @@ pub fn update(
 impl PathQuery<'_, '_> {
     pub fn path(&self, entity: Entity, to: Vec2) -> Option<PathTaskBundle> {
         let (pos, containing_room) = self.pawn_q.get(entity).ok()?;
-        let room = self.mesh_q.get(containing_room.get()).ok()?;
+        let map = self.parent_q.get(containing_room.get()).ok()?.parent();
+        let room = self.mesh_q.get(map).ok()?;
         if let Some(path) = room.path(pos.0, to) {
             return Some(PathTaskBundle {
                 task: Task::new(entity),
