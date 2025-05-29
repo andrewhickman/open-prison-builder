@@ -1,40 +1,26 @@
-use std::{
-    f32::consts::{FRAC_PI_2, FRAC_PI_4, SQRT_2, TAU},
-    sync::Arc,
-};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, SQRT_2, TAU};
 
-use bevy::{
-    math::FloatOrd,
-    platform::collections::{HashMap, HashSet},
-    prelude::*,
-};
+use bevy::{ecs::entity::EntityHashMap, math::FloatOrd, prelude::*};
 use polyanya::{
     Coords, Mesh, Path, Triangulation,
-    geo::{
-        Closest, ClosestPoint, Coord, LineString, Polygon,
-        geometry::Point,
-        winding_order::{Winding, WindingOrder},
-    },
+    geo::{Area, BooleanOps, Closest, ClosestPoint, Point, Polygon, unary_union},
 };
 use smallvec::SmallVec;
-use spade::{
-    CdtEdge, ConstrainedDelaunayTriangulation, Triangulation as _,
-    handles::{DirectedEdgeHandle, FixedDirectedEdgeHandle, FixedVertexHandle},
-};
+use spade::Triangulation as _;
 
 use crate::{
-    map::{Corner, FaceData, Map, UndirectedEdgeData, VertexData, door::Door, wall::Wall},
+    map::{Corner, Map, door::Door, wall::Wall},
     pawn::Pawn,
     root::RootQuery,
 };
 
 #[derive(Debug, Component)]
-pub struct RoomMesh {
-    inner: Arc<RoomMeshInner>,
+pub struct MapMesh {
+    islands: Vec<MapMeshIsland>,
 }
 
 #[derive(Debug)]
-struct RoomMeshInner {
+struct MapMeshIsland {
     mesh: Mesh,
     polygon: Polygon<f32>,
 }
@@ -43,7 +29,7 @@ const RADIUS: f32 = Wall::RADIUS + Pawn::RADIUS;
 
 #[derive(Debug)]
 struct CornerGeometry {
-    pos: Vec2,
+    center: Vec2,
     points: SmallVec<[CornerGeometryPoint; 4]>,
 }
 
@@ -55,7 +41,7 @@ struct CornerGeometryPoint {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 enum CornerGeometryPointKind {
-    Edge(Entity),
+    Wall(Entity),
     Corner,
 }
 
@@ -63,6 +49,7 @@ pub fn update_mesh(
     mut commands: Commands,
     mut map_q: Query<&Map, Changed<Map>>,
     corner_q: Query<&Corner>,
+    wall_q: Query<&Wall>,
     door_q: Query<&Door>,
     root_q: RootQuery,
 ) -> Result {
@@ -71,7 +58,11 @@ pub fn update_mesh(
             continue;
         }
 
-        let corner_geos: HashMap<FixedVertexHandle, CornerGeometry> = map
+        if map.triangulation.all_vertices_on_line() {
+            continue;
+        }
+
+        let corners: EntityHashMap<CornerGeometry> = map
             .corners()
             .map(|entity| {
                 let corner = corner_q.get(entity.id())?;
@@ -85,102 +76,147 @@ pub fn update_mesh(
                     }),
                 );
 
-                Ok((corner.vertex(), geometry))
+                Ok((entity.id(), geometry))
             })
             .collect::<Result<_>>()?;
 
-        let mut edges: HashSet<FixedDirectedEdgeHandle> = map
-            .triangulation
-            .directed_edges()
-            .filter(|edge| edge.is_constraint_edge())
-            .map(|edge| edge.fix())
+        let mut interiors = Vec::with_capacity(map.triangulation.num_constraints() * 3);
+
+        for (_, corner) in &corners {
+            interiors.push(Polygon::new(
+                corner
+                    .points
+                    .iter()
+                    .map(|point| point.point.to_array())
+                    .collect(),
+                vec![],
+            ));
+        }
+
+        for entity in map.walls() {
+            let wall = wall_q.get(entity.id())?;
+
+            let start_points = corners[&wall.start()].wall_intersections(entity.id())?;
+            let end_points = corners[&wall.end()].wall_intersections(entity.id())?;
+
+            if door_q.contains(entity.id()) {
+                let wall_half_len = wall.length() / 2.;
+                let door_start_points = [
+                    wall.isometry() * Vec2::new(-wall_half_len + RADIUS, -RADIUS),
+                    wall.isometry() * Vec2::new(-wall_half_len + RADIUS, RADIUS),
+                ];
+                let door_end_points = [
+                    wall.isometry() * Vec2::new(wall_half_len - RADIUS, RADIUS),
+                    wall.isometry() * Vec2::new(wall_half_len - RADIUS, -RADIUS),
+                ];
+
+                interiors.push(Polygon::new(
+                    start_points
+                        .into_iter()
+                        .chain(door_start_points)
+                        .map(|point| point.to_array())
+                        .collect(),
+                    vec![],
+                ));
+                interiors.push(Polygon::new(
+                    end_points
+                        .into_iter()
+                        .chain(door_end_points)
+                        .map(|point| point.to_array())
+                        .collect(),
+                    vec![],
+                ));
+            } else {
+                interiors.push(Polygon::new(
+                    start_points
+                        .into_iter()
+                        .chain(end_points)
+                        .map(|point| point.to_array())
+                        .collect(),
+                    vec![],
+                ));
+            }
+        }
+
+        let exterior = Polygon::new(
+            map.triangulation
+                .convex_hull()
+                .map(|edge| edge.from().data().position.to_array())
+                .collect(),
+            vec![],
+        );
+        let interior = unary_union(&interiors);
+
+        let islands = exterior
+            .difference(&interior)
+            .into_iter()
+            .filter(|polygon| polygon.unsigned_area() > Pawn::AREA)
+            .map(|polygon| {
+                let layer = Triangulation::from_geo_polygon(polygon.clone()).as_layer();
+                let mut mesh = Mesh {
+                    layers: vec![layer],
+                    search_delta: RADIUS / 2.,
+                    search_steps: 2,
+                };
+
+                // TODO: https://github.com/vleue/polyanya/issues/99
+                // mesh.merge_polygons();
+                mesh.bake();
+
+                MapMeshIsland { mesh, polygon }
+            })
             .collect();
 
-        let mut polygons: HashMap<Vec<Entity>, (Option<LineString<f32>>, Vec<LineString<f32>>)> =
-            default();
-
-        while let Some(&start) = edges.iter().next() {
-            edges.remove(&start);
-
-            let (line_string, rooms) =
-                compute_polygon(&mut edges, &map.triangulation, &corner_geos, start, &door_q)?;
-
-            let (exterior, interior) = polygons.entry(rooms).or_default();
-            match line_string.winding_order().unwrap() {
-                WindingOrder::CounterClockwise => interior.push(line_string),
-                WindingOrder::Clockwise => {
-                    assert!(exterior.is_none());
-                    *exterior = Some(line_string);
-                }
-            }
-        }
-
-        if polygons.is_empty() && map.triangulation.convex_hull_size() > 0 {
-            debug_assert_eq!(map.rooms_deduped().count(), 1);
-            polygons.insert(vec![map.outer_room().id()], default());
-        }
-
-        for (rooms, (exterior, interiors)) in polygons {
-            let exterior = match exterior {
-                Some(exterior) => exterior,
-                None => map
-                    .triangulation
-                    .convex_hull()
-                    .map(|edge| edge.from().data().position.to_array())
-                    .collect(),
-            };
-
-            let polygon = Polygon::new(exterior, interiors);
-            let triangulation = Triangulation::from_geo_polygon(polygon.clone());
-            let mut mesh = triangulation.as_navmesh();
-
-            // TODO: https://github.com/vleue/polyanya/issues/99
-            // mesh.merge_polygons();
-            mesh.bake();
-
-            let inner = Arc::new(RoomMeshInner { mesh, polygon });
-
-            for room in rooms {
-                commands.entity(room).insert(RoomMesh {
-                    inner: inner.clone(),
-                });
-            }
-        }
+        commands.entity(map.id()).insert(MapMesh { islands });
     }
 
     Ok(())
 }
 
-impl RoomMesh {
+impl MapMesh {
     pub fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
-        let from = self.closest_point(from)?;
-        let to = self.closest_point(to)?;
-        self.inner.mesh.path(from, to)
+        if self.islands.len() == 1 {
+            return self.islands[0].path(from, to);
+        }
+
+        let (index, from) = self
+            .islands
+            .iter()
+            .enumerate()
+            .flat_map(|(index, island)| Some((index, island.closest_point(from)?)))
+            .min_by_key(|(_, closest)| FloatOrd(closest.position().distance_squared(from)))?;
+        self.islands[index].path_from(from, to)
     }
 
-    pub fn mesh(&self) -> &Mesh {
-        &self.inner.mesh
+    pub fn meshes(&self) -> impl Iterator<Item = &'_ Mesh> {
+        self.islands.iter().map(|island| &island.mesh)
+    }
+}
+
+impl MapMeshIsland {
+    fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
+        let from = self.closest_point(from)?;
+        self.path_from(from, to)
+    }
+
+    fn path_from(&self, from: Coords, to: Vec2) -> Option<Path> {
+        let to = self.closest_point(to)?;
+        self.mesh.path(from, to)
     }
 
     fn closest_point(&self, point: Vec2) -> Option<Coords> {
-        if let Some(coords) = self.inner.mesh.get_closest_point(point) {
+        if let Some(coords) = self.mesh.get_closest_point(point) {
             return Some(coords);
         }
 
-        match self
-            .inner
-            .polygon
-            .closest_point(&Point::new(point.x, point.y))
-        {
+        match self.polygon.closest_point(&Point::new(point.x, point.y)) {
             Closest::Intersection(closest) | Closest::SinglePoint(closest) => {
                 if let Some(coords) = self
-                    .inner
                     .mesh
                     .get_closest_point(Vec2::new(closest.x(), closest.y()))
                 {
                     Some(coords)
                 } else if let Some(coords) = self
-                    .inner
                     .mesh
                     .get_closest_point_towards(point, Vec2::new(closest.x(), closest.y()))
                 {
@@ -200,105 +236,12 @@ impl RoomMesh {
     }
 }
 
-fn compute_polygon(
-    edges: &mut HashSet<FixedDirectedEdgeHandle>,
-    triangulation: &ConstrainedDelaunayTriangulation<VertexData, (), UndirectedEdgeData, FaceData>,
-    corner_geos: &HashMap<FixedVertexHandle, CornerGeometry>,
-    start: FixedDirectedEdgeHandle,
-    door_q: &Query<&Door>,
-) -> Result<(LineString<f32>, Vec<Entity>)> {
-    let mut coords = Vec::new();
-    let mut rooms = Vec::new();
-
-    let mut current = triangulation.directed_edge(start);
-    rooms.push(current.rev().face().data().room());
-    loop {
-        if door_q.contains(current.as_undirected().data().data().wall()) {
-            add_door_coords(&mut coords, current);
-            rooms.push(current.rev().face().data().room());
-            current = current.rev();
-        }
-
-        let next = next_edge(current);
-        add_corner_coords(&mut coords, current, next, corner_geos);
-        rooms.push(next.rev().face().data().room());
-
-        if !edges.remove(&next.fix()) {
-            debug_assert_eq!(next.fix(), start);
-            break;
-        }
-
-        current = next;
-    }
-
-    rooms.sort_unstable();
-    rooms.dedup();
-    rooms.shrink_to_fit();
-
-    let mut line_string = LineString::new(coords);
-    line_string.close();
-
-    Ok((line_string, rooms))
-}
-
-fn add_corner_coords(
-    coords: &mut Vec<Coord<f32>>,
-    start: DirectedEdgeHandle<'_, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
-    end: DirectedEdgeHandle<'_, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
-    corner_geos: &HashMap<FixedVertexHandle, CornerGeometry>,
-) {
-    assert_eq!(start.to(), end.from());
-    let corner = &corner_geos[&start.to().fix()];
-    let start_wall = start.as_undirected().data().data().wall.unwrap().id();
-    let end_wall = end.as_undirected().data().data().wall.unwrap().id();
-
-    corner.wall_intersections(coords, start_wall, end_wall);
-}
-
-fn add_door_coords(
-    coords: &mut Vec<Coord<f32>>,
-    edge: DirectedEdgeHandle<'_, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
-) {
-    let start = edge.from().data().position;
-    let end = edge.to().data().position;
-
-    let wall_half_len = (end - start).length() / 2.;
-    let wall_isometry = Isometry2d {
-        translation: start.midpoint(end),
-        rotation: Dir2::try_from(end - start)
-            .unwrap_or(Dir2::X)
-            .rotation_from_x(),
-    };
-
-    let points = [
-        Vec2::new(-wall_half_len + RADIUS, -RADIUS),
-        Vec2::new(-wall_half_len + RADIUS, RADIUS),
-    ];
-
-    for point in points {
-        coords.push((wall_isometry * point).to_array().into());
-    }
-}
-
-fn next_edge<'a>(
-    start: DirectedEdgeHandle<'a, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData>,
-) -> DirectedEdgeHandle<'a, VertexData, (), CdtEdge<UndirectedEdgeData>, FaceData> {
-    let mut iter = start.rev();
-
-    loop {
-        iter = iter.ccw();
-        if iter.is_constraint_edge() {
-            return iter;
-        }
-    }
-}
-
 impl CornerGeometry {
     fn new<'a>(start: &Corner, walls: impl Iterator<Item = (Entity, &'a Corner)>) -> Self {
-        let start = start.position();
+        let pos = start.position();
 
         let mut angles: SmallVec<[(Entity, f32); 4]> = walls
-            .map(|(id, end)| (id, (end.position() - start).to_angle()))
+            .map(|(id, end)| (id, (end.position() - pos).to_angle()))
             .collect();
         angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
 
@@ -306,45 +249,46 @@ impl CornerGeometry {
         for (index, &(wall, a2)) in angles.iter().enumerate() {
             if index == 0 {
                 let a1 = wrapping_idx(&angles, index, -1).1;
-                points.extend(corner_intersections(a1, a2).map(CornerGeometryPoint::corner));
+                points.extend(corner_intersections(pos, a1, a2).map(CornerGeometryPoint::corner));
             }
 
-            points.push(CornerGeometryPoint::wall(wall));
+            points.push(CornerGeometryPoint::wall(
+                pos + Vec2::from_angle(a2) * RADIUS,
+                wall,
+            ));
 
             if index != (angles.len() - 1) {
                 let a3 = wrapping_idx(&angles, index, 1).1;
-                points.extend(corner_intersections(a2, a3).map(CornerGeometryPoint::corner));
+                points.extend(corner_intersections(pos, a2, a3).map(CornerGeometryPoint::corner));
             }
         }
 
-        CornerGeometry { pos: start, points }
+        CornerGeometry {
+            points,
+            center: pos,
+        }
     }
 
-    fn wall_intersections(&self, result: &mut Vec<Coord<f32>>, start: Entity, end: Entity) {
-        let start = self
+    fn wall_intersections(&self, wall: Entity) -> Result<[Vec2; 3]> {
+        let index = self
             .points
             .iter()
-            .position(|p| p.kind == CornerGeometryPointKind::Edge(start))
-            .unwrap();
-        let end = self
-            .points
-            .iter()
-            .position(|p| p.kind == CornerGeometryPointKind::Edge(end))
-            .unwrap();
+            .position(|p| p.kind == CornerGeometryPointKind::Wall(wall))
+            .ok_or("wall not found")?;
 
-        let mut i = (start + 1) % self.points.len();
-        while i != end {
-            result.push((self.pos + self.points[i].point).to_array().into());
-            i = (i + 1) % self.points.len();
-        }
+        Ok([
+            wrapping_idx(&self.points, index, 1).point,
+            self.center,
+            wrapping_idx(&self.points, index, -1).point,
+        ])
     }
 }
 
 impl CornerGeometryPoint {
-    fn wall(wall: Entity) -> Self {
+    fn wall(point: Vec2, wall: Entity) -> Self {
         CornerGeometryPoint {
-            point: Vec2::ZERO,
-            kind: CornerGeometryPointKind::Edge(wall),
+            point,
+            kind: CornerGeometryPointKind::Wall(wall),
         }
     }
 
@@ -356,19 +300,19 @@ impl CornerGeometryPoint {
     }
 }
 
-fn corner_intersections(a1: f32, a2: f32) -> impl Iterator<Item = Vec2> {
+fn corner_intersections(pos: Vec2, a1: f32, a2: f32) -> impl Iterator<Item = Vec2> {
     let da = angle_delta(a1, a2);
 
     let mut result = SmallVec::<[Vec2; 2]>::new();
 
     if da > 3. * FRAC_PI_2 {
         result.extend_from_slice(&[
-            right_angle_intersection(a1 + 3. * FRAC_PI_4),
-            right_angle_intersection(a2 - 3. * FRAC_PI_4),
+            pos + right_angle_intersection(a1 + 3. * FRAC_PI_4),
+            pos + right_angle_intersection(a2 - 3. * FRAC_PI_4),
         ]);
     } else {
         let mid = a1 + da / 2.;
-        result.push(angle_intersection(mid, da / 2.));
+        result.push(pos + angle_intersection(mid, da / 2.));
     }
 
     result.into_iter()
