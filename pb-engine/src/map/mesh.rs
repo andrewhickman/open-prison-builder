@@ -11,7 +11,7 @@ use spade::Triangulation as _;
 use crate::{
     map::{Corner, Map, door::Door, wall::Wall},
     pawn::Pawn,
-    root::RootQuery,
+    root::ChildOfRoot,
 };
 
 #[derive(Debug, Default, Component)]
@@ -46,17 +46,12 @@ enum CornerGeometryPointKind {
 }
 
 pub fn update_mesh(
-    mut map_q: Query<(&Map, &mut MapMesh), Changed<Map>>,
+    mut map_q: Query<(&Map, &mut MapMesh), (Changed<Map>, With<ChildOfRoot>)>,
     corner_q: Query<&Corner>,
     wall_q: Query<&Wall>,
     door_q: Query<&Door>,
-    root_q: RootQuery,
 ) -> Result {
     for (map, mut mesh) in &mut map_q {
-        if !root_q.is_descendant_of_root(map.id()) {
-            continue;
-        }
-
         if map.triangulation.all_vertices_on_line() {
             continue;
         }

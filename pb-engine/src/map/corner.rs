@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use pb_util::event::ComponentEvent;
 use spade::handles::FixedVertexHandle;
 
-use crate::{map::wall::Wall, picking::Layer, root::RootQuery};
+use crate::{map::wall::Wall, picking::Layer, root::ChildOfRoot};
 
 #[derive(Clone, Debug, Component)]
 #[require(Transform, Visibility)]
@@ -16,10 +16,10 @@ pub struct Corner {
 pub fn add_colliders(
     mut commands: Commands,
     mut corner_e: EventReader<ComponentEvent<OnInsert, Corner>>,
-    root_q: RootQuery,
+    root_q: Query<&ChildOfRoot>,
 ) -> Result {
     for event in corner_e.read() {
-        if root_q.is_descendant_of_root(event.target) {
+        if root_q.contains(event.target) {
             commands.entity(event.target).insert((
                 RigidBody::Static,
                 Collider::circle(Wall::RADIUS),

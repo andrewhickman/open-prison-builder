@@ -1,6 +1,6 @@
 use bevy::{ecs::entity::EntityHashSet, prelude::*};
 
-use crate::{map::Map, pawn::Pawn, root::RootQuery};
+use crate::{map::Map, pawn::Pawn, root::ChildOfRoot};
 
 #[derive(Clone, Debug, Component)]
 #[require(Transform, Visibility)]
@@ -23,24 +23,19 @@ pub fn room_replaced(trigger: Trigger<OnReplace, Room>, mut commands: Commands) 
 
 pub fn update_containing_room(
     mut commands: Commands,
-    root_q: RootQuery,
-    map_q: Query<(Entity, &Map)>,
-    item_q: Query<(Entity, &Transform), (With<Pawn>, Without<ContainingRoom>)>,
+    map_q: Query<&Map, With<ChildOfRoot>>,
+    item_q: Query<(Entity, &Transform), (With<Pawn>, Without<ContainingRoom>, With<ChildOfRoot>)>,
 ) -> Result {
     'outer: for (item, transform) in &item_q {
-        if root_q.is_descendant_of_root(item) {
-            for (map_id, map) in &map_q {
-                if root_q.is_descendant_of_root(map_id) {
-                    if let Some(room) = map.containing_room(transform.translation.xy()) {
-                        info!("found containing room {room}");
-                        commands.entity(item).insert(ContainingRoom(room));
-                        continue 'outer;
-                    }
-                }
+        for map in &map_q {
+            if let Some(room) = map.containing_room(transform.translation.xy()) {
+                info!("found containing room {room}");
+                commands.entity(item).insert(ContainingRoom(room));
+                continue 'outer;
             }
-
-            warn!("no containing room found for {item}");
         }
+
+        warn!("no containing room found for {item}");
     }
     Ok(())
 }

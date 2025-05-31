@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use pb_util::event::ComponentEvent;
 use spade::handles::FixedUndirectedEdgeHandle;
 
-use crate::{picking::Layer, root::RootQuery};
+use crate::{picking::Layer, root::ChildOfRoot};
 
 use super::door::Door;
 
@@ -23,10 +23,10 @@ pub fn add_colliders(
     mut commands: Commands,
     mut wall_e: EventReader<ComponentEvent<OnInsert, Wall>>,
     wall_q: Query<(&Wall, Has<Door>)>,
-    root_q: RootQuery,
+    root_q: Query<&ChildOfRoot>,
 ) -> Result {
     for event in wall_e.read() {
-        if root_q.is_descendant_of_root(event.target) {
+        if root_q.contains(event.target) {
             let (wall, is_door) = wall_q.get(event.target)?;
             if !is_door {
                 commands.entity(event.target).insert((

@@ -31,8 +31,8 @@ use crate::{
 
 pub const GRID_SIZE: f32 = 4.0;
 
-#[derive(Component)]
-#[require(Transform, Visibility, MapMesh)]
+#[derive(Component, TypePath)]
+#[require(Transform, Visibility, MapMesh, Name::new(Map::type_path()))]
 pub struct Map {
     id: Entity,
     source: Option<Entity>,

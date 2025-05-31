@@ -1,35 +1,26 @@
-use bevy::{ecs::system::SystemParam, prelude::*};
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
-#[require(Transform)]
+#[require(Transform, ChildOfRoot, Name::new(Root::type_path()))]
 pub struct Root;
 
-impl Root {
-    pub fn bundle() -> impl Bundle {
-        (Root, Name::new(Root::type_path()))
+#[derive(Default, Copy, Clone, Component)]
+pub struct ChildOfRoot;
+
+pub fn child_added(
+    trigger: Trigger<OnInsert, ChildOf>,
+    mut commands: Commands,
+    parent_q: Query<&ChildOf>,
+    root_q: Query<Entity, With<ChildOfRoot>>,
+) -> Result {
+    let parent = parent_q.get(trigger.target())?;
+    if root_q.contains(parent.parent()) {
+        commands
+            .entity(trigger.target())
+            .insert_recursive::<Children>(ChildOfRoot);
     }
-}
 
-#[derive(SystemParam)]
-pub struct RootQuery<'w, 's> {
-    root_q: Option<Single<'w, Entity, With<Root>>>,
-    parent_q: Query<'w, 's, &'static ChildOf>,
-}
-
-impl RootQuery<'_, '_> {
-    pub fn parent(&self, entity: Entity) -> Result<Entity> {
-        Ok(self.parent_q.get(entity)?.parent())
-    }
-
-    pub fn is_descendant_of_root(&self, entity: Entity) -> bool {
-        let Some(root) = &self.root_q else {
-            return false;
-        };
-
-        self.parent_q
-            .iter_ancestors(entity)
-            .any(|parent| parent == **root)
-    }
+    Ok(())
 }

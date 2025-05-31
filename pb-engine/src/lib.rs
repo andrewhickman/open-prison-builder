@@ -39,7 +39,8 @@ impl Plugin for PbEnginePlugin {
         app.init_resource::<PathQueryConfig>()
             .init_resource::<DevSettings>();
 
-        app.add_observer(map::map_inserted)
+        app.add_observer(root::child_added)
+            .add_observer(map::map_inserted)
             .add_observer(map::room::room_replaced)
             .add_insert_event::<map::corner::Corner>()
             .add_insert_event::<map::wall::Wall>()

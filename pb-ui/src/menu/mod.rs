@@ -198,7 +198,7 @@ fn new_prison_button(
         commands.entity(root).despawn();
     }
 
-    let root = commands.spawn((Root::bundle(), children![Map::new()])).id();
+    let root = commands.spawn((Root, children![Map::new()])).id();
     ui_state.set(UiState::Game);
     next_engine_state.set(EngineState::Running(root));
     Ok(())

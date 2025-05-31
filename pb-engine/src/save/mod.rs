@@ -145,7 +145,7 @@ impl SaveParam<'_, '_> {
 
 impl SaveModel {
     pub fn spawn(self, commands: &mut Commands) -> Entity {
-        let root = commands.spawn(Root::bundle()).id();
+        let root = commands.spawn(Root).id();
         let mut entity_map = EntityHashMap::<Entity>::new();
 
         commands.queue(move |world: &mut World| -> Result {
