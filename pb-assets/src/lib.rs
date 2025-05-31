@@ -28,6 +28,7 @@ pub struct AssetHandles {
     pub close_icon: Handle<Image>,
     pub error_icon: Handle<Image>,
     pub brick_image: Handle<Image>,
+    pub brick_door_frame_image: Handle<Image>,
 }
 
 pub struct PbAssetsPlugin;
@@ -70,18 +71,19 @@ pub fn load(mut commands: Commands, server: Res<AssetServer>) {
         pawn_bodies_image: server.load("image/pawn_bodies.png"),
         close_icon: server.load("image/close.png"),
         error_icon: server.load("image/error.png"),
-        brick_image: server.load_with_settings(
-            "image/brick.png",
-            |settings: &mut ImageLoaderSettings| {
-                settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-                    address_mode_u: ImageAddressMode::Repeat,
-                    address_mode_v: ImageAddressMode::ClampToEdge,
-                    min_filter: ImageFilterMode::Linear,
-                    mag_filter: ImageFilterMode::Linear,
-                    ..default()
-                });
-            },
-        ),
+        brick_image: server.load_with_settings("image/brick.png", wall_image_settings),
+        brick_door_frame_image: server
+            .load_with_settings("image/brick_door_frame.png", wall_image_settings),
+    });
+}
+
+fn wall_image_settings(settings: &mut ImageLoaderSettings) {
+    settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+        address_mode_u: ImageAddressMode::Repeat,
+        address_mode_v: ImageAddressMode::ClampToEdge,
+        min_filter: ImageFilterMode::Linear,
+        mag_filter: ImageFilterMode::Linear,
+        ..default()
     });
 }
 
@@ -128,6 +130,7 @@ impl AssetHandles {
             close_icon,
             error_icon,
             brick_image,
+            brick_door_frame_image,
         } = self;
 
         [
@@ -150,6 +153,7 @@ impl AssetHandles {
             close_icon.into(),
             error_icon.into(),
             brick_image.into(),
+            brick_door_frame_image.into(),
         ]
         .into_iter()
     }

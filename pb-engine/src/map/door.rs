@@ -3,7 +3,7 @@ use pb_util::event::ComponentEvent;
 
 use crate::map::wall::Wall;
 
-pub const INNER_WIDTH: f32 = 0.75;
+pub const INNER_WIDTH: f32 = WIDTH - (2. * Wall::RADIUS);
 pub const MIN_WIDTH: f32 = 0.9;
 pub const WIDTH: f32 = 1.0;
 pub const DEPTH: f32 = 0.2;

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use pb_engine::map::door::Door;
 use pb_render::wall::{MapRenderMode, WallMaterial};
 
 use crate::{
@@ -40,20 +41,22 @@ pub struct RemoveWallAction;
 fn select_wall(
     trigger: Trigger<SelectWall>,
     mut material_q: Query<&mut MeshMaterial2d<WallMaterial>>,
+    door_q: Query<Entity, With<Door>>,
 ) -> Result {
     material_q
         .get_mut(trigger.wall)?
-        .set_if_neq(MapRenderMode::Removed.material());
+        .set_if_neq(MapRenderMode::Removed.material(door_q.contains(trigger.wall)));
     Ok(())
 }
 
 fn cancel_wall(
     trigger: Trigger<CancelWall>,
     mut material_q: Query<&mut MeshMaterial2d<WallMaterial>>,
+    door_q: Query<Entity, With<Door>>,
 ) -> Result {
     material_q
         .get_mut(trigger.wall)?
-        .set_if_neq(MapRenderMode::Visible.material());
+        .set_if_neq(MapRenderMode::Removed.material(door_q.contains(trigger.wall)));
     Ok(())
 }
 

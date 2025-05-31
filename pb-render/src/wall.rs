@@ -91,6 +91,13 @@ pub const ADDED_MATERIAL: Handle<WallMaterial> =
 pub const REMOVED_MATERIAL: Handle<WallMaterial> =
     weak_handle!("202d16ae-02f2-4584-a77c-7882a55db5fa");
 
+pub const DEFAULT_MATERIAL_DOOR_FRAME: Handle<WallMaterial> =
+    weak_handle!("f79933c3-4af3-4333-9baf-8c6bbd758463");
+pub const ADDED_MATERIAL_DOOR_FRAME: Handle<WallMaterial> =
+    weak_handle!("9cf8f4b9-90ad-4a71-9e86-a8c5b8b4567c");
+pub const REMOVED_MATERIAL_DOOR_FRAME: Handle<WallMaterial> =
+    weak_handle!("000f297d-b754-4828-a46f-64c7fea483de");
+
 const WALL_SHADER_HANDLE: Handle<Shader> = weak_handle!("ac4fc4ae-cc6c-408f-87f2-a75b44bc01b7");
 
 pub fn startup(
@@ -117,6 +124,27 @@ pub fn startup(
         WallMaterial {
             color: Srgba::hex("ffaaaa")?.into(),
             texture: assets.brick_image.clone(),
+        },
+    );
+    materials.insert(
+        &DEFAULT_MATERIAL_DOOR_FRAME,
+        WallMaterial {
+            color: LinearRgba::WHITE,
+            texture: assets.brick_door_frame_image.clone(),
+        },
+    );
+    materials.insert(
+        &ADDED_MATERIAL_DOOR_FRAME,
+        WallMaterial {
+            color: Srgba::hex("aaaaaa")?.into(),
+            texture: assets.brick_door_frame_image.clone(),
+        },
+    );
+    materials.insert(
+        &REMOVED_MATERIAL_DOOR_FRAME,
+        WallMaterial {
+            color: Srgba::hex("ffaaaa")?.into(),
+            texture: assets.brick_door_frame_image.clone(),
         },
     );
     shaders.insert(
@@ -155,7 +183,7 @@ pub fn corner_inserted(
         corner_info,
         Mesh2d(mesh),
         aabb,
-        render_mode.material(),
+        render_mode.material(false),
         render_mode.visibility(),
     ));
     Ok(())
@@ -167,7 +195,7 @@ pub fn wall_inserted(trigger: Trigger<OnInsert, Wall>, mut commands: Commands) {
         WallGeometry::default(),
         Mesh2d::default(),
         Aabb::default(),
-        render_mode.material(),
+        render_mode.material(false),
         render_mode.visibility(),
     ));
 }
@@ -194,6 +222,7 @@ pub fn update_visibility(
     map_q: Query<Ref<Map>>,
     children_q: Query<&Children>,
     mut render_mode_q: Query<(&mut Visibility, &mut MeshMaterial2d<WallMaterial>)>,
+    door_q: Query<Entity, With<Door>>,
 ) -> Result {
     if engine_state.is_changed() {
         match *engine_state.get() {
@@ -271,7 +300,7 @@ pub fn update_visibility(
             };
             visibility.set_if_neq(render_mode.visibility());
 
-            let new_material = render_mode.material();
+            let new_material = render_mode.material(door_q.contains(id));
             if material.0 != new_material.0 {
                 *material = new_material;
             }
@@ -358,12 +387,15 @@ impl VisibleMap {
 }
 
 impl MapRenderMode {
-    pub fn material(self) -> MeshMaterial2d<WallMaterial> {
-        match self {
-            MapRenderMode::Added => MeshMaterial2d(ADDED_MATERIAL.clone()),
-            MapRenderMode::Visible => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
-            MapRenderMode::Removed => MeshMaterial2d(REMOVED_MATERIAL.clone()),
-            MapRenderMode::Hidden => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
+    pub fn material(self, door: bool) -> MeshMaterial2d<WallMaterial> {
+        match (self, door) {
+            (MapRenderMode::Added, false) => MeshMaterial2d(ADDED_MATERIAL.clone()),
+            (MapRenderMode::Added, true) => MeshMaterial2d(ADDED_MATERIAL_DOOR_FRAME.clone()),
+            (MapRenderMode::Visible, false) => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
+            (MapRenderMode::Visible, true) => MeshMaterial2d(DEFAULT_MATERIAL_DOOR_FRAME.clone()),
+            (MapRenderMode::Removed, false) => MeshMaterial2d(REMOVED_MATERIAL.clone()),
+            (MapRenderMode::Removed, true) => MeshMaterial2d(REMOVED_MATERIAL_DOOR_FRAME.clone()),
+            (MapRenderMode::Hidden, _) => MeshMaterial2d(DEFAULT_MATERIAL.clone()),
         }
     }
 
@@ -528,18 +560,18 @@ impl WallGeometry {
                 .with_inserted_attribute(
                     Mesh::ATTRIBUTE_UV_0,
                     VertexAttributeValues::Float32x2(vec![
-                        [self.points[0].x, TEXTURE_BOTTOM],
-                        [self.points[1].x, TEXTURE_TOP],
-                        [self.points[2].x, TEXTURE_BOTTOM],
-                        [self.points[3].x, TEXTURE_BOTTOM],
-                        [self.points[4].x, TEXTURE_TOP],
-                        [self.points[5].x, TEXTURE_BOTTOM],
-                        [door_points[0].x, TEXTURE_BOTTOM],
-                        [door_points[1].x, TEXTURE_TOP],
-                        [door_points[2].x, TEXTURE_BOTTOM],
-                        [door_points[3].x, TEXTURE_BOTTOM],
-                        [door_points[4].x, TEXTURE_TOP],
-                        [door_points[5].x, TEXTURE_BOTTOM],
+                        [0.5 + self.points[0].x - door_points[0].x, TEXTURE_BOTTOM],
+                        [0.5 + self.points[1].x - door_points[1].x, TEXTURE_TOP],
+                        [0.5 + self.points[2].x - door_points[2].x, TEXTURE_BOTTOM],
+                        [0.5 - self.points[3].x + door_points[3].x, TEXTURE_BOTTOM],
+                        [0.5 - self.points[4].x + door_points[4].x, TEXTURE_TOP],
+                        [0.5 - self.points[5].x + door_points[5].x, TEXTURE_BOTTOM],
+                        [0.5, TEXTURE_BOTTOM],
+                        [0.5, TEXTURE_TOP],
+                        [0.5, TEXTURE_BOTTOM],
+                        [0.5, TEXTURE_BOTTOM],
+                        [0.5, TEXTURE_TOP],
+                        [0.5, TEXTURE_BOTTOM],
                     ]),
                 )
                 .with_inserted_indices(Indices::U16(vec![
