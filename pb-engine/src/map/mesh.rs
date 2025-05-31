@@ -14,7 +14,7 @@ use crate::{
     root::RootQuery,
 };
 
-#[derive(Debug, Component)]
+#[derive(Debug, Default, Component)]
 pub struct MapMesh {
     islands: Vec<MapMeshIsland>,
 }
@@ -46,14 +46,13 @@ enum CornerGeometryPointKind {
 }
 
 pub fn update_mesh(
-    mut commands: Commands,
-    mut map_q: Query<&Map, Changed<Map>>,
+    mut map_q: Query<(&Map, &mut MapMesh), Changed<Map>>,
     corner_q: Query<&Corner>,
     wall_q: Query<&Wall>,
     door_q: Query<&Door>,
     root_q: RootQuery,
 ) -> Result {
-    for map in &mut map_q {
+    for (map, mut mesh) in &mut map_q {
         if !root_q.is_descendant_of_root(map.id()) {
             continue;
         }
@@ -147,27 +146,27 @@ pub fn update_mesh(
         );
         let interior = unary_union(&interiors);
 
-        let islands = exterior
-            .difference(&interior)
-            .into_iter()
-            .filter(|polygon| polygon.unsigned_area() > Pawn::AREA)
-            .map(|polygon| {
-                let layer = Triangulation::from_geo_polygon(polygon.clone()).as_layer();
-                let mut mesh = Mesh {
-                    layers: vec![layer],
-                    search_delta: RADIUS / 2.,
-                    search_steps: 2,
-                };
+        mesh.islands.clear();
+        mesh.islands.extend(
+            exterior
+                .difference(&interior)
+                .into_iter()
+                .filter(|polygon| polygon.unsigned_area() > Pawn::AREA)
+                .map(|polygon| {
+                    let layer = Triangulation::from_geo_polygon(polygon.clone()).as_layer();
+                    let mut mesh = Mesh {
+                        layers: vec![layer],
+                        search_delta: RADIUS / 2.,
+                        search_steps: 2,
+                    };
 
-                // TODO: https://github.com/vleue/polyanya/issues/99
-                // mesh.merge_polygons();
-                mesh.bake();
+                    // TODO: https://github.com/vleue/polyanya/issues/99
+                    // mesh.merge_polygons();
+                    mesh.bake();
 
-                MapMeshIsland { mesh, polygon }
-            })
-            .collect();
-
-        commands.entity(map.id()).insert(MapMesh { islands });
+                    MapMeshIsland { mesh, polygon }
+                }),
+        );
     }
 
     Ok(())
