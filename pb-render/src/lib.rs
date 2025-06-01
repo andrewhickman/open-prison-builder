@@ -9,7 +9,7 @@ pub mod wall;
 use bevy::{prelude::*, sprite::Material2dPlugin};
 use grid::GridMaterial;
 use pb_engine::root::Root;
-use wall::{VisibleMap, WallMaterial};
+use wall::{VisibleMaps, WallMaterial};
 
 pub struct PbRenderPlugin;
 
@@ -26,7 +26,7 @@ impl Plugin for PbRenderPlugin {
             .add_observer(wall::map_removed)
             .add_observer(pawn::pawn_added);
 
-        app.init_resource::<VisibleMap>();
+        app.init_resource::<VisibleMaps>();
 
         app.add_plugins(Material2dPlugin::<GridMaterial>::default())
             .add_plugins(Material2dPlugin::<WallMaterial>::default());

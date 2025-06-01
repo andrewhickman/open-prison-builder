@@ -35,7 +35,6 @@ pub const GRID_SIZE: f32 = 4.0;
 #[require(Transform, Visibility, MapMesh, Name::new(Map::type_path()))]
 pub struct Map {
     id: Entity,
-    source: Option<Entity>,
     children: EntityHashSet,
     size: u32,
     triangulation: ConstrainedDelaunayTriangulation<VertexData, (), UndirectedEdgeData, FaceData>,
@@ -167,7 +166,6 @@ impl Map {
 
         let mut map = Map {
             id: Entity::PLACEHOLDER,
-            source: None,
             triangulation,
             children: EntityHashSet::default(),
             size: 0,
@@ -181,16 +179,12 @@ impl Map {
     }
 
     pub fn cloned(&self) -> Self {
-        debug_assert!(self.source().is_none());
-
         let mut cloned = Map::default();
         cloned.clone_from_inner(self);
         cloned
     }
 
     pub fn clone_from(&mut self, commands: &mut Commands, source: &Map) {
-        debug_assert!(source.source().is_none());
-
         self.clone_from_inner(source);
 
         for &child in &self.children {
@@ -233,13 +227,10 @@ impl Map {
                 .map(MapEntity::cloned);
         }
 
-        self.source = Some(source.id());
         self.size = source.size;
     }
 
     pub fn clone_into(&mut self, queries: &mut MapQueries, source: &mut Map) {
-        debug_assert_eq!(self.source(), Some(source.id()));
-
         let mut new_children = EntityHashSet::default();
 
         self.triangulation.clone_into(&mut source.triangulation);
@@ -290,14 +281,6 @@ impl Map {
 
     pub fn id(&self) -> Entity {
         self.id
-    }
-
-    pub fn source(&self) -> Option<Entity> {
-        self.source
-    }
-
-    pub fn is_cloned(&self) -> bool {
-        self.source.is_some()
     }
 
     pub fn corners(&self) -> impl Iterator<Item = MapEntity> + '_ {
@@ -755,7 +738,6 @@ impl Default for Map {
     fn default() -> Self {
         Self {
             id: Entity::PLACEHOLDER,
-            source: None,
             children: EntityHashSet::default(),
             triangulation: Default::default(),
             size: 0,

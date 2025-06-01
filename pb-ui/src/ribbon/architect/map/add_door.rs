@@ -3,7 +3,7 @@ use pb_engine::map::{
     CornerDef, Map,
     door::{self, Door},
 };
-use pb_render::wall::VisibleMap;
+use pb_render::wall::VisibleMaps;
 
 use crate::{
     action::Action,
@@ -23,10 +23,10 @@ use crate::{
 pub fn add_door(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
-    mut visible_map: ResMut<VisibleMap>,
+    mut visible_map: ResMut<VisibleMaps>,
     map_q: Query<&Map>,
 ) -> Result {
-    let Some(source_id) = visible_map.source().or_else(|| visible_map.id()) else {
+    let Some(source_id) = visible_map.source() else {
         return Ok(());
     };
     let source = map_q.get(source_id)?;
@@ -44,7 +44,10 @@ pub fn add_door(
         ))
         .id();
     let map = commands.spawn((source.cloned(), ChildOf(id))).id();
-    visible_map.set(map, Some(source.id()));
+    *visible_map = VisibleMaps::Preview {
+        map,
+        source: source.id(),
+    };
     Ok(())
 }
 

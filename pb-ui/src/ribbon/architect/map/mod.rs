@@ -4,12 +4,12 @@ pub mod remove_wall;
 
 use bevy::{ecs::system::SystemParam, prelude::*};
 use pb_engine::map::{CornerDef, Map, MapQueries};
-use pb_render::wall::VisibleMap;
+use pb_render::wall::VisibleMaps;
 
 #[derive(SystemParam)]
 struct MapParam<'w, 's> {
     map_queries: MapQueries<'w, 's>,
-    visible_map: Res<'w, VisibleMap>,
+    visible_map: Res<'w, VisibleMaps>,
     map_q: Query<'w, 's, &'static mut Map>,
 }
 
@@ -19,6 +19,7 @@ impl MapParam<'_, '_> {
     }
 
     fn source(&self) -> Result<Entity> {
+        debug_assert!(self.visible_map.is_preview());
         Ok(self
             .visible_map
             .source()

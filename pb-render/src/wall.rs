@@ -27,6 +27,7 @@ use pb_engine::{
         door::{self, Door},
         wall::Wall,
     },
+    root::ChildOfRoot,
 };
 use smallvec::SmallVec;
 
@@ -37,10 +38,17 @@ const CORNER_LOCUS: Vec2 = Vec2::new(0., 0.5 * Wall::RADIUS);
 const TEXTURE_TOP: f32 = 0.0;
 const TEXTURE_BOTTOM: f32 = 1.0;
 
-#[derive(Resource, Default)]
-pub struct VisibleMap {
-    id: Option<Entity>,
-    source: Option<Entity>,
+#[derive(Resource, Default, Debug)]
+pub enum VisibleMaps {
+    #[default]
+    Hidden,
+    Visible {
+        map: Entity,
+    },
+    Preview {
+        map: Entity,
+        source: Entity,
+    },
 }
 
 #[derive(Debug, Component, PartialEq)]
@@ -200,42 +208,27 @@ pub fn wall_inserted(trigger: Trigger<OnInsert, Wall>, mut commands: Commands) {
     ));
 }
 
-pub fn map_removed(
-    trigger: Trigger<OnRemove, Map>,
-    mut visible_map: ResMut<VisibleMap>,
-    map_q: Query<&Map>,
-) -> Result {
-    if visible_map.id == Some(trigger.target()) {
-        if let Some(source) = visible_map.source() {
-            let map = map_q.get(source)?;
-            visible_map.set(map.id(), map.source());
-        } else {
-            visible_map.clear();
-        }
-    }
-    Ok(())
+pub fn map_removed(trigger: Trigger<OnRemove, Map>, mut visible_maps: ResMut<VisibleMaps>) {
+    visible_maps.remove(trigger.target());
 }
 
 pub fn update_visibility(
     engine_state: Res<State<EngineState>>,
-    mut visible_maps: ResMut<VisibleMap>,
+    mut visible_maps: ResMut<VisibleMaps>,
     map_q: Query<Ref<Map>>,
     children_q: Query<&Children>,
+    root_map_q: Query<Entity, (With<Map>, With<ChildOfRoot>)>,
     mut render_mode_q: Query<(&mut Visibility, &mut MeshMaterial2d<WallMaterial>)>,
     door_q: Query<Entity, With<Door>>,
 ) -> Result {
     if engine_state.is_changed() {
         match *engine_state.get() {
-            EngineState::Running(root) => {
-                for child in children_q.relationship_sources(root) {
-                    if let Ok(map) = map_q.get(child) {
-                        visible_maps.set(map.id(), map.source());
-                    }
-                }
+            EngineState::Running(_) => {
+                *visible_maps = VisibleMaps::Visible {
+                    map: root_map_q.single()?,
+                };
             }
-            EngineState::Disabled => {
-                visible_maps.clear();
-            }
+            EngineState::Disabled => *visible_maps = VisibleMaps::Hidden,
         }
     }
 
@@ -265,7 +258,7 @@ pub fn update_visibility(
                         render_modes.insert(entity, MapRenderMode::Visible);
                     }
                     MapEntity::Owned(entity) => {
-                        if map.source().is_some() {
+                        if visible_maps.is_preview() {
                             render_modes.insert(entity, MapRenderMode::Added);
                         } else {
                             render_modes.insert(entity, MapRenderMode::Visible);
@@ -284,7 +277,7 @@ pub fn update_visibility(
                         render_modes.insert(entity, MapRenderMode::Visible);
                     }
                     MapEntity::Owned(entity) => {
-                        if map.source().is_some() {
+                        if visible_maps.is_preview() {
                             render_modes.insert(entity, MapRenderMode::Added);
                         } else {
                             render_modes.insert(entity, MapRenderMode::Visible);
@@ -312,7 +305,7 @@ pub fn update_visibility(
 
 pub fn update_geometry(
     mut meshes: ResMut<Assets<Mesh>>,
-    visible_maps: Res<VisibleMap>,
+    visible_maps: Res<VisibleMaps>,
     map_q: Query<Ref<Map>>,
     corner_position_q: Query<&Corner>,
     mut corner_q: Query<(&Corner, &mut CornerGeometry, &mut Mesh2d, &mut Aabb), Without<Wall>>,
@@ -366,23 +359,39 @@ pub fn update_geometry(
     Ok(())
 }
 
-impl VisibleMap {
+impl VisibleMaps {
     pub fn id(&self) -> Option<Entity> {
-        self.id
+        match *self {
+            VisibleMaps::Hidden => None,
+            VisibleMaps::Visible { map } | VisibleMaps::Preview { map, .. } => Some(map),
+        }
     }
 
     pub fn source(&self) -> Option<Entity> {
-        self.source
+        match *self {
+            VisibleMaps::Hidden => None,
+            VisibleMaps::Visible { map: source } | VisibleMaps::Preview { source, .. } => {
+                Some(source)
+            }
+        }
     }
 
-    pub fn set(&mut self, id: Entity, source: Option<Entity>) {
-        self.id = Some(id);
-        self.source = source;
+    pub fn is_preview(&self) -> bool {
+        matches!(self, VisibleMaps::Preview { .. })
     }
 
-    pub fn clear(&mut self) {
-        self.id = None;
-        self.source = None;
+    pub fn remove(&mut self, id: Entity) {
+        match *self {
+            VisibleMaps::Visible { map } | VisibleMaps::Preview { source: map, .. }
+                if map == id =>
+            {
+                *self = VisibleMaps::Hidden
+            }
+            VisibleMaps::Preview { map, source } if map == id => {
+                *self = VisibleMaps::Visible { map: source }
+            }
+            _ => {}
+        }
     }
 }
 
