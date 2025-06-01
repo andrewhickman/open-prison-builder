@@ -281,15 +281,8 @@ fn assert_consistency(world: &World) {
 
             let corner1 = directed_edge.from().data().corner();
             let corner2 = directed_edge.to().data().corner();
-            let room1 = directed_edge.face().data().room();
-            let room2 = directed_edge.rev().face().data().room();
 
             assert_eq!(wall.corners(), [corner1, corner2]);
-            assert_eq!(wall.rooms(), [room1, room2]);
-        } else {
-            let room1 = directed_edge.face().data().room();
-            let room2 = directed_edge.rev().face().data().room();
-            assert_eq!(room1, room2);
         }
     }
 

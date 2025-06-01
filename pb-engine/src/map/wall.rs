@@ -16,7 +16,6 @@ pub struct Wall {
     position: Vec2,
     rotation: Rot2,
     corners: [Entity; 2],
-    rooms: [Entity; 2],
 }
 
 pub fn add_colliders(
@@ -59,18 +58,6 @@ impl Wall {
         self.corners[1]
     }
 
-    pub fn left_room(&self) -> Entity {
-        self.rooms[0]
-    }
-
-    pub fn right_room(&self) -> Entity {
-        self.rooms[1]
-    }
-
-    pub fn rooms(&self) -> [Entity; 2] {
-        self.rooms
-    }
-
     pub fn position(&self) -> Vec2 {
         self.position
     }
@@ -94,7 +81,6 @@ impl Wall {
         edge: FixedUndirectedEdgeHandle,
         corners: [Entity; 2],
         [position1, position2]: [Vec2; 2],
-        rooms: [Entity; 2],
     ) -> impl Bundle {
         let length = position1.distance(position2);
         let position = position1.midpoint(position2);
@@ -111,7 +97,6 @@ impl Wall {
                 position,
                 rotation: Rot2::radians(rotation),
                 corners,
-                rooms,
             },
             Transform {
                 scale: Vec3::ONE,

@@ -323,6 +323,17 @@ impl Map {
             })
     }
 
+    pub fn wall_rooms(&self, wall: &Wall) -> [Entity; 2] {
+        let directed = self
+            .triangulation
+            .undirected_edge(wall.edge())
+            .as_directed();
+        [
+            directed.face().data().room(),
+            directed.rev().face().data().room(),
+        ]
+    }
+
     pub fn containing_room(&self, position: Vec2) -> Option<Entity> {
         match self
             .triangulation
@@ -618,22 +629,14 @@ impl Map {
             let is_wall = edge.is_constraint_edge();
 
             if is_wall {
-                let directed1 = edge.as_directed();
-                let directed2 = directed1.rev();
-                let corners = directed1.vertices().map(|vertex| vertex.data().corner());
+                let corners = edge
+                    .as_directed()
+                    .vertices()
+                    .map(|vertex| vertex.data().corner());
                 let positions = edge.vertices().map(|vertex| vertex.data().position);
-                let room1 = directed1.face().data().room();
-                let room2 = directed2.face().data().room();
                 let edge = edge.fix();
 
-                let wall = self.update_wall(
-                    queries,
-                    edge_data.wall,
-                    edge,
-                    corners,
-                    positions,
-                    [room1, room2],
-                );
+                let wall = self.update_wall(queries, edge_data.wall, edge, corners, positions);
                 self.triangulation
                     .undirected_edge_data_mut(edge)
                     .data_mut()
@@ -704,21 +707,16 @@ impl Map {
         edge: FixedUndirectedEdgeHandle,
         corners: [Entity; 2],
         positions: [Vec2; 2],
-        rooms: [Entity; 2],
     ) -> MapEntity {
         if let Some(wall) = wall {
             match queries.wall(wall.id()) {
-                Some(wall_data)
-                    if wall_data.edge() == edge
-                        && wall_data.corners() == corners
-                        && wall_data.rooms() == rooms =>
-                {
+                Some(wall_data) if wall_data.edge() == edge && wall_data.corners() == corners => {
                     wall
                 }
-                _ => queries.update(self.id, wall, Wall::bundle(edge, corners, positions, rooms)),
+                _ => queries.update(self.id, wall, Wall::bundle(edge, corners, positions)),
             }
         } else {
-            queries.spawn(self.id, Wall::bundle(edge, corners, positions, rooms))
+            queries.spawn(self.id, Wall::bundle(edge, corners, positions))
         }
     }
 

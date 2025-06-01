@@ -118,7 +118,7 @@ impl SaveParam<'_, '_> {
                         Ok(WallModel {
                             id: id.id(),
                             corners: wall.corners(),
-                            rooms: wall.rooms(),
+                            rooms: map.wall_rooms(wall),
                         })
                     })
                     .collect::<Result<Vec<_>>>()?;
