@@ -1,7 +1,10 @@
 use bevy::{ecs::query::QueryEntityError, prelude::*};
 use pb_util::event::ComponentEvent;
 
-use crate::map::wall::Wall;
+use crate::{
+    map::{Map, wall::Wall},
+    root::ChildOfRoot,
+};
 
 pub const INNER_WIDTH: f32 = WIDTH - (2. * Wall::RADIUS);
 pub const MIN_WIDTH: f32 = 0.9;
@@ -16,6 +19,13 @@ pub const HALF_DEPTH: f32 = DEPTH / 2.;
 #[derive(Clone, Debug, Component)]
 #[component(immutable)]
 pub struct Door;
+
+#[derive(Clone, Debug, Component)]
+#[component(immutable)]
+pub struct DoorLinks {
+    pub left: Entity,
+    pub right: Entity,
+}
 
 pub fn validate(
     mut commands: Commands,
@@ -32,4 +42,36 @@ pub fn validate(
             }
         }
     }
+}
+
+pub fn wall_replaced(trigger: Trigger<OnReplace, Wall>, mut commands: Commands) {
+    commands.entity(trigger.target()).try_remove::<DoorLinks>();
+}
+
+pub fn remove_links(
+    map_q: Query<&Map, (Changed<Map>, With<ChildOfRoot>)>,
+    door_q: Query<Entity, With<DoorLinks>>,
+    mut commands: Commands,
+) {
+    map_q.iter().for_each(|map| {
+        for wall in map.walls() {
+            if door_q.contains(wall.id()) {
+                commands.entity(wall.id()).remove::<DoorLinks>();
+            }
+        }
+    });
+}
+
+pub fn add_links(
+    door_q: Query<(Entity, &Wall, &ChildOf), (With<Door>, With<ChildOfRoot>, Without<DoorLinks>)>,
+    map_q: Query<&Map>,
+    mut commands: Commands,
+) -> Result {
+    for (id, wall, parent) in door_q {
+        let map = map_q.get(parent.parent())?;
+        let [left, right] = map.wall_rooms(wall);
+        commands.entity(id).insert(DoorLinks { left, right });
+    }
+
+    Ok(())
 }
