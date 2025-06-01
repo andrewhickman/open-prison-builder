@@ -612,7 +612,7 @@ impl Map {
 
             faces.sort_unstable();
 
-            let room = self.update_room(queries, room);
+            let room = self.update_room(queries, room, &faces);
             for face in faces {
                 self.triangulation.face_data_mut(face).room = Some(room);
             }
@@ -720,14 +720,19 @@ impl Map {
         }
     }
 
-    fn update_room(&self, queries: &mut MapQueries, room: Option<MapEntity>) -> MapEntity {
+    fn update_room(
+        &self,
+        queries: &mut MapQueries,
+        room: Option<MapEntity>,
+        faces: &[FixedFaceHandle<PossiblyOuterTag>],
+    ) -> MapEntity {
         if let Some(room) = room {
             match queries.room(room.id()) {
-                Some(_) => room,
-                _ => queries.update(self.id, room, Room::bundle()),
+                Some(room_data) if room_data.faces() == faces => room,
+                _ => queries.update(self.id, room, Room::bundle(faces.to_owned())),
             }
         } else {
-            queries.spawn(self.id, Room::bundle())
+            queries.spawn(self.id, Room::bundle(faces.to_owned()))
         }
     }
 }

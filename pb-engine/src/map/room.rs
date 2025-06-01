@@ -1,11 +1,14 @@
 use bevy::{ecs::entity::EntityHashSet, prelude::*};
+use spade::handles::{FixedFaceHandle, PossiblyOuterTag};
 
 use crate::{map::Map, pawn::Pawn, root::ChildOfRoot};
 
 #[derive(Clone, Debug, Component)]
 #[require(Transform, Visibility)]
 #[component(immutable)]
-pub struct Room {}
+pub struct Room {
+    faces: Vec<FixedFaceHandle<PossiblyOuterTag>>,
+}
 
 #[derive(Component, Clone, PartialEq, Eq, Debug)]
 #[relationship(relationship_target = RoomContents)]
@@ -41,7 +44,11 @@ pub fn update_containing_room(
 }
 
 impl Room {
-    pub(crate) fn bundle() -> impl Bundle {
-        (Name::new("room"), Room {})
+    pub(crate) fn faces(&self) -> &[FixedFaceHandle<PossiblyOuterTag>] {
+        &self.faces
+    }
+
+    pub(crate) fn bundle(faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> impl Bundle {
+        (Name::new("room"), Room { faces })
     }
 }
