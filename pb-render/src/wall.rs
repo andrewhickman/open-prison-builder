@@ -212,14 +212,10 @@ pub fn map_removed(trigger: Trigger<OnRemove, Map>, mut visible_maps: ResMut<Vis
     visible_maps.remove(trigger.target());
 }
 
-pub fn update_visibility(
-    engine_state: Res<State<EngineState>>,
+pub fn update_visible_maps(
     mut visible_maps: ResMut<VisibleMaps>,
-    map_q: Query<Ref<Map>>,
-    children_q: Query<&Children>,
+    engine_state: Res<State<EngineState>>,
     root_map_q: Query<Entity, (With<Map>, With<ChildOfRoot>)>,
-    mut render_mode_q: Query<(&mut Visibility, &mut MeshMaterial2d<WallMaterial>)>,
-    door_q: Query<Entity, With<Door>>,
 ) -> Result {
     if engine_state.is_changed() {
         match *engine_state.get() {
@@ -232,71 +228,85 @@ pub fn update_visibility(
         }
     }
 
-    if visible_maps.is_changed()
+    Ok(())
+}
+
+pub fn update_render_mode_condition(
+    visible_maps: Res<VisibleMaps>,
+    map_q: Query<Ref<Map>>,
+) -> bool {
+    visible_maps.is_changed()
         || visible_maps
             .id()
             .is_some_and(|map| map_q.get(map).is_ok_and(|map| map.is_changed()))
-    {
-        let mut render_modes = EntityHashMap::default();
-        for map in &map_q {
-            if visible_maps.id() != Some(map.id()) {
-                for entity in children_q.iter_descendants(map.id()) {
-                    render_modes.insert(entity, MapRenderMode::Hidden);
-                }
+}
+
+pub fn update_render_mode(
+    visible_maps: Res<VisibleMaps>,
+    map_q: Query<Ref<Map>>,
+    children_q: Query<&Children>,
+    mut render_mode_q: Query<(&mut Visibility, &mut MeshMaterial2d<WallMaterial>)>,
+    door_q: Query<Entity, With<Door>>,
+) -> Result {
+    let mut render_modes = EntityHashMap::default();
+    for map in &map_q {
+        if visible_maps.id() != Some(map.id()) {
+            for entity in children_q.iter_descendants(map.id()) {
+                render_modes.insert(entity, MapRenderMode::Hidden);
             }
         }
+    }
 
-        if let Some(map) = visible_maps.id() {
-            let map = map_q.get(map)?;
-            for corners in map.corners() {
-                match corners {
-                    MapEntity::Cloned(entity) => {
-                        render_modes.insert(entity, MapRenderMode::Visible);
-                    }
-                    MapEntity::Replaced(source, entity) => {
-                        render_modes.insert(source, MapRenderMode::Hidden);
-                        render_modes.insert(entity, MapRenderMode::Visible);
-                    }
-                    MapEntity::Owned(entity) => {
-                        if visible_maps.is_preview() {
-                            render_modes.insert(entity, MapRenderMode::Added);
-                        } else {
-                            render_modes.insert(entity, MapRenderMode::Visible);
-                        }
-                    }
+    if let Some(map) = visible_maps.id() {
+        let map = map_q.get(map)?;
+        for corners in map.corners() {
+            match corners {
+                MapEntity::Cloned(entity) => {
+                    render_modes.insert(entity, MapRenderMode::Visible);
                 }
-            }
-
-            for wall in map.walls() {
-                match wall {
-                    MapEntity::Cloned(entity) => {
+                MapEntity::Replaced(source, entity) => {
+                    render_modes.insert(source, MapRenderMode::Hidden);
+                    render_modes.insert(entity, MapRenderMode::Visible);
+                }
+                MapEntity::Owned(entity) => {
+                    if visible_maps.is_preview() {
+                        render_modes.insert(entity, MapRenderMode::Added);
+                    } else {
                         render_modes.insert(entity, MapRenderMode::Visible);
-                    }
-                    MapEntity::Replaced(source, entity) => {
-                        render_modes.insert(source, MapRenderMode::Hidden);
-                        render_modes.insert(entity, MapRenderMode::Visible);
-                    }
-                    MapEntity::Owned(entity) => {
-                        if visible_maps.is_preview() {
-                            render_modes.insert(entity, MapRenderMode::Added);
-                        } else {
-                            render_modes.insert(entity, MapRenderMode::Visible);
-                        }
                     }
                 }
             }
         }
 
-        for (id, render_mode) in render_modes {
-            let Ok((mut visibility, mut material)) = render_mode_q.get_mut(id) else {
-                continue;
-            };
-            visibility.set_if_neq(render_mode.visibility());
-
-            let new_material = render_mode.material(door_q.contains(id));
-            if material.0 != new_material.0 {
-                *material = new_material;
+        for wall in map.walls() {
+            match wall {
+                MapEntity::Cloned(entity) => {
+                    render_modes.insert(entity, MapRenderMode::Visible);
+                }
+                MapEntity::Replaced(source, entity) => {
+                    render_modes.insert(source, MapRenderMode::Hidden);
+                    render_modes.insert(entity, MapRenderMode::Visible);
+                }
+                MapEntity::Owned(entity) => {
+                    if visible_maps.is_preview() {
+                        render_modes.insert(entity, MapRenderMode::Added);
+                    } else {
+                        render_modes.insert(entity, MapRenderMode::Visible);
+                    }
+                }
             }
+        }
+    }
+
+    for (id, render_mode) in render_modes {
+        let Ok((mut visibility, mut material)) = render_mode_q.get_mut(id) else {
+            continue;
+        };
+        visibility.set_if_neq(render_mode.visibility());
+
+        let new_material = render_mode.material(door_q.contains(id));
+        if material.0 != new_material.0 {
+            *material = new_material;
         }
     }
 

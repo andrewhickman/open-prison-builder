@@ -42,5 +42,11 @@ fn main() -> AppExit {
         PbUiPlugin,
     ));
 
+    app.ignore_ambiguity(
+        PostUpdate,
+        pb_render::pawn::clear_rotation,
+        bevy::ui::ui_layout_system,
+    );
+
     app.run()
 }

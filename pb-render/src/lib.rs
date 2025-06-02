@@ -16,7 +16,17 @@ pub struct PbRenderPlugin;
 impl Plugin for PbRenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (wall::startup, grid::startup));
-        app.add_systems(Update, (wall::update_visibility, wall::update_geometry));
+        app.add_systems(
+            Update,
+            (
+                wall::update_visible_maps,
+                (
+                    wall::update_render_mode.run_if(wall::update_render_mode_condition),
+                    wall::update_geometry,
+                )
+                    .after(wall::update_visible_maps),
+            ),
+        );
         app.add_systems(
             PostUpdate,
             pawn::clear_rotation.before(TransformSystem::TransformPropagate),
