@@ -4,10 +4,14 @@ use bevy::{
 };
 use spade::handles::{FixedFaceHandle, FixedVertexHandle, PossiblyOuterTag};
 
-use crate::{map::Map, pawn::Pawn, root::ChildOfRoot};
+use crate::{
+    map::{Map, door::RoomLinks},
+    pawn::Pawn,
+    root::ChildOfRoot,
+};
 
 #[derive(Clone, Debug, Component)]
-#[require(Transform, Visibility)]
+#[require(Transform, Visibility, RoomLinks)]
 #[component(immutable)]
 pub struct Room {
     faces: Vec<FixedFaceHandle<PossiblyOuterTag>>,

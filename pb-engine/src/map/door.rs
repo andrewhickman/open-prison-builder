@@ -1,4 +1,10 @@
-use bevy::{ecs::query::QueryEntityError, prelude::*};
+use bevy::{
+    ecs::{
+        component::HookContext, entity::EntityHashMap, query::QueryEntityError,
+        world::DeferredWorld,
+    },
+    prelude::*,
+};
 use pb_util::event::ComponentEvent;
 
 use crate::{
@@ -21,10 +27,21 @@ pub const HALF_DEPTH: f32 = DEPTH / 2.;
 pub struct Door;
 
 #[derive(Clone, Debug, Component)]
-#[component(immutable)]
+#[component(immutable, on_insert = DoorLinks::on_insert, on_remove = DoorLinks::on_remove)]
 pub struct DoorLinks {
     pub left: Entity,
     pub right: Entity,
+}
+
+#[derive(Default, Clone, Debug, Component)]
+pub struct RoomLinks {
+    doors: EntityHashMap<RoomLink>,
+}
+
+#[derive(Clone, Debug)]
+pub struct RoomLink {
+    position: Vec2,
+    room: Entity,
 }
 
 pub fn validate(
@@ -74,4 +91,66 @@ pub fn add_links(
     }
 
     Ok(())
+}
+
+impl RoomLinks {
+    pub fn doors(&self) -> impl Iterator<Item = (Entity, Entity, Vec2)> {
+        self.doors
+            .iter()
+            .map(|(&door, link)| (door, link.room, link.position))
+    }
+}
+
+impl DoorLinks {
+    fn on_insert(mut world: DeferredWorld, context: HookContext) {
+        let door = world.entity(context.entity);
+        let wall = door.get::<Wall>().unwrap().clone();
+        let links = door.get::<DoorLinks>().unwrap().clone();
+
+        world
+            .entity_mut(links.left)
+            .get_mut::<RoomLinks>()
+            .unwrap()
+            .doors
+            .insert(
+                context.entity,
+                RoomLink {
+                    position: wall.position(),
+                    room: links.right,
+                },
+            );
+        world
+            .entity_mut(links.right)
+            .get_mut::<RoomLinks>()
+            .unwrap()
+            .doors
+            .insert(
+                context.entity,
+                RoomLink {
+                    position: wall.position(),
+                    room: links.left,
+                },
+            );
+    }
+
+    fn on_remove(mut world: DeferredWorld, context: HookContext) {
+        let links = world
+            .entity(context.entity)
+            .get::<DoorLinks>()
+            .unwrap()
+            .clone();
+
+        if let Ok(mut room) = world.get_entity_mut(links.left) {
+            room.get_mut::<RoomLinks>()
+                .unwrap()
+                .doors
+                .remove(&context.entity);
+        }
+        if let Ok(mut room) = world.get_entity_mut(links.right) {
+            room.get_mut::<RoomLinks>()
+                .unwrap()
+                .doors
+                .remove(&context.entity);
+        }
+    }
 }
