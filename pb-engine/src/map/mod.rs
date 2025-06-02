@@ -334,24 +334,34 @@ impl Map {
         ]
     }
 
-    pub fn containing_room(&self, position: Vec2) -> Option<Entity> {
-        match self
-            .triangulation
-            .locate(Point2::new(position.x, position.y))
-        {
+    pub fn containing_room(
+        &self,
+        position: Vec2,
+        hint: Option<FixedVertexHandle>,
+    ) -> Option<(Entity, FixedVertexHandle)> {
+        let point = Point2::new(position.x, position.y);
+        let location = match hint {
+            Some(hint) => self.triangulation.locate_with_hint(point, hint),
+            None => self.triangulation.locate(point),
+        };
+
+        match location {
             PositionInTriangulation::OnVertex(vertex) => self
                 .triangulation
                 .vertex(vertex)
                 .out_edge()
-                .and_then(|edge| edge.face().data().room),
+                .map(|edge| (edge.face().data().room(), vertex)),
             PositionInTriangulation::OnEdge(edge) => {
-                self.triangulation.directed_edge(edge).face().data().room
+                let edge = self.triangulation.directed_edge(edge);
+                Some((edge.face().data().room(), edge.from().fix()))
             }
-            PositionInTriangulation::OnFace(face) => self.triangulation.face(face).data().room,
+            PositionInTriangulation::OnFace(face) => {
+                let face = self.triangulation.face(face);
+                Some((face.data().room(), face.adjacent_edge().from().fix()))
+            }
             PositionInTriangulation::OutsideOfConvexHull(_)
             | PositionInTriangulation::NoTriangulation => None,
         }
-        .map(|entity| entity.id())
     }
 
     pub fn insert_corner(&mut self, queries: &mut MapQueries, corner: CornerDef) -> Result<Entity> {

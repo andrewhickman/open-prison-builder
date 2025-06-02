@@ -1,5 +1,8 @@
-use bevy::{ecs::entity::EntityHashSet, prelude::*};
-use spade::handles::{FixedFaceHandle, PossiblyOuterTag};
+use bevy::{
+    ecs::{entity::EntityHashSet, relationship::Relationship},
+    prelude::*,
+};
+use spade::handles::{FixedFaceHandle, FixedVertexHandle, PossiblyOuterTag};
 
 use crate::{map::Map, pawn::Pawn, root::ChildOfRoot};
 
@@ -12,7 +15,11 @@ pub struct Room {
 
 #[derive(Component, Clone, PartialEq, Eq, Debug)]
 #[relationship(relationship_target = RoomContents)]
-pub struct ContainingRoom(pub Entity);
+pub struct ContainingRoom {
+    #[relationship]
+    room: Entity,
+    hint: Option<FixedVertexHandle>,
+}
 
 #[derive(Component, Default, Debug, PartialEq, Eq)]
 #[relationship_target(relationship = ContainingRoom)]
@@ -25,22 +32,43 @@ pub fn room_replaced(trigger: Trigger<OnReplace, Room>, mut commands: Commands) 
 }
 
 pub fn update_containing_room(
-    mut commands: Commands,
+    commands: ParallelCommands,
     map_q: Query<&Map, With<ChildOfRoot>>,
-    item_q: Query<(Entity, &Transform), (With<Pawn>, Without<ContainingRoom>, With<ChildOfRoot>)>,
-) -> Result {
-    'outer: for (item, transform) in &item_q {
-        for map in &map_q {
-            if let Some(room) = map.containing_room(transform.translation.xy()) {
-                info!("found containing room {room}");
-                commands.entity(item).insert(ContainingRoom(room));
-                continue 'outer;
+    item_q: Query<
+        (Entity, &Transform, Option<&ContainingRoom>),
+        (
+            With<Pawn>,
+            With<ChildOfRoot>,
+            Or<(Without<ContainingRoom>, Changed<Transform>)>,
+        ),
+    >,
+) {
+    item_q
+        .par_iter()
+        .for_each(|(id, transform, containing_room)| {
+            let hint = containing_room.and_then(|prev_room| prev_room.hint);
+            for map in &map_q {
+                if let Some((room, hint)) = map.containing_room(transform.translation.xy(), hint) {
+                    if containing_room.is_none_or(|prev_room| prev_room.get() != room) {
+                        info!("updated containing room {room} for {id}");
+                        commands.command_scope(|mut commands| {
+                            commands.entity(id).insert(ContainingRoom {
+                                room,
+                                hint: Some(hint),
+                            });
+                        });
+                    }
+                    return;
+                }
             }
-        }
 
-        warn!("no containing room found for {item}");
-    }
-    Ok(())
+            warn!("no containing room found for {id}");
+            if containing_room.is_some() {
+                commands.command_scope(|mut commands| {
+                    commands.entity(id).remove::<ContainingRoom>();
+                });
+            }
+        });
 }
 
 impl Room {
