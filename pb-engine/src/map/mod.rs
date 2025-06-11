@@ -868,6 +868,7 @@ impl MapQueries<'_, '_> {
                             .allow::<Wall>()
                             .allow::<Room>()
                             .allow::<Door>()
+                            .allow::<Perimeter>()
                             .linked_cloning(false);
                     })
                     .insert((bundle, ChildOf(map)))
