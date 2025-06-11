@@ -16,6 +16,9 @@ use crate::{
 )]
 pub struct Grid {
     level: i32,
+    min_level: i32,
+    max_level: i32,
+    snap_to_midpoint: bool,
 }
 
 pub fn grid_added(
@@ -51,12 +54,21 @@ pub fn input(
 }
 
 impl Grid {
+    pub fn new(min_level: i32, max_level: i32, snap_to_midpoint: bool) -> Self {
+        Grid {
+            level: 0,
+            min_level,
+            max_level,
+            snap_to_midpoint,
+        }
+    }
+
     pub fn increase_size(&mut self) {
-        self.level = (self.level - 1).max(-1)
+        self.level = (self.level - 1).max(self.min_level)
     }
 
     pub fn decrease_size(&mut self) {
-        self.level = (self.level + 1).min(4)
+        self.level = (self.level + 1).min(self.max_level)
     }
 
     pub fn level(&self) -> f32 {
@@ -65,7 +77,13 @@ impl Grid {
 
     pub fn mark(&self, p: f32, scale: f32) -> Option<f32> {
         let level = self.level();
-        let mark = (p / level).round() * level;
+
+        let mark = if self.snap_to_midpoint {
+            ((p / level + 0.5).round() - 0.5) * level
+        } else {
+            (p / level).round() * level
+        };
+
         if (p - mark).abs() < (POINT_PICKING_THRESHOLD * scale) {
             Some(mark)
         } else {

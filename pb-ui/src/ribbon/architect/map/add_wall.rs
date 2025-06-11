@@ -34,7 +34,7 @@ pub fn add_wall(
         .spawn((
             AddWallAction::default(),
             children![
-                Grid::default(),
+                Grid::new(-1, 4, false),
                 Observer::new(select_point),
                 Observer::new(cancel_point),
                 Observer::new(click_point),

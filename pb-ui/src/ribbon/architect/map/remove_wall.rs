@@ -56,7 +56,7 @@ fn cancel_wall(
 ) -> Result {
     material_q
         .get_mut(trigger.wall)?
-        .set_if_neq(MapRenderMode::Removed.material(door_q.contains(trigger.wall)));
+        .set_if_neq(MapRenderMode::Visible.material(door_q.contains(trigger.wall)));
     Ok(())
 }
 

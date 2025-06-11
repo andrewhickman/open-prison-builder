@@ -36,7 +36,7 @@ pub fn add_door(
         .spawn((
             AddDoorAction::default(),
             children![
-                Grid::default(),
+                Grid::new(-1, 4, true),
                 Observer::new(select_wall),
                 Observer::new(cancel_wall),
                 Observer::new(click_wall),
