@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
-#[require(Transform, ChildOfRoot, Name::new(Root::type_path()))]
+#[require(Transform, Visibility, ChildOfRoot, Name::new(Root::type_path()))]
 pub struct Root;
 
 #[derive(Default, Copy, Clone, Component)]

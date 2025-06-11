@@ -8,7 +8,6 @@ pub mod wall;
 
 use bevy::{prelude::*, sprite::Material2dPlugin};
 use grid::GridMaterial;
-use pb_engine::root::Root;
 use wall::{VisibleMaps, WallMaterial};
 
 pub struct PbRenderPlugin;
@@ -40,7 +39,5 @@ impl Plugin for PbRenderPlugin {
 
         app.add_plugins(Material2dPlugin::<GridMaterial>::default())
             .add_plugins(Material2dPlugin::<WallMaterial>::default());
-
-        app.register_required_components::<Root, Visibility>();
     }
 }

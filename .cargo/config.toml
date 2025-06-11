@@ -3,3 +3,7 @@ linker = "rust-lld.exe"
 
 [target.wasm32-unknown-unknown]
 rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
+
+[env]
+WGPU_BACKEND = "dx12"
+RUST_BACKTRACE = "true"

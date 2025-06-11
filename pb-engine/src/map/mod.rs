@@ -1,6 +1,7 @@
 pub mod corner;
 pub mod door;
 pub mod mesh;
+pub mod perimeter;
 pub mod room;
 pub mod wall;
 
@@ -25,7 +26,7 @@ use spade::{
 };
 
 use crate::{
-    map::{corner::Corner, door::Door, room::Room, wall::Wall},
+    map::{corner::Corner, door::Door, perimeter::Perimeter, room::Room, wall::Wall},
     save::MapModel,
 };
 
@@ -45,6 +46,7 @@ pub struct MapQueries<'w, 's> {
     pub commands: Commands<'w, 's>,
     pub corner_q: Query<'w, 's, &'static Corner>,
     pub wall_q: Query<'w, 's, &'static Wall>,
+    pub perimeter_q: Query<'w, 's, &'static Perimeter>,
     pub room_q: Query<'w, 's, &'static Room>,
 }
 
@@ -292,13 +294,14 @@ impl Map {
     pub fn walls(&self) -> impl Iterator<Item = MapEntity> + '_ {
         self.triangulation
             .undirected_edges()
-            .filter_map(|edge| edge.data().data().wall)
+            .filter(|edge| edge.is_constraint_edge())
+            .map(|edge| edge.data().data().wall.unwrap())
     }
 
     pub fn rooms(&self) -> impl Iterator<Item = MapEntity> + '_ {
         self.triangulation
             .all_faces()
-            .filter_map(|face| face.data().room)
+            .map(|face| face.data().room.unwrap())
     }
 
     pub fn rooms_deduped(&self) -> impl Iterator<Item = MapEntity> + '_ {
@@ -306,7 +309,13 @@ impl Map {
         self.rooms().filter(move |&face| unique.insert(face.id()))
     }
 
-    pub fn outer_room(&self) -> MapEntity {
+    pub fn perimeter(&self) -> impl Iterator<Item = MapEntity> + '_ {
+        self.triangulation
+            .convex_hull()
+            .map(|edge| edge.as_undirected().data().data().wall.unwrap())
+    }
+
+    pub fn perimeter_room(&self) -> MapEntity {
         self.triangulation.face(OUTER_FACE).data().room.unwrap()
     }
 
@@ -521,34 +530,25 @@ impl Map {
     }
 
     fn expand_size(&mut self, point: Vec2) -> Result {
-        let max_dim = point.x.abs().max(point.y.abs());
+        let new_size = (point.x.abs().max(point.y.abs()) / GRID_SIZE).ceil() + 1.;
 
-        while (self.size as f32 * GRID_SIZE) <= max_dim {
-            let new_size = self.size + 1;
-            let new_size_f = new_size as f32 * GRID_SIZE;
-
-            for i in 0..new_size {
-                let pos_f = i as f32 * GRID_SIZE;
-
-                self.triangulation
-                    .insert(VertexData::new(Vec2::new(new_size_f, new_size_f - pos_f)))?;
-                self.triangulation
-                    .insert(VertexData::new(Vec2::new(new_size_f, -pos_f)))?;
-                self.triangulation
-                    .insert(VertexData::new(Vec2::new(new_size_f - pos_f, -new_size_f)))?;
-                self.triangulation
-                    .insert(VertexData::new(Vec2::new(-pos_f, -new_size_f)))?;
-                self.triangulation
-                    .insert(VertexData::new(Vec2::new(-new_size_f, pos_f - new_size_f)))?;
-                self.triangulation
-                    .insert(VertexData::new(Vec2::new(-new_size_f, pos_f)))?;
-                self.triangulation
-                    .insert(VertexData::new(Vec2::new(pos_f - new_size_f, new_size_f)))?;
-                self.triangulation
-                    .insert(VertexData::new(Vec2::new(pos_f, new_size_f)))?;
-            }
-
-            self.size = new_size;
+        if new_size > self.size as f32 {
+            self.triangulation.insert(VertexData::new(Vec2::new(
+                -new_size * GRID_SIZE,
+                -new_size * GRID_SIZE,
+            )))?;
+            self.triangulation.insert(VertexData::new(Vec2::new(
+                -new_size * GRID_SIZE,
+                new_size * GRID_SIZE,
+            )))?;
+            self.triangulation.insert(VertexData::new(Vec2::new(
+                new_size * GRID_SIZE,
+                new_size * GRID_SIZE,
+            )))?;
+            self.triangulation.insert(VertexData::new(Vec2::new(
+                new_size * GRID_SIZE,
+                -new_size * GRID_SIZE,
+            )))?;
         }
 
         Ok(())
@@ -571,11 +571,10 @@ impl Map {
         for vertex in self.triangulation.fixed_vertices() {
             let vertex = self.triangulation.vertex(vertex);
             let vertex_data = vertex.data();
-            let is_corner =
-                vertex_data.standalone || vertex.out_edges().any(|e| e.is_constraint_edge());
+            let is_corner = vertex.out_edges().any(|e| e.is_constraint_edge());
             let vertex = vertex.fix();
 
-            if is_corner {
+            if vertex_data.standalone || is_corner {
                 let corner =
                     self.update_corner(queries, vertex_data.corner, vertex, vertex_data.position);
                 self.triangulation.vertex_data_mut(vertex).corner = Some(corner);
@@ -637,22 +636,34 @@ impl Map {
             let edge = self.triangulation.undirected_edge(edge);
             let edge_data = *edge.data().data();
             let is_wall = edge.is_constraint_edge();
+            let is_perimeter = edge.is_part_of_convex_hull();
 
-            if is_wall {
-                let corners = edge
-                    .as_directed()
-                    .vertices()
-                    .map(|vertex| vertex.data().corner());
-                let positions = edge.vertices().map(|vertex| vertex.data().position);
-                let edge = edge.fix();
+            debug_assert!(!(is_wall && is_perimeter));
+            if is_wall || is_perimeter {
+                let entity = if is_wall {
+                    let corners = edge.vertices().map(|vertex| vertex.data().corner());
+                    let positions = edge.vertices().map(|vertex| vertex.data().position);
 
-                let wall = self.update_wall(queries, edge_data.wall, edge, corners, positions);
+                    self.update_wall(queries, edge_data.wall, edge.fix(), corners, positions)
+                } else {
+                    let directed_edge = if edge.as_directed().is_outer_edge() {
+                        edge.as_directed()
+                    } else {
+                        edge.as_directed().rev()
+                    };
+
+                    let positions = directed_edge
+                        .vertices()
+                        .map(|vertex| vertex.data().position);
+
+                    self.update_perimeter(queries, edge_data.wall, positions)
+                };
                 self.triangulation
-                    .undirected_edge_data_mut(edge)
+                    .undirected_edge_data_mut(edge.fix())
                     .data_mut()
-                    .wall = Some(wall);
-                if !wall.is_cloned() {
-                    new_children.insert(wall.id());
+                    .wall = Some(entity);
+                if !entity.is_cloned() {
+                    new_children.insert(entity.id());
                 }
             } else if edge_data.wall.is_some() {
                 self.triangulation
@@ -671,24 +682,20 @@ impl Map {
         ),
     ) {
         if let Some(inner_face) = face.as_inner() {
-            for adjacent_face in self
+            for edge in self
                 .triangulation
                 .face(inner_face)
                 .adjacent_edges()
                 .into_iter()
                 .filter(|edge| !edge.is_constraint_edge())
-                .map(|edge| edge.rev().face())
             {
-                f(adjacent_face);
+                f(edge.rev().face());
             }
         } else {
-            for adjacent_face in self
-                .triangulation
-                .convex_hull()
-                .filter(|edge| !edge.is_constraint_edge())
-                .map(|edge| edge.rev().face())
-            {
-                f(adjacent_face);
+            for edge in self.triangulation.convex_hull() {
+                debug_assert!(!edge.is_constraint_edge());
+                debug_assert_eq!(edge.face().fix(), OUTER_FACE);
+                f(edge.rev().face());
             }
         }
     }
@@ -727,6 +734,26 @@ impl Map {
             }
         } else {
             queries.spawn(self.id, Wall::bundle(edge, corners, positions))
+        }
+    }
+
+    fn update_perimeter(
+        &self,
+        queries: &mut MapQueries,
+        perimeter: Option<MapEntity>,
+        [start, end]: [Vec2; 2],
+    ) -> MapEntity {
+        if let Some(perimeter) = perimeter {
+            match queries.perimeter(perimeter.id()) {
+                Some(perimeter_data)
+                    if perimeter_data.start() == start && perimeter_data.end() == end =>
+                {
+                    perimeter
+                }
+                _ => queries.update(self.id, perimeter, Perimeter::bundle(start, end)),
+            }
+        } else {
+            queries.spawn(self.id, Perimeter::bundle(start, end))
         }
     }
 
@@ -814,6 +841,10 @@ impl MapQueries<'_, '_> {
 
     fn wall(&self, wall: Entity) -> Option<&Wall> {
         self.wall_q.get(wall).ok()
+    }
+
+    fn perimeter(&self, perimeter: Entity) -> Option<&Perimeter> {
+        self.perimeter_q.get(perimeter).ok()
     }
 
     fn room(&self, room: Entity) -> Option<&Room> {

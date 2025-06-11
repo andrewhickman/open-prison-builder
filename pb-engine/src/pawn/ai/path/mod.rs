@@ -292,7 +292,10 @@ impl Default for PathQueryConfig {
     fn default() -> Self {
         Self {
             collider: Collider::circle(Pawn::VISION_RADIUS),
-            all_filter: SpatialQueryFilter::DEFAULT,
+            all_filter: SpatialQueryFilter {
+                mask: LayerMask(Layer::Wall.to_bits() | Layer::Perimeter.to_bits()),
+                ..Default::default()
+            },
             wall_filter: SpatialQueryFilter {
                 mask: Layer::Wall.into(),
                 ..Default::default()

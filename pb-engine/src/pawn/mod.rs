@@ -14,6 +14,7 @@ use crate::picking::Layer;
 #[derive(Debug, Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
 #[require(
+    Name::new("Pawn"),
     Actor,
     RigidBody::Dynamic,
     Collider::circle(Pawn::RADIUS),
@@ -45,7 +46,7 @@ impl Pawn {
     pub const REVERSE_VELOCITY: f32 = 0.7;
     pub const MAX_TORQUE: f32 = TAU;
     pub const MAX_ANGULAR_VELOCITY: f32 = PI;
-    pub const VISION_RADIUS: f32 = 10.;
+    pub const VISION_RADIUS: f32 = 4.;
 
     pub fn update_movement(&mut self, angle: f32, accel: f32, torque: f32) {
         self.dir = Vec2::from_angle(to_finite_f32_lossy(angle).clamp(-1., 1.) * PI);

@@ -45,6 +45,7 @@ impl Plugin for PbEnginePlugin {
             .add_observer(map::door::wall_replaced)
             .add_insert_event::<map::corner::Corner>()
             .add_insert_event::<map::wall::Wall>()
+            .add_insert_event::<map::perimeter::Perimeter>()
             .add_insert_event::<map::door::Door>()
             .add_observer(pawn::ai::task_added)
             .add_observer(pawn::ai::task_removed)
@@ -59,6 +60,7 @@ impl Plugin for PbEnginePlugin {
                         .after(map::door::validate)
                         .after(map::door::remove_links),
                     map::corner::add_colliders,
+                    map::perimeter::add_colliders,
                     map::mesh::update_mesh,
                     map::room::update_containing_room,
                 ),

@@ -53,26 +53,21 @@ pub fn update_mesh(
 ) -> Result {
     for (map, mut mesh) in &mut map_q {
         if map.triangulation.all_vertices_on_line() {
+            mesh.islands.clear();
             continue;
         }
 
-        let corners: EntityHashMap<CornerGeometry> = map
-            .corners()
-            .map(|entity| {
-                let corner = corner_q.get(entity.id())?;
-                let geometry = CornerGeometry::new(
-                    corner,
-                    map.corner_walls(corner).filter_map(|(wall, end_corner)| {
-                        corner_q
-                            .get(end_corner)
-                            .ok()
-                            .map(|end_corner| (wall, end_corner))
-                    }),
-                );
+        let mut corners = EntityHashMap::new();
+        for entity in map.corners() {
+            let corner = corner_q.get(entity.id())?;
+            let geometry = CornerGeometry::new(
+                corner,
+                map.corner_walls(corner)
+                    .map(|(wall, end_corner)| Ok((wall, corner_q.get(end_corner)?))),
+            )?;
 
-                Ok((entity.id(), geometry))
-            })
-            .collect::<Result<_>>()?;
+            corners.insert(entity.id(), geometry);
+        }
 
         let mut interiors = Vec::with_capacity(map.triangulation.num_constraints() * 3);
 
@@ -231,12 +226,15 @@ impl MapMeshIsland {
 }
 
 impl CornerGeometry {
-    fn new<'a>(start: &Corner, walls: impl Iterator<Item = (Entity, &'a Corner)>) -> Self {
+    fn new<'a>(
+        start: &Corner,
+        walls: impl Iterator<Item = Result<(Entity, &'a Corner)>>,
+    ) -> Result<Self> {
         let pos = start.position();
 
         let mut angles: SmallVec<[(Entity, f32); 4]> = walls
-            .map(|(id, end)| (id, (end.position() - pos).to_angle()))
-            .collect();
+            .map(|res| res.map(|(id, end)| (id, (end.position() - pos).to_angle())))
+            .collect::<Result<_>>()?;
         angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
 
         let mut points: SmallVec<[CornerGeometryPoint; 4]> = default();
@@ -257,10 +255,10 @@ impl CornerGeometry {
             }
         }
 
-        CornerGeometry {
+        Ok(CornerGeometry {
             points,
             center: pos,
-        }
+        })
     }
 
     fn wall_intersections(&self, wall: Entity) -> Result<[Vec2; 3]> {

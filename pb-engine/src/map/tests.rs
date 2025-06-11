@@ -1,7 +1,7 @@
 use bevy::{ecs::system::RunSystemOnce, prelude::*};
 use spade::Triangulation;
 
-use crate::map::{self, Corner, CornerDef, Map, MapQueries, Room, Wall};
+use crate::map::{self, Corner, CornerDef, Map, MapQueries, Room, Wall, perimeter::Perimeter};
 
 #[test]
 fn test_empty() {
@@ -260,7 +260,10 @@ fn assert_consistency(world: &World) {
     assert_eq!(children.len(), map.children.len());
     assert_eq!(
         children.len(),
-        map.corners().count() + map.walls().count() + map.rooms_deduped().count()
+        map.corners().count()
+            + map.walls().count()
+            + map.rooms_deduped().count()
+            + map.perimeter().count()
     );
 
     for vertex in map.triangulation.vertices() {
@@ -273,17 +276,36 @@ fn assert_consistency(world: &World) {
     }
 
     for edge in map.triangulation.undirected_edges() {
-        assert_eq!(edge.is_constraint_edge(), edge.data().data().wall.is_some());
+        assert_eq!(
+            edge.is_constraint_edge() || edge.is_part_of_convex_hull(),
+            edge.data().data().wall.is_some()
+        );
 
-        let directed_edge = edge.as_directed();
-        if let Some(wall) = edge.data().data().wall {
-            let wall = world.entity(wall.id()).get::<Wall>().unwrap();
+        if edge.is_constraint_edge() {
+            let directed_edge = edge.as_directed();
+            let wall = world
+                .entity(edge.data().data().wall())
+                .get::<Wall>()
+                .unwrap();
 
             let corner1 = directed_edge.from().data().corner();
             let corner2 = directed_edge.to().data().corner();
 
             assert_eq!(wall.corners(), [corner1, corner2]);
         }
+    }
+
+    for edge in map.triangulation.convex_hull() {
+        let undirected_edge = edge.as_undirected();
+
+        assert!(!undirected_edge.is_constraint_edge());
+
+        let perimeter = world
+            .entity(undirected_edge.data().data().wall())
+            .get::<Perimeter>()
+            .unwrap();
+        assert_eq!(perimeter.start(), edge.from().data().position);
+        assert_eq!(perimeter.end(), edge.to().data().position);
     }
 
     for face in map.triangulation.all_faces() {

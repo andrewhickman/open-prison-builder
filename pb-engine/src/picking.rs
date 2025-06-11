@@ -4,6 +4,7 @@ use avian2d::prelude::PhysicsLayer;
 pub enum Layer {
     #[default]
     Default,
+    Perimeter,
     Wall,
     Pawn,
 }

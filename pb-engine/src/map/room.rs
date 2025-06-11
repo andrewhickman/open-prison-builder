@@ -2,7 +2,7 @@ use bevy::{
     ecs::{entity::EntityHashSet, relationship::Relationship},
     prelude::*,
 };
-use spade::handles::{FixedFaceHandle, FixedVertexHandle, PossiblyOuterTag};
+use spade::handles::{FixedFaceHandle, FixedVertexHandle, OUTER_FACE, PossiblyOuterTag};
 
 use crate::{
     map::{Map, door::RoomLinks},
@@ -76,11 +76,16 @@ pub fn update_containing_room(
 }
 
 impl Room {
+    pub fn is_outer(&self) -> bool {
+        self.faces[0] == OUTER_FACE
+    }
+
     pub(crate) fn faces(&self) -> &[FixedFaceHandle<PossiblyOuterTag>] {
         &self.faces
     }
 
     pub(crate) fn bundle(faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> impl Bundle {
+        debug_assert!(!faces.is_empty());
         (Name::new("room"), Room { faces })
     }
 }

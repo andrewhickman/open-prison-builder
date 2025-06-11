@@ -174,7 +174,7 @@ pub fn corner_inserted(
     let corner = corner_q.get(trigger.target())?;
     let render_mode = MapRenderMode::Hidden;
 
-    let corner_info = CornerGeometry::new(corner, iter::empty());
+    let corner_info = CornerGeometry::new(corner, iter::empty())?;
 
     let mesh = corner_info.mesh();
     let aabb = mesh
@@ -197,7 +197,7 @@ pub fn corner_inserted(
     Ok(())
 }
 
-pub fn wall_inserted(trigger: Trigger<OnInsert, Wall>, mut commands: Commands) {
+pub fn wall_inserted(trigger: Trigger<OnInsert, Wall>, mut commands: Commands) -> Result {
     let render_mode = MapRenderMode::Hidden;
     commands.entity(trigger.target()).insert((
         WallGeometry::default(),
@@ -206,6 +206,7 @@ pub fn wall_inserted(trigger: Trigger<OnInsert, Wall>, mut commands: Commands) {
         render_mode.material(false),
         render_mode.visibility(),
     ));
+    Ok(())
 }
 
 pub fn map_removed(trigger: Trigger<OnRemove, Map>, mut visible_maps: ResMut<VisibleMaps>) {
@@ -342,13 +343,9 @@ pub fn update_geometry(
 
             let new_info = CornerGeometry::new(
                 corner,
-                map.corner_walls(corner).filter_map(|(wall, end_corner)| {
-                    corner_position_q
-                        .get(end_corner)
-                        .ok()
-                        .map(|end_corner| (wall, end_corner))
-                }),
-            );
+                map.corner_walls(corner)
+                    .map(|(wall, end_corner)| Ok((wall, corner_position_q.get(end_corner)?))),
+            )?;
 
             if info.set_if_neq(new_info) {
                 update_mesh(&mut meshes, &mut mesh, &mut aabb, info.mesh());
@@ -356,7 +353,9 @@ pub fn update_geometry(
         }
 
         for entity in map.walls() {
-            let (wall, door, mut info, mut mesh, mut aabb) = wall_q.get_mut(entity.id())?;
+            let Ok((wall, door, mut info, mut mesh, mut aabb)) = wall_q.get_mut(entity.id()) else {
+                continue;
+            };
             let [(_, start_info, _, _), (_, end_info, _, _)] = corner_q.get_many(wall.corners())?;
 
             let new_info = WallGeometry::new(entity.id(), wall, door, start_info, end_info)?;
@@ -429,12 +428,15 @@ impl MapRenderMode {
 }
 
 impl CornerGeometry {
-    fn new<'a>(start: &Corner, walls: impl Iterator<Item = (Entity, &'a Corner)>) -> Self {
+    fn new<'a>(
+        start: &Corner,
+        walls: impl Iterator<Item = Result<(Entity, &'a Corner)>>,
+    ) -> Result<Self> {
         let start = start.position();
 
         let mut angles: SmallVec<[(Entity, f32); 4]> = walls
-            .map(|(id, end)| (id, (end.position() - start).to_angle()))
-            .collect();
+            .map(|res| res.map(|(id, end)| (id, (end.position() - start).to_angle())))
+            .collect::<Result<_>>()?;
         angles.sort_by_key(|&(_, angle)| FloatOrd(angle));
 
         let mut points: SmallVec<[CornerGeometryPoint; 4]> = default();
@@ -461,7 +463,7 @@ impl CornerGeometry {
             ]);
         }
 
-        CornerGeometry { pos: start, points }
+        Ok(CornerGeometry { pos: start, points })
     }
 
     fn wall_intersection(&self, id: Entity) -> Option<(Vec2, Vec2, Vec2)> {
