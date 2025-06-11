@@ -11,9 +11,9 @@ use bevy::{
 use tokio::sync::oneshot;
 
 use crate::{
+    layer::Layer,
     map::{mesh::MapMesh, room::ContainingRoom, wall::Wall},
     pawn::{Pawn, ai::Task},
-    picking::Layer,
 };
 
 const POSITION_EPSILON: f32 = Pawn::MAX_VELOCITY / 64.;

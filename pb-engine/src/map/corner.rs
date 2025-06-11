@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use pb_util::event::ComponentEvent;
 use spade::handles::FixedVertexHandle;
 
-use crate::{map::wall::Wall, picking::Layer, root::ChildOfRoot};
+use crate::{layer::Layer, map::wall::Wall, root::ChildOfRoot};
 
 #[derive(Clone, Debug, Component)]
 #[require(Transform, Visibility)]

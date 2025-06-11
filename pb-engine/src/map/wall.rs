@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use pb_util::event::ComponentEvent;
 use spade::handles::FixedUndirectedEdgeHandle;
 
-use crate::{picking::Layer, root::ChildOfRoot};
+use crate::{layer::Layer, root::ChildOfRoot};
 
 use super::door::Door;
 

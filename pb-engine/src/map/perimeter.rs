@@ -2,7 +2,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use pb_util::event::ComponentEvent;
 
-use crate::{picking::Layer, root::ChildOfRoot};
+use crate::{layer::Layer, root::ChildOfRoot};
 
 #[derive(Clone, Debug, Component)]
 #[require(Transform, Visibility)]

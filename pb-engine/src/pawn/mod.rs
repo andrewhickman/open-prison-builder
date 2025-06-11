@@ -9,7 +9,7 @@ use bevy::prelude::*;
 use pb_util::math::to_finite_f32_lossy;
 use serde::{Deserialize, Serialize};
 
-use crate::picking::Layer;
+use crate::layer::Layer;
 
 #[derive(Debug, Default, Copy, Clone, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]

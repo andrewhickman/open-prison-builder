@@ -11,9 +11,9 @@ use bevy::{
     prelude::*,
 };
 use pb_engine::{
+    layer::Layer,
     map::{corner::Corner, wall::Wall},
     pawn::Pawn,
-    picking::Layer,
 };
 use pb_render::projection::ProjectionExt;
 
