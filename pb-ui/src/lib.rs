@@ -21,6 +21,7 @@ use bevy_simple_text_input::{TextInputPlugin, TextInputSystem};
 
 use input::{camera::CameraState, cancel::CancelStack};
 use loading::LoadingState;
+use pb_engine::pawn::task::TaskSystems;
 use ribbon::RibbonState;
 
 use crate::{menu::MenuState, message::Message};
@@ -108,9 +109,10 @@ impl Plugin for PbUiPlugin {
                 Update,
                 input::camera::update.run_if(input::camera::update_condition),
             )
+            .add_systems(FixedUpdate, input::pawn::update.in_set(TaskSystems))
             .add_observer(input::cancel::input)
             .add_observer(input::camera::input)
-            .add_observer(input::movement::input)
+            .add_observer(input::pawn::input)
             .add_observer(input::pause::input)
             .add_observer(input::picking::point::grid::input)
             .add_observer(input::picking::point::root_added)

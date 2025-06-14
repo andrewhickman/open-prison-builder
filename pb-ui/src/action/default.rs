@@ -1,6 +1,5 @@
 use bevy::{ecs::world::OnDespawn, prelude::*};
 use pb_assets::AssetHandles;
-use pb_engine::pawn::ai::path::PathQuery;
 use pb_render::pawn::PawnHighlight;
 
 use crate::{
@@ -77,13 +76,8 @@ fn click_pawn(
     action.click_pawn(trigger.pawn, &mut commands, &assets, &theme)
 }
 
-fn click_point(
-    trigger: Trigger<ClickPoint>,
-    mut commands: Commands,
-    mut action: Single<&mut DefaultAction>,
-    path_q: PathQuery,
-) -> Result {
-    action.click_point(&mut commands, &path_q, trigger.point)
+fn click_point(trigger: Trigger<ClickPoint>, mut action: Single<&mut DefaultAction>) -> Result {
+    action.click_point(trigger.point)
 }
 
 impl DefaultAction {
@@ -140,17 +134,11 @@ impl DefaultAction {
         Ok(())
     }
 
-    fn click_point(&mut self, commands: &mut Commands, path_q: &PathQuery, to: Vec2) -> Result {
+    fn click_point(&mut self, to: Vec2) -> Result {
         match self.state {
             DefaultActionState::Default => (),
             DefaultActionState::SelectedPawn { pawn, .. } => {
                 info!("move {pawn} to {to}");
-                match path_q.path(pawn, to) {
-                    Some(path) => {
-                        commands.spawn(path);
-                    }
-                    None => warn!("no path found for {pawn} to {to}"),
-                }
             }
         }
 

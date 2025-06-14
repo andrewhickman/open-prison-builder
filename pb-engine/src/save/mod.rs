@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     EngineState,
     map::{Map, corner::Corner, room::Room, wall::Wall},
-    pawn::{Pawn, PawnBundle},
+    pawn::Pawn,
     root::Root,
 };
 
@@ -153,7 +153,7 @@ impl SaveModel {
                 .spawn_batch(
                     self.pawns
                         .iter()
-                        .map(|pawn| (PawnBundle::new(pawn.position, pawn.rotation), ChildOf(root))),
+                        .map(|pawn| (Pawn::bundle(pawn.position, pawn.rotation), ChildOf(root))),
                 )
                 .zip(&self.pawns)
             {

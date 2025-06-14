@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use pb_engine::{EngineState, pawn::PawnBundle};
+use pb_engine::{EngineState, pawn::Pawn};
 
 use crate::{
     action::Action,
@@ -25,5 +25,5 @@ fn click_point(
         return;
     };
 
-    commands.spawn((PawnBundle::new(trigger.point, 0.), ChildOf(root)));
+    commands.spawn((Pawn::bundle(trigger.point, 0.), ChildOf(root)));
 }

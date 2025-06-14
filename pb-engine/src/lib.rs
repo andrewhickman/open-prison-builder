@@ -7,13 +7,10 @@ pub mod pawn;
 pub mod root;
 pub mod save;
 
-use avian2d::{
-    dynamics::{integrator::IntegrationSet, solver::schedule::SubstepSolverSet},
-    prelude::*,
-};
+use avian2d::prelude::*;
 use bevy::prelude::*;
 use dev::DevSettings;
-use pawn::{Pawn, ai::path::PathQueryConfig};
+use pawn::Pawn;
 use pb_util::event::AddComponentEvent;
 use root::Root;
 
@@ -36,8 +33,7 @@ impl Plugin for PbEnginePlugin {
 
         app.insert_resource(Gravity::ZERO);
 
-        app.init_resource::<PathQueryConfig>()
-            .init_resource::<DevSettings>();
+        app.init_resource::<DevSettings>();
 
         app.add_observer(root::child_added)
             .add_observer(map::map_inserted)
@@ -47,9 +43,6 @@ impl Plugin for PbEnginePlugin {
             .add_insert_event::<map::wall::Wall>()
             .add_insert_event::<map::perimeter::Perimeter>()
             .add_insert_event::<map::door::Door>()
-            .add_observer(pawn::ai::task_added)
-            .add_observer(pawn::ai::task_removed)
-            .add_observer(pawn::ai::actor_removed)
             .add_systems(
                 FixedPreUpdate,
                 (
@@ -65,16 +58,7 @@ impl Plugin for PbEnginePlugin {
                     map::room::update_containing_room,
                 ),
             )
-            .add_systems(
-                FixedUpdate,
-                (pawn::ai::path::update, pawn::movement).chain(),
-            )
-            .add_systems(
-                SubstepSchedule,
-                pawn::clamp_velocity
-                    .after(SubstepSolverSet::SolveConstraints)
-                    .before(IntegrationSet::Position),
-            )
+            // .add_systems(FixedUpdate, ())
             .add_systems(
                 Update,
                 (

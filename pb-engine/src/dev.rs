@@ -1,13 +1,6 @@
-use avian2d::prelude::*;
-use bevy::{
-    color::palettes::tailwind::{GREEN_300, INDIGO_800},
-    prelude::*,
-};
+use bevy::{color::palettes::tailwind::GREEN_300, prelude::*};
 
-use crate::{
-    map::mesh::MapMesh,
-    pawn::ai::{Task, path::PathTask},
-};
+use crate::map::mesh::MapMesh;
 
 #[derive(Default, Resource)]
 pub struct DevSettings {
@@ -19,20 +12,22 @@ pub fn draw_paths_condition(settings: Res<DevSettings>) -> bool {
     settings.draw_paths
 }
 
-pub fn draw_paths(task_q: Query<(&Task, &PathTask)>, pos_q: Query<&Position>, mut gizmos: Gizmos) {
-    for (task, path) in &task_q {
-        if let Some(steps) = path.steps() {
-            if let Ok(start) = pos_q.get(task.actor()) {
-                if !steps.is_empty() {
-                    gizmos.line_2d(start.0, steps[0], INDIGO_800);
-                    for i in 0..(steps.len() - 1) {
-                        gizmos.line_2d(steps[i], steps[i + 1], INDIGO_800);
-                    }
-                }
-            }
-        }
-    }
-}
+pub fn draw_paths() {}
+
+// pub fn draw_paths(task_q: Query<(&Task, &PathTask)>, pos_q: Query<&Position>, mut gizmos: Gizmos) {
+//     for (task, path) in &task_q {
+//         if let Some(steps) = path.steps() {
+//             if let Ok(start) = pos_q.get(task.actor()) {
+//                 if !steps.is_empty() {
+//                     gizmos.line_2d(start.0, steps[0], INDIGO_800);
+//                     for i in 0..(steps.len() - 1) {
+//                         gizmos.line_2d(steps[i], steps[i + 1], INDIGO_800);
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 
 pub fn draw_meshes_condition(settings: Res<DevSettings>) -> bool {
     settings.draw_meshes
