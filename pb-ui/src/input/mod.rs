@@ -1,7 +1,7 @@
 pub mod camera;
 pub mod cancel;
-pub mod movement;
 pub mod pause;
+pub mod pawn;
 pub mod picking;
 pub mod settings;
 
@@ -11,7 +11,7 @@ use bevy::{
     input::{ButtonState, keyboard::KeyboardInput},
     prelude::*,
 };
-use movement::{MovementDirection, MovementInput};
+use pawn::{MovementDirection, MovementInput};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]

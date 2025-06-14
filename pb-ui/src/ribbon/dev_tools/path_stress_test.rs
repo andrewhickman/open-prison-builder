@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::*;
-use pb_engine::pawn::{Pawn, PawnBundle, ai::path::PathTaskBundle};
+use pb_engine::pawn::Pawn;
 use pb_util::rng::LocalRng;
 use rand::distr::{Distribution, Uniform};
 
@@ -13,7 +13,7 @@ pub fn spawn_1000_pawns(
     let position_distr = Uniform::new(-100., 100.).unwrap();
     let rotation_distr = Uniform::new(-PI, PI).unwrap();
 
-    let pawns: Vec<PawnBundle> = (0..1000)
+    let pawns: Vec<_> = (0..1000)
         .map(|_| {
             let position = Vec2::new(
                 position_distr.sample(&mut rng),
@@ -21,7 +21,7 @@ pub fn spawn_1000_pawns(
             );
             let rotation = rotation_distr.sample(&mut rng);
 
-            PawnBundle::new(position, rotation)
+            Pawn::bundle(position, rotation)
         })
         .collect();
 
@@ -29,28 +29,6 @@ pub fn spawn_1000_pawns(
     Ok(())
 }
 
-pub fn create_path_tasks(
-    _: Trigger<Pointer<Click>>,
-    mut commands: Commands,
-    query: Query<Entity, With<Pawn>>,
-    mut rng: LocalRng,
-) -> Result {
-    let position_distr = Uniform::new(-100., 100.).unwrap();
-
-    let tasks: Vec<PathTaskBundle> = query
-        .iter()
-        .map(|entity| {
-            let position = Vec2::new(
-                position_distr.sample(&mut rng),
-                position_distr.sample(&mut rng),
-            );
-
-            PathTaskBundle::move_to(entity, position)
-        })
-        .collect();
-
-    info!("created {} path tasks", tasks.len());
-
-    commands.spawn_batch(tasks);
+pub fn create_path_tasks(_: Trigger<Pointer<Click>>) -> Result {
     Ok(())
 }

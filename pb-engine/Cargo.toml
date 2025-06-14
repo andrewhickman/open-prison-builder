@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["Andrew Hickman <me@andrewhickman.dev>"]
 publish = false
 edition = "2024"
-build = "build.rs"
 
 [features]
 dev = ["avian2d/debug-plugin", "bevy/bevy_gizmos"]
