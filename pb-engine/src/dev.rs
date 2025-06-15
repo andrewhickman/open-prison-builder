@@ -1,6 +1,6 @@
 use bevy::{color::palettes::tailwind::GREEN_300, prelude::*};
 
-use crate::map::mesh::MapMesh;
+use crate::map::mesh::RoomMesh;
 
 #[derive(Default, Resource)]
 pub struct DevSettings {
@@ -33,21 +33,19 @@ pub fn draw_meshes_condition(settings: Res<DevSettings>) -> bool {
     settings.draw_meshes
 }
 
-pub fn draw_meshes(map_q: Query<&MapMesh>, mut gizmos: Gizmos) {
+pub fn draw_meshes(map_q: Query<&RoomMesh>, mut gizmos: Gizmos) {
     for map in &map_q {
-        for mesh in map.meshes() {
-            for layer in &mesh.layers {
-                for polygon in &layer.polygons {
-                    gizmos.linestrip(
-                        polygon
-                            .vertices
-                            .iter()
-                            .cycle()
-                            .take(polygon.vertices.len() + 1)
-                            .map(|&index| layer.vertices[index as usize].coords.extend(0.)),
-                        GREEN_300,
-                    );
-                }
+        for layer in &map.mesh().layers {
+            for polygon in &layer.polygons {
+                gizmos.linestrip(
+                    polygon
+                        .vertices
+                        .iter()
+                        .cycle()
+                        .take(polygon.vertices.len() + 1)
+                        .map(|&index| layer.vertices[index as usize].coords.extend(0.)),
+                    GREEN_300,
+                );
             }
         }
     }

@@ -29,8 +29,8 @@ pub struct Door;
 #[derive(Clone, Debug, Component)]
 #[component(immutable, on_insert = DoorLinks::on_insert, on_remove = DoorLinks::on_remove)]
 pub struct DoorLinks {
-    pub left: Entity,
-    pub right: Entity,
+    left: Entity,
+    right: Entity,
 }
 
 #[derive(Default, Clone, Debug, Component)]
