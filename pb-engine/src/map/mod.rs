@@ -15,7 +15,7 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use mesh::MapMesh;
+use mesh::RoomMesh;
 use spade::{
     CdtEdge, ConstrainedDelaunayTriangulation, HasPosition, Point2, PositionInTriangulation,
     Triangulation,
@@ -33,7 +33,7 @@ use crate::{
 pub const GRID_SIZE: f32 = 4.0;
 
 #[derive(Component, TypePath)]
-#[require(Transform, Visibility, MapMesh, Name::new(Map::type_path()))]
+#[require(Transform, Visibility, RoomMesh, Name::new(Map::type_path()))]
 pub struct Map {
     id: Entity,
     children: EntityHashSet,

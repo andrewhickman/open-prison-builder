@@ -3,26 +3,24 @@ use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, SQRT_2, TAU};
 use bevy::{ecs::entity::EntityHashMap, math::FloatOrd, prelude::*};
 use polyanya::{
     Coords, Mesh, Path, Triangulation,
-    geo::{Area, BooleanOps, Closest, ClosestPoint, Point, Polygon, unary_union},
+    geo::{
+        Area, BooleanOps, Closest, ClosestPoint, Coord, Point, Polygon, StitchTriangles, Triangle,
+        unary_union,
+    },
 };
 use smallvec::SmallVec;
 use spade::Triangulation as _;
 
 use crate::{
-    map::{Corner, Map, door::Door, wall::Wall},
+    map::{Corner, Map, door::Door, room::Room, wall::Wall},
     pawn::Pawn,
     root::ChildOfRoot,
 };
 
 #[derive(Debug, Default, Component)]
-pub struct MapMesh {
-    islands: Vec<MapMeshIsland>,
-}
-
-#[derive(Debug)]
-struct MapMeshIsland {
+pub struct RoomMesh {
     mesh: Mesh,
-    polygon: Polygon<f32>,
+    polygon: Option<Polygon<f32>>,
 }
 
 const RADIUS: f32 = Wall::RADIUS + Pawn::RADIUS;
@@ -46,17 +44,13 @@ enum CornerGeometryPointKind {
 }
 
 pub fn update_mesh(
-    mut map_q: Query<(&Map, &mut MapMesh), (Changed<Map>, With<ChildOfRoot>)>,
+    mut map_q: Query<&Map, (Changed<Map>, With<ChildOfRoot>)>,
     corner_q: Query<&Corner>,
     wall_q: Query<&Wall>,
     door_q: Query<&Door>,
+    mut room_q: Query<(&Room, &mut RoomMesh)>,
 ) -> Result {
-    for (map, mut mesh) in &mut map_q {
-        if map.triangulation.all_vertices_on_line() {
-            mesh.islands.clear();
-            continue;
-        }
-
+    for map in &mut map_q {
         let mut corners = EntityHashMap::new();
         for entity in map.corners() {
             let corner = corner_q.get(entity.id())?;
@@ -69,14 +63,14 @@ pub fn update_mesh(
             corners.insert(entity.id(), geometry);
         }
 
-        let mut interiors = Vec::with_capacity(map.triangulation.num_constraints() * 3);
+        let mut obstacles = Vec::with_capacity(map.triangulation.num_constraints() * 3);
 
         for (_, corner) in &corners {
-            interiors.push(Polygon::new(
+            obstacles.push(Polygon::new(
                 corner
                     .points
                     .iter()
-                    .map(|point| point.point.to_array())
+                    .map(|point| to_coord(point.point))
                     .collect(),
                 vec![],
             ));
@@ -99,93 +93,92 @@ pub fn update_mesh(
                     wall.isometry() * Vec2::new(wall_half_len - RADIUS, -RADIUS),
                 ];
 
-                interiors.push(Polygon::new(
+                obstacles.push(Polygon::new(
                     start_points
                         .into_iter()
                         .chain(door_start_points)
-                        .map(|point| point.to_array())
+                        .map(to_coord)
                         .collect(),
                     vec![],
                 ));
-                interiors.push(Polygon::new(
+                obstacles.push(Polygon::new(
                     end_points
                         .into_iter()
                         .chain(door_end_points)
-                        .map(|point| point.to_array())
+                        .map(to_coord)
                         .collect(),
                     vec![],
                 ));
             } else {
-                interiors.push(Polygon::new(
+                obstacles.push(Polygon::new(
                     start_points
                         .into_iter()
                         .chain(end_points)
-                        .map(|point| point.to_array())
+                        .map(to_coord)
                         .collect(),
                     vec![],
                 ));
             }
         }
 
-        let exterior = Polygon::new(
-            map.triangulation
-                .convex_hull()
-                .map(|edge| edge.from().data().position.to_array())
-                .collect(),
-            vec![],
-        );
-        let interior = unary_union(&interiors);
+        let obstacles = unary_union(&obstacles);
 
-        mesh.islands.clear();
-        mesh.islands.extend(
-            exterior
-                .difference(&interior)
+        for entity in map.rooms_deduped() {
+            let (room, mut room_mesh) = room_q.get_mut(entity.id())?;
+
+            let triangles: Vec<Triangle<f32>> = room
+                .faces()
+                .iter()
+                .filter_map(|face| {
+                    face.as_inner().map(|inner_face| {
+                        map.triangulation
+                            .face(inner_face)
+                            .vertices()
+                            .map(|vertex| to_coord(vertex.data().position))
+                            .into()
+                    })
+                })
+                .collect();
+            let polygon = triangles
+                .stitch_triangulation()?
+                .difference(&obstacles)
                 .into_iter()
-                .filter(|polygon| polygon.unsigned_area() > Pawn::AREA)
-                .map(|polygon| {
-                    let layer = Triangulation::from_geo_polygon(polygon.clone()).as_layer();
-                    let mut mesh = Mesh {
-                        layers: vec![layer],
-                        search_delta: RADIUS / 2.,
-                        search_steps: 2,
-                    };
+                .max_by_key(|island| FloatOrd(island.unsigned_area()));
 
-                    // TODO: https://github.com/vleue/polyanya/issues/99
-                    // mesh.merge_polygons();
-                    mesh.bake();
+            if room_mesh.polygon != polygon {
+                let mesh = polygon
+                    .clone()
+                    .map(|polygon| {
+                        let layer = Triangulation::from_geo_polygon(polygon).as_layer();
+                        let mut mesh = Mesh {
+                            layers: vec![layer],
+                            search_delta: RADIUS / 2.,
+                            search_steps: 2,
+                        };
 
-                    MapMeshIsland { mesh, polygon }
-                }),
-        );
+                        // TODO: https://github.com/vleue/polyanya/issues/99
+                        // mesh.merge_polygons();
+                        mesh.bake();
+                        mesh
+                    })
+                    .unwrap_or_default();
+
+                *room_mesh = RoomMesh { polygon, mesh };
+            }
+        }
     }
 
     Ok(())
 }
 
-impl MapMesh {
+impl RoomMesh {
     pub fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
-        if self.islands.len() == 1 {
-            return self.islands[0].path(from, to);
-        }
-
-        let (index, from) = self
-            .islands
-            .iter()
-            .enumerate()
-            .flat_map(|(index, island)| Some((index, island.closest_point(from)?)))
-            .min_by_key(|(_, closest)| FloatOrd(closest.position().distance_squared(from)))?;
-        self.islands[index].path_from(from, to)
-    }
-
-    pub fn meshes(&self) -> impl Iterator<Item = &'_ Mesh> {
-        self.islands.iter().map(|island| &island.mesh)
-    }
-}
-
-impl MapMeshIsland {
-    fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
         let from = self.closest_point(from)?;
         self.path_from(from, to)
+    }
+
+    pub fn mesh(&self) -> &Mesh {
+        &self.mesh
     }
 
     fn path_from(&self, from: Coords, to: Vec2) -> Option<Path> {
@@ -198,7 +191,8 @@ impl MapMeshIsland {
             return Some(coords);
         }
 
-        match self.polygon.closest_point(&Point::new(point.x, point.y)) {
+        let polygon = self.polygon.as_ref()?;
+        match polygon.closest_point(&Point::new(point.x, point.y)) {
             Closest::Intersection(closest) | Closest::SinglePoint(closest) => {
                 if let Some(coords) = self
                     .mesh
@@ -328,4 +322,11 @@ fn angle_delta(a1: f32, a2: f32) -> f32 {
 
 fn wrapping_idx<T>(slice: &[T], index: usize, offset: isize) -> &T {
     &slice[(index as isize + offset).rem_euclid(slice.len() as isize) as usize]
+}
+
+fn to_coord(point: Vec2) -> Coord<f32> {
+    Coord {
+        x: point.x,
+        y: point.y,
+    }
 }

@@ -5,13 +5,13 @@ use bevy::{
 use spade::handles::{FixedFaceHandle, FixedVertexHandle, OUTER_FACE, PossiblyOuterTag};
 
 use crate::{
-    map::{Map, door::RoomLinks},
+    map::{Map, door::RoomLinks, mesh::RoomMesh},
     pawn::Pawn,
     root::ChildOfRoot,
 };
 
 #[derive(Clone, Debug, Component)]
-#[require(Transform, Visibility, RoomLinks)]
+#[require(Transform, Visibility, RoomLinks, RoomMesh)]
 #[component(immutable)]
 pub struct Room {
     faces: Vec<FixedFaceHandle<PossiblyOuterTag>>,
