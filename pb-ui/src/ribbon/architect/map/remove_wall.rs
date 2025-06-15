@@ -12,7 +12,7 @@ use crate::{
             wall::{CancelWall, ClickWall, SelectWall},
         },
     },
-    ribbon::architect::map::MapParam,
+    ribbon::architect::map::VisibleMapParam,
 };
 
 pub fn remove_wall(_: Trigger<Pointer<Click>>, mut commands: Commands) -> Result {
@@ -60,6 +60,6 @@ fn cancel_wall(
     Ok(())
 }
 
-fn click_wall(trigger: Trigger<ClickWall>, mut map: MapParam) -> Result {
+fn click_wall(trigger: Trigger<ClickWall>, mut map: VisibleMapParam) -> Result {
     map.remove_wall(trigger.wall)
 }

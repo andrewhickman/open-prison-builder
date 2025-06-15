@@ -42,7 +42,7 @@ pub struct Map {
 }
 
 #[derive(SystemParam)]
-pub struct MapQueries<'w, 's> {
+pub struct MapParam<'w, 's> {
     pub commands: Commands<'w, 's>,
     pub corner_q: Query<'w, 's, &'static Corner>,
     pub wall_q: Query<'w, 's, &'static Wall>,
@@ -88,7 +88,7 @@ struct FaceData {
 pub fn map_inserted(
     trigger: Trigger<OnInsert, Map>,
     mut map_q: Query<&mut Map>,
-    mut queries: MapQueries,
+    mut queries: MapParam,
 ) -> Result {
     let mut map = map_q.get_mut(trigger.target())?;
     map.id = trigger.target();
@@ -232,7 +232,7 @@ impl Map {
         self.size = source.size;
     }
 
-    pub fn clone_into(&mut self, queries: &mut MapQueries, source: &mut Map) {
+    pub fn clone_into(&mut self, queries: &mut MapParam, source: &mut Map) {
         let mut new_children = EntityHashSet::default();
 
         self.triangulation.clone_into(&mut source.triangulation);
@@ -373,13 +373,13 @@ impl Map {
         }
     }
 
-    pub fn insert_corner(&mut self, queries: &mut MapQueries, corner: CornerDef) -> Result<Entity> {
+    pub fn insert_corner(&mut self, queries: &mut MapParam, corner: CornerDef) -> Result<Entity> {
         let vertex = self.get_or_insert_vertex(queries, corner)?;
         self.sync(queries);
         Ok(self.triangulation.vertex(vertex).data().corner())
     }
 
-    pub fn remove_corner(&mut self, queries: &mut MapQueries, corner: Entity) -> Result {
+    pub fn remove_corner(&mut self, queries: &mut MapParam, corner: Entity) -> Result {
         let vertex = queries.corner_q.get(corner)?.vertex();
         self.triangulation.remove(vertex);
         self.sync(queries);
@@ -388,7 +388,7 @@ impl Map {
 
     pub fn insert_wall(
         &mut self,
-        queries: &mut MapQueries,
+        queries: &mut MapParam,
         start: CornerDef,
         end: CornerDef,
     ) -> Result<Option<(Entity, Entity)>> {
@@ -414,7 +414,7 @@ impl Map {
 
     pub fn insert_wall_with(
         &mut self,
-        queries: &mut MapQueries,
+        queries: &mut MapParam,
         start: CornerDef,
         end: CornerDef,
         bundle: impl Bundle + Clone,
@@ -456,7 +456,7 @@ impl Map {
         }
     }
 
-    pub fn remove_wall(&mut self, queries: &mut MapQueries, wall: Entity) -> Result {
+    pub fn remove_wall(&mut self, queries: &mut MapParam, wall: Entity) -> Result {
         let edge = queries.wall_q.get(wall)?.edge();
         self.triangulation.remove_constraint_edge(edge);
         self.sync(queries);
@@ -465,7 +465,7 @@ impl Map {
 
     fn get_or_insert_vertices(
         &mut self,
-        queries: &mut MapQueries,
+        queries: &mut MapParam,
         target1: CornerDef,
         target2: CornerDef,
     ) -> Result<(FixedVertexHandle, FixedVertexHandle)> {
@@ -497,7 +497,7 @@ impl Map {
 
     fn get_or_insert_vertex(
         &mut self,
-        queries: &mut MapQueries,
+        queries: &mut MapParam,
         target: CornerDef,
     ) -> Result<FixedVertexHandle> {
         match target {
@@ -554,7 +554,7 @@ impl Map {
         Ok(())
     }
 
-    fn sync(&mut self, queries: &mut MapQueries) {
+    fn sync(&mut self, queries: &mut MapParam) {
         let mut new_children = EntityHashSet::default();
 
         self.sync_vertices(queries, &mut new_children);
@@ -567,7 +567,7 @@ impl Map {
         self.children = new_children;
     }
 
-    fn sync_vertices(&mut self, queries: &mut MapQueries, new_children: &mut EntityHashSet) {
+    fn sync_vertices(&mut self, queries: &mut MapParam, new_children: &mut EntityHashSet) {
         for vertex in self.triangulation.fixed_vertices() {
             let vertex = self.triangulation.vertex(vertex);
             let vertex_data = vertex.data();
@@ -587,7 +587,7 @@ impl Map {
         }
     }
 
-    fn sync_faces(&mut self, queries: &mut MapQueries, new_children: &mut EntityHashSet) {
+    fn sync_faces(&mut self, queries: &mut MapParam, new_children: &mut EntityHashSet) {
         let mut visited_faces = HashSet::new();
         let mut visited_rooms = EntityHashSet::default();
 
@@ -631,7 +631,7 @@ impl Map {
         }
     }
 
-    fn sync_edges(&mut self, queries: &mut MapQueries, new_children: &mut EntityHashSet) {
+    fn sync_edges(&mut self, queries: &mut MapParam, new_children: &mut EntityHashSet) {
         for edge in self.triangulation.fixed_undirected_edges() {
             let edge = self.triangulation.undirected_edge(edge);
             let edge_data = *edge.data().data();
@@ -702,7 +702,7 @@ impl Map {
 
     fn update_corner(
         &self,
-        queries: &mut MapQueries,
+        queries: &mut MapParam,
         corner: Option<MapEntity>,
         vertex: FixedVertexHandle,
         position: Vec2,
@@ -719,7 +719,7 @@ impl Map {
 
     fn update_wall(
         &self,
-        queries: &mut MapQueries,
+        queries: &mut MapParam,
         wall: Option<MapEntity>,
         edge: FixedUndirectedEdgeHandle,
         corners: [Entity; 2],
@@ -739,7 +739,7 @@ impl Map {
 
     fn update_perimeter(
         &self,
-        queries: &mut MapQueries,
+        queries: &mut MapParam,
         perimeter: Option<MapEntity>,
         [start, end]: [Vec2; 2],
     ) -> MapEntity {
@@ -759,7 +759,7 @@ impl Map {
 
     fn update_room(
         &self,
-        queries: &mut MapQueries,
+        queries: &mut MapParam,
         room: Option<MapEntity>,
         faces: &[FixedFaceHandle<PossiblyOuterTag>],
     ) -> MapEntity {
@@ -834,7 +834,7 @@ impl MapEntity {
     }
 }
 
-impl MapQueries<'_, '_> {
+impl MapParam<'_, '_> {
     fn corner(&self, corner: Entity) -> Option<&Corner> {
         self.corner_q.get(corner).ok()
     }
