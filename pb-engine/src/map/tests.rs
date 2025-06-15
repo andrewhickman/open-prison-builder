@@ -1,7 +1,7 @@
 use bevy::{ecs::system::RunSystemOnce, prelude::*};
 use spade::Triangulation;
 
-use crate::map::{self, Corner, CornerDef, Map, MapQueries, Room, Wall, perimeter::Perimeter};
+use crate::map::{self, Corner, CornerDef, Map, MapParam, Room, Wall, perimeter::Perimeter};
 
 #[test]
 fn test_empty() {
@@ -221,7 +221,7 @@ fn create_map() -> (World, Entity) {
 
 fn insert_wall(world: &mut World, start: CornerDef, end: CornerDef) {
     world
-        .run_system_once(move |mut map: Single<&mut Map>, mut queries: MapQueries| {
+        .run_system_once(move |mut map: Single<&mut Map>, mut queries: MapParam| {
             map.insert_wall(&mut queries, start, end).unwrap();
         })
         .unwrap();

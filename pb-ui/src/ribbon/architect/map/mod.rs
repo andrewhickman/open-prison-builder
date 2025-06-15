@@ -3,17 +3,17 @@ pub mod add_wall;
 pub mod remove_wall;
 
 use bevy::{ecs::system::SystemParam, prelude::*};
-use pb_engine::map::{CornerDef, Map, MapQueries};
+use pb_engine::map::{CornerDef, Map, MapParam};
 use pb_render::wall::VisibleMaps;
 
 #[derive(SystemParam)]
-struct MapParam<'w, 's> {
-    map_queries: MapQueries<'w, 's>,
+struct VisibleMapParam<'w, 's> {
+    map_queries: MapParam<'w, 's>,
     visible_map: Res<'w, VisibleMaps>,
     map_q: Query<'w, 's, &'static mut Map>,
 }
 
-impl MapParam<'_, '_> {
+impl VisibleMapParam<'_, '_> {
     fn id(&self) -> Result<Entity> {
         Ok(self.visible_map.id().ok_or("map should be visible")?)
     }

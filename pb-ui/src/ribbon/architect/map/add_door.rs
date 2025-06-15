@@ -17,7 +17,7 @@ use crate::{
             point::grid::Grid,
         },
     },
-    ribbon::architect::map::MapParam,
+    ribbon::architect::map::VisibleMapParam,
 };
 
 pub fn add_door(
@@ -68,7 +68,7 @@ pub enum AddDoorAction {
 fn select_wall(
     trigger: Trigger<SelectWall>,
     mut action: Single<&mut AddDoorAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.select_wall(&mut map, trigger.wall, trigger.position)
 }
@@ -76,7 +76,7 @@ fn select_wall(
 fn cancel_wall(
     _: Trigger<CancelWall>,
     mut action: Single<&mut AddDoorAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.cancel(&mut map)
 }
@@ -84,13 +84,18 @@ fn cancel_wall(
 fn click_wall(
     trigger: Trigger<ClickWall>,
     mut action: Single<&mut AddDoorAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.click_wall(&mut map, trigger.wall, trigger.position)
 }
 
 impl AddDoorAction {
-    fn select_wall(&mut self, map: &mut MapParam, wall_id: Entity, position: Vec2) -> Result {
+    fn select_wall(
+        &mut self,
+        map: &mut VisibleMapParam,
+        wall_id: Entity,
+        position: Vec2,
+    ) -> Result {
         map.reset()?;
 
         let wall = map.map_queries.wall_q.get(wall_id)?;
@@ -133,12 +138,12 @@ impl AddDoorAction {
         }
     }
 
-    fn click_wall(&mut self, map: &mut MapParam, wall_id: Entity, position: Vec2) -> Result {
+    fn click_wall(&mut self, map: &mut VisibleMapParam, wall_id: Entity, position: Vec2) -> Result {
         self.select_wall(map, wall_id, position)?;
         map.commit()
     }
 
-    fn cancel(&mut self, map: &mut MapParam) -> Result {
+    fn cancel(&mut self, map: &mut VisibleMapParam) -> Result {
         map.reset()
     }
 }

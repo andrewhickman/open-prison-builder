@@ -15,7 +15,7 @@ use crate::{
             point::{CancelPoint, ClickPoint, SelectPoint, grid::Grid},
         },
     },
-    ribbon::architect::map::MapParam,
+    ribbon::architect::map::VisibleMapParam,
 };
 
 pub fn add_wall(
@@ -75,7 +75,7 @@ pub enum AddWallAction {
 fn select_point(
     trigger: Trigger<SelectPoint>,
     mut action: Single<&mut AddWallAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.select_corner(&mut map, CornerDef::Position(trigger.point))
 }
@@ -83,7 +83,7 @@ fn select_point(
 fn cancel_point(
     _: Trigger<CancelPoint>,
     mut action: Single<&mut AddWallAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.cancel(&mut map)
 }
@@ -91,7 +91,7 @@ fn cancel_point(
 fn click_point(
     trigger: Trigger<ClickPoint>,
     mut action: Single<&mut AddWallAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.click(&mut map, CornerDef::Position(trigger.point))
 }
@@ -99,7 +99,7 @@ fn click_point(
 fn select_wall(
     trigger: Trigger<SelectWall>,
     mut action: Single<&mut AddWallAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.select_corner(&mut map, CornerDef::Wall(trigger.wall, trigger.position))
 }
@@ -107,7 +107,7 @@ fn select_wall(
 fn cancel_wall(
     _: Trigger<CancelWall>,
     mut action: Single<&mut AddWallAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.cancel(&mut map)
 }
@@ -115,7 +115,7 @@ fn cancel_wall(
 fn click_wall(
     trigger: Trigger<ClickWall>,
     mut action: Single<&mut AddWallAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.click(&mut map, CornerDef::Wall(trigger.wall, trigger.position))
 }
@@ -123,7 +123,7 @@ fn click_wall(
 fn select_corner(
     trigger: Trigger<SelectCorner>,
     mut action: Single<&mut AddWallAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.select_corner(&mut map, CornerDef::Corner(trigger.corner))
 }
@@ -131,7 +131,7 @@ fn select_corner(
 fn cancel_corner(
     _: Trigger<CancelCorner>,
     mut action: Single<&mut AddWallAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.cancel(&mut map)
 }
@@ -139,13 +139,13 @@ fn cancel_corner(
 fn click_corner(
     trigger: Trigger<ClickCorner>,
     mut action: Single<&mut AddWallAction>,
-    mut map: MapParam,
+    mut map: VisibleMapParam,
 ) -> Result {
     action.click(&mut map, CornerDef::Corner(trigger.corner))
 }
 
 impl AddWallAction {
-    fn select_corner(&mut self, map: &mut MapParam, corner: CornerDef) -> Result {
+    fn select_corner(&mut self, map: &mut VisibleMapParam, corner: CornerDef) -> Result {
         map.reset()?;
 
         match *self {
@@ -160,7 +160,7 @@ impl AddWallAction {
         Ok(())
     }
 
-    fn click(&mut self, map: &mut MapParam, corner: CornerDef) -> Result {
+    fn click(&mut self, map: &mut VisibleMapParam, corner: CornerDef) -> Result {
         map.reset()?;
 
         match *self {
@@ -181,7 +181,7 @@ impl AddWallAction {
         Ok(())
     }
 
-    fn cancel(&mut self, map: &mut MapParam) -> Result {
+    fn cancel(&mut self, map: &mut VisibleMapParam) -> Result {
         map.reset()
     }
 }
