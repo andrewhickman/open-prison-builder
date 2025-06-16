@@ -37,7 +37,7 @@ impl Plugin for PbEnginePlugin {
 
         app.add_observer(root::child_added)
             .add_observer(map::map_inserted)
-            .add_observer(map::room::room_replaced)
+            .add_observer(map::room::contents::room_replaced)
             .add_observer(map::door::wall_replaced)
             .add_insert_event::<map::corner::Corner>()
             .add_insert_event::<map::wall::Wall>()
@@ -54,8 +54,11 @@ impl Plugin for PbEnginePlugin {
                         .after(map::door::remove_links),
                     map::corner::add_colliders,
                     map::perimeter::add_colliders,
-                    map::mesh::update_mesh,
-                    map::room::update_containing_room,
+                    map::room::mesh::update,
+                    map::room::contents::update,
+                    map::room::paths::update
+                        .after(map::room::mesh::update)
+                        .after(map::room::contents::update),
                 ),
             )
             // .add_systems(FixedUpdate, ())

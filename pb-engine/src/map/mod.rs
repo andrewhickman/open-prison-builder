@@ -1,6 +1,5 @@
 pub mod corner;
 pub mod door;
-pub mod mesh;
 pub mod perimeter;
 pub mod room;
 pub mod wall;
@@ -15,7 +14,6 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use mesh::RoomMesh;
 use spade::{
     CdtEdge, ConstrainedDelaunayTriangulation, HasPosition, Point2, PositionInTriangulation,
     Triangulation,
@@ -26,7 +24,13 @@ use spade::{
 };
 
 use crate::{
-    map::{corner::Corner, door::Door, perimeter::Perimeter, room::Room, wall::Wall},
+    map::{
+        corner::Corner,
+        door::Door,
+        perimeter::Perimeter,
+        room::{Room, mesh::RoomMesh},
+        wall::Wall,
+    },
     save::MapModel,
 };
 

@@ -1,6 +1,6 @@
 use bevy::{color::palettes::tailwind::GREEN_300, prelude::*};
 
-use crate::map::mesh::RoomMesh;
+use crate::map::room::mesh::RoomMesh;
 
 #[derive(Default, Resource)]
 pub struct DevSettings {

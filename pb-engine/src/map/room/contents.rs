@@ -2,20 +2,13 @@ use bevy::{
     ecs::{entity::EntityHashSet, relationship::Relationship},
     prelude::*,
 };
-use spade::handles::{FixedFaceHandle, FixedVertexHandle, OUTER_FACE, PossiblyOuterTag};
+use spade::handles::FixedVertexHandle;
 
 use crate::{
-    map::{Map, door::RoomLinks, mesh::RoomMesh},
+    map::{Map, room::Room},
     pawn::Pawn,
     root::ChildOfRoot,
 };
-
-#[derive(Clone, Debug, Component)]
-#[require(Transform, Visibility, RoomLinks, RoomMesh)]
-#[component(immutable)]
-pub struct Room {
-    faces: Vec<FixedFaceHandle<PossiblyOuterTag>>,
-}
 
 #[derive(Component, Clone, PartialEq, Eq, Debug)]
 #[relationship(relationship_target = RoomContents)]
@@ -35,7 +28,7 @@ pub fn room_replaced(trigger: Trigger<OnReplace, Room>, mut commands: Commands) 
         .try_remove::<RoomContents>();
 }
 
-pub fn update_containing_room(
+pub fn update(
     commands: ParallelCommands,
     map_q: Query<&Map, With<ChildOfRoot>>,
     item_q: Query<
@@ -73,19 +66,4 @@ pub fn update_containing_room(
                 });
             }
         });
-}
-
-impl Room {
-    pub fn is_outer(&self) -> bool {
-        self.faces[0] == OUTER_FACE
-    }
-
-    pub(crate) fn faces(&self) -> &[FixedFaceHandle<PossiblyOuterTag>] {
-        &self.faces
-    }
-
-    pub(crate) fn bundle(faces: Vec<FixedFaceHandle<PossiblyOuterTag>>) -> impl Bundle {
-        debug_assert!(!faces.is_empty());
-        (Name::new("room"), Room { faces })
-    }
 }
