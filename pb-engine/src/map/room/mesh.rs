@@ -2,7 +2,7 @@ use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, SQRT_2, TAU};
 
 use bevy::{ecs::entity::EntityHashMap, math::FloatOrd, prelude::*};
 use polyanya::{
-    Coords, Mesh, Path, Triangulation,
+    Coords, Mesh, Triangulation,
     geo::{
         Area, BooleanOps, Closest, ClosestPoint, Coord, Point, Polygon, StitchTriangles, Triangle,
         unary_union,
@@ -21,6 +21,12 @@ use crate::{
 pub struct RoomMesh {
     mesh: Mesh,
     polygon: Option<Polygon<f32>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Path {
+    pub length: f32,
+    pub path: Vec<Vec2>,
 }
 
 const RADIUS: f32 = Wall::RADIUS + Pawn::RADIUS;
@@ -43,7 +49,7 @@ enum CornerGeometryPointKind {
     Corner,
 }
 
-pub fn update_mesh(
+pub fn update(
     mut map_q: Query<&Map, (Changed<Map>, With<ChildOfRoot>)>,
     corner_q: Query<&Corner>,
     wall_q: Query<&Wall>,
@@ -183,7 +189,11 @@ impl RoomMesh {
 
     fn path_from(&self, from: Coords, to: Vec2) -> Option<Path> {
         let to = self.closest_point(to)?;
-        self.mesh.path(from, to)
+        let path = self.mesh.path(from, to)?;
+        Some(Path {
+            path: path.path,
+            length: path.length,
+        })
     }
 
     fn closest_point(&self, point: Vec2) -> Option<Coords> {

@@ -1,14 +1,11 @@
 use bevy::{
-    ecs::{
-        component::HookContext, entity::EntityHashMap, query::QueryEntityError,
-        world::DeferredWorld,
-    },
+    ecs::{component::HookContext, query::QueryEntityError, world::DeferredWorld},
     prelude::*,
 };
 use pb_util::event::ComponentEvent;
 
 use crate::{
-    map::{Map, wall::Wall},
+    map::{Map, room::links::RoomLinks, wall::Wall},
     root::ChildOfRoot,
 };
 
@@ -31,17 +28,6 @@ pub struct Door;
 pub struct DoorLinks {
     left: Entity,
     right: Entity,
-}
-
-#[derive(Default, Clone, Debug, Component)]
-pub struct RoomLinks {
-    doors: EntityHashMap<RoomLink>,
-}
-
-#[derive(Clone, Debug)]
-pub struct RoomLink {
-    position: Vec2,
-    room: Entity,
 }
 
 pub fn validate(
@@ -93,14 +79,6 @@ pub fn add_links(
     Ok(())
 }
 
-impl RoomLinks {
-    pub fn doors(&self) -> impl Iterator<Item = (Entity, Entity, Vec2)> {
-        self.doors
-            .iter()
-            .map(|(&door, link)| (door, link.room, link.position))
-    }
-}
-
 impl DoorLinks {
     fn on_insert(mut world: DeferredWorld, context: HookContext) {
         let door = world.entity(context.entity);
@@ -111,26 +89,12 @@ impl DoorLinks {
             .entity_mut(links.left)
             .get_mut::<RoomLinks>()
             .unwrap()
-            .doors
-            .insert(
-                context.entity,
-                RoomLink {
-                    position: wall.position(),
-                    room: links.right,
-                },
-            );
+            .insert_door(context.entity, wall.position(), links.right);
         world
             .entity_mut(links.right)
             .get_mut::<RoomLinks>()
             .unwrap()
-            .doors
-            .insert(
-                context.entity,
-                RoomLink {
-                    position: wall.position(),
-                    room: links.left,
-                },
-            );
+            .insert_door(context.entity, wall.position(), links.left);
     }
 
     fn on_remove(mut world: DeferredWorld, context: HookContext) {
@@ -143,14 +107,12 @@ impl DoorLinks {
         if let Ok(mut room) = world.get_entity_mut(links.left) {
             room.get_mut::<RoomLinks>()
                 .unwrap()
-                .doors
-                .remove(&context.entity);
+                .remove_door(context.entity);
         }
         if let Ok(mut room) = world.get_entity_mut(links.right) {
             room.get_mut::<RoomLinks>()
                 .unwrap()
-                .doors
-                .remove(&context.entity);
+                .remove_door(context.entity);
         }
     }
 }

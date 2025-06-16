@@ -1,3 +1,5 @@
+pub mod path;
+
 use bevy::prelude::*;
 
 #[derive(Clone, Debug, Component)]
