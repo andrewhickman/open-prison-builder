@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     EngineState,
-    map::{Map, corner::Corner, room::Room, wall::Wall},
+    map::{Map, corner::Corner, door::Door, room::Room, wall::Wall},
     pawn::{Pawn, PawnBundle},
     root::Root,
 };
@@ -31,7 +31,7 @@ pub struct SaveParam<'w, 's> {
     >,
     map_q: Query<'w, 's, (Entity, &'static Map, &'static ChildOf)>,
     corner_q: Query<'w, 's, &'static Corner>,
-    wall_q: Query<'w, 's, &'static Wall>,
+    wall_q: Query<'w, 's, (&'static Wall, Has<Door>)>,
     room_q: Query<'w, 's, &'static Room>,
 }
 
@@ -69,6 +69,8 @@ pub struct WallModel {
     pub id: Entity,
     pub corners: [Entity; 2],
     pub rooms: [Entity; 2],
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub door: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -114,11 +116,12 @@ impl SaveParam<'_, '_> {
                 let walls = map
                     .walls()
                     .map(|id| {
-                        let wall = self.wall_q.get(id.id())?;
+                        let (wall, door) = self.wall_q.get(id.id())?;
                         Ok(WallModel {
                             id: id.id(),
                             corners: wall.corners(),
                             rooms: map.wall_rooms(wall),
+                            door,
                         })
                     })
                     .collect::<Result<Vec<_>>>()?;
@@ -146,9 +149,10 @@ impl SaveParam<'_, '_> {
 impl SaveModel {
     pub fn spawn(self, commands: &mut Commands) -> Entity {
         let root = commands.spawn(Root).id();
-        let mut entity_map = EntityHashMap::<Entity>::new();
 
         commands.queue(move |world: &mut World| -> Result {
+            let mut entity_map = EntityHashMap::<Entity>::new();
+
             for (entity, pawn) in world
                 .spawn_batch(
                     self.pawns
@@ -187,6 +191,14 @@ impl SaveModel {
                 world
                     .entity_mut(map_id)
                     .insert(Map::from_model(map, &mut entity_map)?);
+
+                for wall in &map.walls {
+                    if wall.door {
+                        world
+                            .entity_mut(entity_map.get_mapped(wall.id))
+                            .insert(Door);
+                    }
+                }
             }
 
             Ok(())
