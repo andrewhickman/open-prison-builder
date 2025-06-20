@@ -123,7 +123,7 @@ impl Environment {
     }
 
     fn observe(&mut self) -> Observation {
-        todo!()
+        Observation {}
     }
 }
 

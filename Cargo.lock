@@ -3960,6 +3960,7 @@ dependencies = [
  "pb-learn-model",
  "pb-util",
  "polyanya",
+ "rstar",
  "serde",
  "smallvec",
  "spade",

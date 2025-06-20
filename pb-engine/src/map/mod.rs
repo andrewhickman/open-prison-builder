@@ -1,5 +1,6 @@
 pub mod corner;
 pub mod door;
+pub mod hint;
 pub mod perimeter;
 pub mod room;
 pub mod wall;
@@ -27,6 +28,7 @@ use crate::{
     map::{
         corner::Corner,
         door::Door,
+        hint::RTreeHintGenerator,
         perimeter::Perimeter,
         room::{Room, mesh::RoomMesh},
         wall::Wall,
@@ -42,7 +44,13 @@ pub struct Map {
     id: Entity,
     children: EntityHashSet,
     size: u32,
-    triangulation: ConstrainedDelaunayTriangulation<VertexData, (), UndirectedEdgeData, FaceData>,
+    triangulation: ConstrainedDelaunayTriangulation<
+        VertexData,
+        (),
+        UndirectedEdgeData,
+        FaceData,
+        RTreeHintGenerator,
+    >,
 }
 
 #[derive(SystemParam)]
@@ -118,6 +126,7 @@ impl Map {
             (),
             UndirectedEdgeData,
             FaceData,
+            RTreeHintGenerator,
         >::bulk_load_cdt_stable(
             model
                 .corners
