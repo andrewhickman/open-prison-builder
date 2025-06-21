@@ -12,7 +12,12 @@ use smallvec::SmallVec;
 use spade::Triangulation as _;
 
 use crate::{
-    map::{Corner, Map, door::Door, room::Room, wall::Wall},
+    map::{
+        Corner, Map,
+        door::Door,
+        room::{Room, path::RoomPath},
+        wall::Wall,
+    },
     pawn::Pawn,
     root::ChildOfRoot,
 };
@@ -21,12 +26,6 @@ use crate::{
 pub struct RoomMesh {
     mesh: Mesh,
     polygon: Option<Polygon<f32>>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Path {
-    pub length: f32,
-    pub path: Vec<Vec2>,
 }
 
 const RADIUS: f32 = Wall::RADIUS + Pawn::RADIUS;
@@ -178,7 +177,7 @@ pub fn update(
 }
 
 impl RoomMesh {
-    pub fn path(&self, from: Vec2, to: Vec2) -> Option<Path> {
+    pub fn path(&self, from: Vec2, to: Vec2) -> Option<RoomPath> {
         let from = self.closest_point(from)?;
         self.path_from(from, to)
     }
@@ -187,13 +186,10 @@ impl RoomMesh {
         &self.mesh
     }
 
-    fn path_from(&self, from: Coords, to: Vec2) -> Option<Path> {
+    fn path_from(&self, from: Coords, to: Vec2) -> Option<RoomPath> {
         let to = self.closest_point(to)?;
         let path = self.mesh.path(from, to)?;
-        Some(Path {
-            path: path.path,
-            length: path.length,
-        })
+        Some(RoomPath::new(from.position(), path))
     }
 
     fn closest_point(&self, point: Vec2) -> Option<Coords> {

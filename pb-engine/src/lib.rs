@@ -14,6 +14,8 @@ use pawn::Pawn;
 use pb_util::event::AddComponentEvent;
 use root::Root;
 
+use crate::map::path::MapPathCache;
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, States)]
 pub enum EngineState {
     #[default]
@@ -33,7 +35,8 @@ impl Plugin for PbEnginePlugin {
 
         app.insert_resource(Gravity::ZERO);
 
-        app.init_resource::<DevSettings>();
+        app.init_resource::<DevSettings>()
+            .init_resource::<MapPathCache>();
 
         app.add_observer(root::child_added)
             .add_observer(map::map_inserted)
@@ -56,12 +59,14 @@ impl Plugin for PbEnginePlugin {
                     map::perimeter::add_colliders,
                     map::room::mesh::update,
                     map::room::contents::update,
-                    map::room::paths::update
+                    map::room::path::update
                         .after(map::room::mesh::update)
                         .after(map::room::contents::update),
+                    map::path::invalidate_cache,
                 ),
             )
             // .add_systems(FixedUpdate, ())
+            .add_systems(FixedPostUpdate, map::path::update_cache)
             .add_systems(
                 Update,
                 (

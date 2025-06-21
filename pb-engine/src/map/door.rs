@@ -5,7 +5,7 @@ use bevy::{
 use pb_util::event::ComponentEvent;
 
 use crate::{
-    map::{Map, room::links::RoomLinks, wall::Wall},
+    map::{Map, room::link::RoomLinks, wall::Wall},
     root::ChildOfRoot,
 };
 
@@ -80,6 +80,10 @@ pub fn add_links(
 }
 
 impl DoorLinks {
+    pub fn rooms(&self) -> [Entity; 2] {
+        [self.left, self.right]
+    }
+
     fn on_insert(mut world: DeferredWorld, context: HookContext) {
         let door = world.entity(context.entity);
         let wall = door.get::<Wall>().unwrap().clone();

@@ -1,15 +1,15 @@
 pub mod contents;
-pub mod links;
+pub mod link;
 pub mod mesh;
-pub mod paths;
+pub mod path;
 
 use bevy::prelude::*;
 use spade::handles::{FixedFaceHandle, OUTER_FACE, PossiblyOuterTag};
 
-use crate::map::room::{links::RoomLinks, mesh::RoomMesh, paths::RoomPaths};
+use crate::map::room::{link::RoomLinks, mesh::RoomMesh, path::RoomPathCache};
 
 #[derive(Clone, Debug, Component)]
-#[require(Transform, Visibility, RoomLinks, RoomMesh, RoomPaths)]
+#[require(Transform, Visibility, RoomLinks, RoomMesh, RoomPathCache)]
 #[component(immutable)]
 pub struct Room {
     faces: Vec<FixedFaceHandle<PossiblyOuterTag>>,

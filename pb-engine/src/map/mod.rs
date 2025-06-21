@@ -1,6 +1,7 @@
 pub mod corner;
 pub mod door;
 pub mod hint;
+pub mod path;
 pub mod perimeter;
 pub mod room;
 pub mod wall;
@@ -26,11 +27,7 @@ use spade::{
 
 use crate::{
     map::{
-        corner::Corner,
-        door::Door,
-        hint::RTreeHintGenerator,
-        perimeter::Perimeter,
-        room::{Room, mesh::RoomMesh},
+        corner::Corner, door::Door, hint::RTreeHintGenerator, perimeter::Perimeter, room::Room,
         wall::Wall,
     },
     save::MapModel,
@@ -39,7 +36,7 @@ use crate::{
 pub const GRID_SIZE: f32 = 4.0;
 
 #[derive(Component, TypePath)]
-#[require(Transform, Visibility, RoomMesh, Name::new(Map::type_path()))]
+#[require(Transform, Visibility, Name::new(Map::type_path()))]
 pub struct Map {
     id: Entity,
     children: EntityHashSet,
